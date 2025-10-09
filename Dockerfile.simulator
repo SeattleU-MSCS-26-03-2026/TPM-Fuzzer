@@ -1,0 +1,42 @@
+# Builder docker image; Builds required libraries and binaries.
+FROM debian:stable AS builder
+
+ENV DEBIAN_FRONTEND=noninteractive
+
+RUN mkdir -p /src/external
+WORKDIR /src
+
+RUN apt-get update -q
+RUN apt-get install -y --no-install-recommends ca-certificates \
+    git-core \
+    openssl \
+    libssl-dev \
+    clang \
+    libclang-rt-dev \
+    cmake \
+    ninja-build
+
+ENV TPM_SRC=external/TPM
+ENV INSTALL_DIR=build
+ENV CXX=clang++
+ENV CC=clang
+
+COPY . /src/
+
+RUN ./scripts/build-simulator.sh
+
+# Slim runner Dockerfile; Only contains the generated
+# binaries from the INSTALL_DIR/bin directory
+FROM debian:stable-slim AS runner
+
+RUN mkdir -p /srv/
+
+RUN apt-get update -q
+RUN apt-get install -y --no-install-recommends ca-certificates \
+    openssl \
+    libssl-dev \
+    libclang-rt-dev
+
+COPY --from=builder /src/build/bin/ /srv/
+
+CMD ["stdbuf", "-oL", "-eL", "/srv/Simulator"]
