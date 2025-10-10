@@ -22,3 +22,16 @@ d3f941e9909d   suse-26-03   "…"       ... minutes ago   Up ... minutes        
 # 4. View simulator logs
 $ docker container logs -f intelligent_gates
 ```
+
+### Running with Docker Compose
+
+```sh
+# 1. Run all available containers using docker compose
+$ docker compose up -d
+
+# 2. View simulator logs
+$ docker container logs -f intelligent_gates
+
+# 3. Shut all containers down
+$ docker compose down
+```
