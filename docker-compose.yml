@@ -1,0 +1,7 @@
+services:
+  tpm-simulator:
+    build:
+      context: .
+      dockerfile: Dockerfile.simulator
+    ports:
+      - "5500:5500"
