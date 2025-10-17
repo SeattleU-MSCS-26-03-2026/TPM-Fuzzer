@@ -44,6 +44,7 @@ $ docker compose run --rm tools
 # check the available commands here https://tpm2-tools.readthedocs.io/en/latest/
 # example
 /app# tpm2_startup -c
+/app# tpm2_readclock
 ...
 
 # at the end you can exit the container with exit
