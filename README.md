@@ -44,4 +44,11 @@ $ docker compose run --rm tools
 # check the available commands here https://tpm2-tools.readthedocs.io/en/latest/
 # example
 /app# tpm2_startup -c
+...
+
+# at the end you can exit the container with exit
+/app# exit
+
+# then shut down all containers
+$ docker compose down
 ```
