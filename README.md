@@ -35,3 +35,13 @@ $ docker container logs -f intelligent_gates
 # 3. Shut all containers down
 $ docker compose down
 ```
+
+### Interact with TPM simulator from another container
+
+```sh
+$ docker compose run --rm tools
+# now we are in the other container and you can put in commands to interact with TPM simulator
+# check the available commands here https://tpm2-tools.readthedocs.io/en/latest/
+# example
+/app# tpm2_startup -c
+```

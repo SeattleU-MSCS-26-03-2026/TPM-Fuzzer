@@ -4,4 +4,15 @@ services:
       context: .
       dockerfile: Dockerfile.simulator
     ports:
-      - "5500:5500"
+      - "2321:2321"
+      - "2322:2322"
+  tools:
+    build:
+      context: .
+      dockerfile: Dockerfile.tools
+    container_name: tpm-tools
+    environment:
+      - TPM2TOOLS_TCTI=mssim:host=tpm-simulator,port=2321
+    depends_on:
+      - tpm-simulator
+    tty: true
