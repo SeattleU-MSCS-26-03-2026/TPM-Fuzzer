@@ -1,0 +1,10 @@
+# Disallow everything
+*
+
+# Allow only
+!.dockerignore
+!.gitignore
+!Dockerfile*
+!README.md
+!docker-compose.yml
+!scripts/build-simulator.sh
