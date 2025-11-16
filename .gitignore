@@ -7,4 +7,6 @@
 !Dockerfile*
 !README.md
 !docker-compose.yml
-!scripts/build-simulator.sh
+!fuzzer/
+!fuzzer/vendor
+!fuzzer/vendor/TPM
