@@ -4,6 +4,8 @@
 # Allow only
 !.dockerignore
 !.gitignore
+!.github/
+!.github/**/*
 !Dockerfile*
 !README.md
 !docker-compose.yml

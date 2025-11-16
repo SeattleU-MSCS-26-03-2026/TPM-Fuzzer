@@ -1,0 +1,30 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  build-fuzzer:
+    runs-on: ubuntu-22.04
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+        with:
+          submodules: recursive
+
+      - name: Dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y cmake clang llvm libssl-dev ninja
+
+      - name: Configure
+        run: cmake -S fuzzer -B fuzzer/build -G Ninja
+
+      - name: Build
+        run: cmake --build fuzzer/build
+
+      - name: Verify
+        run: ./fuzzer/build/Fuzzer -help=1
