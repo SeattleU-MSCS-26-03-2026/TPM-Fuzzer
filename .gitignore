@@ -10,6 +10,7 @@
 !README.md
 !docker-compose.yml
 !fuzzer/
+!fuzzer/.clang-format
 !fuzzer/CMakeLists.txt
 !fuzzer/include/
 !fuzzer/include/CMakeLists.txt
