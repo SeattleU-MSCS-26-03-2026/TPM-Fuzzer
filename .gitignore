@@ -13,3 +13,4 @@
 !fuzzer/src/**/*
 !fuzzer/vendor
 !fuzzer/vendor/TPM
+!fuzzer/vendor/CMakeLists.txt
