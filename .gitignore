@@ -9,8 +9,13 @@
 !docker-compose.yml
 !fuzzer/
 !fuzzer/CMakeLists.txt
+!fuzzer/include/
+!fuzzer/include/CMakeLists.txt
+!fuzzer/include/harness/
+!fuzzer/include/harness/common_headers.h
+!fuzzer/include/harness/tpm_wrapper.h
 !fuzzer/src
 !fuzzer/src/**/*
 !fuzzer/vendor
-!fuzzer/vendor/TPM
 !fuzzer/vendor/CMakeLists.txt
+!fuzzer/vendor/TPM

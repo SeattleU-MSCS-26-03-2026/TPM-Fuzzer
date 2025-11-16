@@ -12,11 +12,11 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 # NOTE: Copy the configuration from build/compile_commands.json
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
-project(Fuzzer LANGUAGES CXX)
+project(Fuzzer LANGUAGES CXX C)
 
-#----------------------------
+#-----------------------------
 # Vendor Libraries
-#----------------------------
+#-----------------------------
 
 # As of 11/15/2025 the TPM Reference code is only
 # tested for OpenSSL version 1.1.x to 3.5.x
@@ -28,10 +28,25 @@ include_directories(BEFORE ${OPENSSL_INCLUDE_DIR})
 add_subdirectory(vendor)
 
 #-----------------------------
+# Include project headers
+#-----------------------------
+add_subdirectory(include)
+
+#-----------------------------
 # Fuzzer Binary
 #-----------------------------
 add_executable(Fuzzer)
+
 target_sources(Fuzzer
   PRIVATE
     src/fuzzer.cc
+    src/harness/tpm_wrapper.c
+    vendor/TPM/TPMCmd/Simulator/src/TPMCmdp.c
+    vendor/TPM/TPMCmd/Simulator/src/TcpServer.c
+)
+target_link_libraries(Fuzzer
+  PRIVATE
+    include
+    Tpm_PlatformLib::Tpm_PlatformLib
+    Tpm_CoreLib::Tpm_CoreLib
 )
