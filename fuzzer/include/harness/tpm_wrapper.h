@@ -3,5 +3,5 @@
 #include <simulatorPrivate.h>
 
 void TPMSendCommand(unsigned char locality, _IN_BUFFER request,
-                    _OUT_BUFFER *response);
+                    _OUT_BUFFER* response);
 #endif
