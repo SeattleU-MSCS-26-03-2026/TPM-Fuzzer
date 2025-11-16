@@ -8,6 +8,8 @@ on:
 
 jobs:
   build-fuzzer:
+    name: Build Fuzzer binary
+    # Provides OpenSSL 3.0.2
     runs-on: ubuntu-22.04
     steps:
       - name: Checkout
@@ -28,3 +30,22 @@ jobs:
 
       - name: Verify
         run: ./fuzzer/build/Fuzzer -help=1
+
+  format:
+    name: Check code format
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        path:
+          - 'fuzzer/src'
+          - 'fuzzer/include'
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+
+      - name: Check format
+        uses: jidicula/clang-format-action@v4.16.0
+        with:
+          clang-format-version: '21'
+          check-path: ${{ matrix.path }}
+          fallback-style: 'Google'
