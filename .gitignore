@@ -8,5 +8,8 @@
 !README.md
 !docker-compose.yml
 !fuzzer/
+!fuzzer/CMakeLists.txt
+!fuzzer/src
+!fuzzer/src/**/*
 !fuzzer/vendor
 !fuzzer/vendor/TPM
