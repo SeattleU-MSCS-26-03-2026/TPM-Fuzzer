@@ -1,0 +1,24 @@
+# Disallow everything
+*
+
+# Allow only
+!.dockerignore
+!.gitignore
+!.github/
+!.github/**/*
+!Dockerfile*
+!README.md
+!docker-compose.yml
+!fuzzer/
+!fuzzer/.clang-format
+!fuzzer/CMakeLists.txt
+!fuzzer/include/
+!fuzzer/include/CMakeLists.txt
+!fuzzer/include/harness/
+!fuzzer/include/harness/common_headers.h
+!fuzzer/include/harness/tpm_wrapper.h
+!fuzzer/src
+!fuzzer/src/**/*
+!fuzzer/vendor
+!fuzzer/vendor/CMakeLists.txt
+!fuzzer/vendor/TPM

@@ -1,0 +1,3 @@
+[submodule "fuzzer/vendor/TPM"]
+	path = fuzzer/vendor/TPM
+	url = https://github.com/TrustedComputingGroup/TPM.git
