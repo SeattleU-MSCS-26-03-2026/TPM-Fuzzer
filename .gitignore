@@ -22,3 +22,7 @@
 !fuzzer/vendor
 !fuzzer/vendor/CMakeLists.txt
 !fuzzer/vendor/TPM
+!fuzzer/README.md
+!scripts/config_loader.py
+!scripts/config_corpus.py
+!tests/test_config_loader.py
