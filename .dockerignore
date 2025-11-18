@@ -3,3 +3,6 @@
 
 # Allow only
 !scripts
+!fuzzer
+!.gitmodules
+!.git
