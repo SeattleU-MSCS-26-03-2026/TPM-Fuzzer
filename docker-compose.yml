@@ -20,4 +20,5 @@ services:
     build:
       context: .
       dockerfile: Dockerfile.fuzzer
-
+    volumes:
+      - ./corpus:/srv/corpus
