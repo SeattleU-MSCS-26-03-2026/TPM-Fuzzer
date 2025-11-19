@@ -5,7 +5,6 @@
  * https://github.com/TrustedComputingGroup/TPM source code. Specifically
  * the `SendCommand` TPM API.
  */
-// #include <harness/tpm_wrapper.h>
 
 #include <arpa/inet.h>
 
@@ -20,6 +19,10 @@ extern "C" {
 
 extern "C" int LLVMFuzzerTestOneInput(const uint8_t* Data, size_t Size) {
   size_t offset = 0;
+
+  // TPM start up sequence
+  TPMSignalPowerOn(false);
+  TPMSignalNvOn();
 
   while (offset + 5 <= Size) {
     unsigned char locality = Data[offset];
@@ -42,9 +45,9 @@ extern "C" int LLVMFuzzerTestOneInput(const uint8_t* Data, size_t Size) {
     request.Buffer = (uint8_t*)InputBuffer;
     request.BufferSize = length;
 
-    _OUTPUT_BUFFER OutputBuffer;
+    char OutputBuffer[MAX_BUFFER];
     _OUT_BUFFER response;
-    response.Buffer = OutputBuffer;
+    response.Buffer = (uint8_t*)OutputBuffer;
     response.BufferSize = MAX_BUFFER;
 
     TPMSendCommand(locality, request, &response);
