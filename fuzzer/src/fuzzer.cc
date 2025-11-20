@@ -33,8 +33,8 @@ extern "C" int LLVMFuzzerTestOneInput(const uint8_t* Data, size_t Size) {
     length = ntohl(length);
     offset += 4;
 
-    if (length > MAX_BUFFER || offset + length > Size) return 0;
-    if (Size < 5 + length) return 0;
+    if (length > MAX_BUFFER || offset + length > Size) return -1;
+    if (Size < 5 + length) return -1;
 
     char InputBuffer[MAX_BUFFER];
 
