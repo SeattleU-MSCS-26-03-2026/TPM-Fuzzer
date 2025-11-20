@@ -22,7 +22,7 @@ project(Fuzzer LANGUAGES CXX C)
 # tested for OpenSSL version 1.1.x to 3.5.x
 # NOTE: Build will fail if the version is not in that range
 #       so we require it to be in the range.
-find_package(OpenSSL 1.1...3.5 REQUIRED)
+find_package(OpenSSL 1.1...3.5.99 REQUIRED)
 include_directories(BEFORE ${OPENSSL_INCLUDE_DIR})
 
 add_subdirectory(vendor)
@@ -49,4 +49,14 @@ target_link_libraries(Fuzzer
     include
     Tpm_PlatformLib::Tpm_PlatformLib
     Tpm_CoreLib::Tpm_CoreLib
+)
+
+target_compile_options(Fuzzer
+  PRIVATE
+    -g
+    -fsanitize=fuzzer,address
+)
+target_link_options(Fuzzer
+  PRIVATE
+    -fsanitize=fuzzer,address
 )

@@ -16,3 +16,9 @@ services:
     depends_on:
       - tpm-simulator
     tty: true
+  fuzzer:
+    build:
+      context: .
+      dockerfile: Dockerfile.fuzzer
+    volumes:
+      - ./corpus:/srv/corpus
