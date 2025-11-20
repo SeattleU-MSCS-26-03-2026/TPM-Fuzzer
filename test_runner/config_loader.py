@@ -9,51 +9,80 @@ class ConfigError(Exception):
 REQUIRED_FIELDS = {"corpus_dir", "protocol", "tpm_host"}
 ALLOWED_PROTOCOLS = {"tcp"}
 
-def load_config(config_path: str | Path) -> dict:
-    config_path = Path(config_path)
+# Default configuration values (fallback when YAML is missing)
+DEFAULT_CONFIG = {
+    "corpus_dir": "./corpus",
+    "protocol": "tcp",
+    "tpm_host": "127.0.0.1",
+}
 
-    if not config_path.exists():
-        raise ConfigError(f"Configuration file not found: {config_path}")
+def load_config(config_path: str | Path | None, allow_defaults: bool = False) -> dict:
+    """
+    Load configuration from YAML and validate it.
 
-    try:
-        data = yaml.safe_load(config_path.read_text(encoding="utf-8"))
-    except yaml.YAMLError as e:
-        raise ConfigError(f"Failed to parse YAML: {e}") from e
+    Behavior:
+    - If config_path exists → load YAML + validate (strict)
+    - If config_path does NOT exist:
+        * if allow_defaults = True → use DEFAULT_CONFIG
+        * else → raise ConfigError
+    """
+    repo_root = Path(__file__).resolve().parent.parent
 
-    if not isinstance(data, dict):
-        raise ConfigError("Configuration root must be a YAML mapping (dict)")
+    # ---- Case 1: No config path provided ----
+    if config_path is None:
+        if not allow_defaults:
+            raise ConfigError("No configuration file provided.")
+        cfg = DEFAULT_CONFIG.copy()
+    else:
+        config_path = Path(config_path)
 
-    # Check required fields
-    for field in REQUIRED_FIELDS:
-        if field not in data:
-            raise ConfigError(f"Missing required field: '{field}'")
+        # ---- Case 2: config.yaml missing ----
+        if not config_path.exists():
+            if not allow_defaults:
+                raise ConfigError(f"Configuration file not found: {config_path}")
+            cfg = DEFAULT_CONFIG.copy()
+        else:
+            # ---- Case 3: Load YAML ----
+            try:
+                raw = yaml.safe_load(config_path.read_text(encoding="utf-8"))
+            except yaml.YAMLError as e:
+                raise ConfigError(f"Failed to parse YAML: {e}") from e
+
+            if not isinstance(raw, dict):
+                raise ConfigError("Configuration root must be a YAML mapping (dict)")
+
+            # Merge user YAML over defaults (user overrides defaults)
+            cfg = {**DEFAULT_CONFIG, **raw}
+
+    # ---- Validation ----
 
     # Validate corpus_dir
-    corpus_dir = Path(data["corpus_dir"])
+    corpus_dir = Path(cfg["corpus_dir"])
     if not corpus_dir.is_dir():
         raise ConfigError(f"Corpus directory does not exist: {corpus_dir}")
-    data["corpus_dir"] = str(corpus_dir.resolve())
+    cfg["corpus_dir"] = str(corpus_dir.resolve())
 
     # Validate protocol
-    protocol = str(data["protocol"]).lower()
+    protocol = str(cfg["protocol"]).lower()
     if protocol not in ALLOWED_PROTOCOLS:
         allowed = ", ".join(ALLOWED_PROTOCOLS)
         raise ConfigError(f"Invalid protocol '{protocol}'. Allowed: {allowed}")
-    data["protocol"] = protocol
+    cfg["protocol"] = protocol
 
     # Validate tpm_host
-    if not str(data["tpm_host"]).strip():
+    if not str(cfg["tpm_host"]).strip():
         raise ConfigError("tpm_host must be a non-empty string")
 
-    return data
+    return cfg
 
 
 if __name__ == "__main__":
     repo_root = Path(__file__).resolve().parent.parent
-    config_path = repo_root / "tpm_fuzzer_config.yaml"
+    config_path = repo_root / "config.yaml"
 
     try:
-        config = load_config(config_path)
+        # allow_defaults=True even without yaml
+        config = load_config(config_path, allow_defaults=True)
     except ConfigError as e:
         print(f"[config error] {e}")
         exit(1)

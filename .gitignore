@@ -23,3 +23,16 @@
 !fuzzer/vendor/**/*
 !scripts/
 !scripts/**/*
+!config.yaml
+
+# Allow corpus file
+!corpus/
+!corpus/**/*
+
+# Allow new test runner directory
+!test_runner/
+!test_runner/**/*
+
+# Allow tests
+!tests/
+!tests/**/*
