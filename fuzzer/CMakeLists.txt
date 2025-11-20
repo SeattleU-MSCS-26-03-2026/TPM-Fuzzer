@@ -50,3 +50,13 @@ target_link_libraries(Fuzzer
     Tpm_PlatformLib::Tpm_PlatformLib
     Tpm_CoreLib::Tpm_CoreLib
 )
+
+target_compile_options(Fuzzer
+  PRIVATE
+    -g
+    -fsanitize=fuzzer,address
+)
+target_link_options(Fuzzer
+  PRIVATE
+    -fsanitize=fuzzer,address
+)

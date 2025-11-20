@@ -53,3 +53,13 @@ $ docker compose run --rm tools
 # then shut down all containers
 $ docker compose down
 ```
+
+### Run TPM Fuzzer
+
+```sh
+# use this command to start fuzzing TPM send command
+$ docker compose run --rm fuzzer
+
+# then shut down all containers
+$ docker compose down
+```
