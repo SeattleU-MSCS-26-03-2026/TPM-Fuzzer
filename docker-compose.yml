@@ -22,3 +22,7 @@ services:
       dockerfile: Dockerfile.fuzzer
     volumes:
       - ./corpus:/srv/corpus
+      - ./coverage:/srv/build/coverage
+    environment:
+      - ASAN_OPTIONS=halt_on_error=0:abort_on_error=0
+      - LLVM_PROFILE_FILE=/srv/build/Fuzzer.profraw
