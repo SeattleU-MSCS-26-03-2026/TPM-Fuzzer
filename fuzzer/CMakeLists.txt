@@ -55,8 +55,12 @@ target_compile_options(Fuzzer
   PRIVATE
     -g
     -fsanitize=fuzzer,address
+    -fprofile-instr-generate
+    -fcoverage-mapping
 )
 target_link_options(Fuzzer
   PRIVATE
     -fsanitize=fuzzer,address
+    -fprofile-instr-generate
+    -fcoverage-mapping
 )
