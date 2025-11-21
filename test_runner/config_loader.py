@@ -11,7 +11,7 @@ ALLOWED_PROTOCOLS = {"tcp"}
 
 # Default configuration values (fallback when YAML is missing)
 DEFAULT_CONFIG = {
-    "corpus_dir": "./corpus",
+    "corpus_dir": str((Path(__file__).resolve().parent / "corpus")),
     "protocol": "tcp",
     "tpm_host": "127.0.0.1",
 }
@@ -26,7 +26,7 @@ def load_config(config_path: str | Path | None, allow_defaults: bool = False) ->
         * if allow_defaults = True → use DEFAULT_CONFIG
         * else → raise ConfigError
     """
-    repo_root = Path(__file__).resolve().parent.parent
+    repo_root = Path(__file__).resolve().parent
 
     # ---- Case 1: No config path provided ----
     if config_path is None:
@@ -77,7 +77,7 @@ def load_config(config_path: str | Path | None, allow_defaults: bool = False) ->
 
 
 if __name__ == "__main__":
-    repo_root = Path(__file__).resolve().parent.parent
+    repo_root = Path(__file__).resolve().parent
     config_path = repo_root / "config.yaml"
 
     try:
