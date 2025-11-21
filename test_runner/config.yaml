@@ -1,0 +1,3 @@
+corpus_dir: ./test_runner/corpus
+protocol: tcp
+tpm_host: 127.0.0.1

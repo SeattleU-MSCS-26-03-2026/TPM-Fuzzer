@@ -23,3 +23,8 @@
 !fuzzer/vendor/**/*
 !scripts/
 !scripts/**/*
+
+# Allow new test runner directory
+!test_runner/
+!test_runner/**/*
+
