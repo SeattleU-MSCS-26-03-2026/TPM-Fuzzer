@@ -5,7 +5,7 @@ echo "Running fuzzer..."
 ./build/Fuzzer -runs=100000 /srv/corpus
 
 echo "Creating coverage report..."
-llvm-profdata merge -sparse /srv/build/Fuzzer.profraw -o /srv/build/Fuzzer.profdata
+llvm-profdata merge -sparse $LLVM_PROFILE_FILE -o /srv/build/Fuzzer.profdata
 
 llvm-cov show /srv/build/Fuzzer \
     -instr-profile=/srv/build/Fuzzer.profdata \
