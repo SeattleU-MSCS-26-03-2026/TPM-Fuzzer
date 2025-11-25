@@ -22,3 +22,6 @@ services:
       dockerfile: Dockerfile.fuzzer
     volumes:
       - ./corpus:/srv/corpus
+      - ./coverage:/srv/build/coverage
+    environment:
+      - LLVM_PROFILE_FILE=/srv/build/Fuzzer.profraw
