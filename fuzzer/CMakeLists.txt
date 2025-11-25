@@ -14,6 +14,23 @@ set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
 project(Fuzzer LANGUAGES CXX C)
 
+# -----------------------------------------------------------
+# Global Sanitizer & Coverage Flags
+# -----------------------------------------------------------
+
+add_compile_options(
+    -g
+    -fsanitize=fuzzer,address
+    -fprofile-instr-generate
+    -fcoverage-mapping
+)
+
+add_link_options(
+    -fsanitize=fuzzer,address
+    -fprofile-instr-generate
+    -fcoverage-mapping
+)
+
 #-----------------------------
 # Vendor Libraries
 #-----------------------------
@@ -49,18 +66,4 @@ target_link_libraries(Fuzzer
     include
     Tpm_PlatformLib::Tpm_PlatformLib
     Tpm_CoreLib::Tpm_CoreLib
-)
-
-target_compile_options(Fuzzer
-  PRIVATE
-    -g
-    -fsanitize=fuzzer,address
-    -fprofile-instr-generate
-    -fcoverage-mapping
-)
-target_link_options(Fuzzer
-  PRIVATE
-    -fsanitize=fuzzer,address
-    -fprofile-instr-generate
-    -fcoverage-mapping
 )
