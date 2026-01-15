@@ -6,4 +6,5 @@
 !fuzzer
 !.gitmodules
 !.git
-!.corpus
+!corpus/
+!seeds/
