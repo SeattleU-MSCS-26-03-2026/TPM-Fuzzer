@@ -75,7 +75,7 @@ def tpm_get_rand_seeds() -> List[bytes]:
     """
     seeds: List[bytes] = []
     for st in [TPM_ST_NO_SESSIONS, TPM_ST_SESSIONS]:
-        for bytes_requested in [1, 65535]:
+        for bytes_requested in [16, 32, 64, 0, 48]:
             # NOTE: Command Size is Total number of input bytes including
             #       tag and command size.
             command_size = 2 + 4 + 4 + 2
