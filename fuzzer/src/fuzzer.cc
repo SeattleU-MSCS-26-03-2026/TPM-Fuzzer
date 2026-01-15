@@ -8,6 +8,7 @@
 
 #include <parser/byte_parser.h>
 
+#include <cstddef>
 #include <vector>
 
 extern "C" {
