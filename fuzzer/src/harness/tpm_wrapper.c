@@ -68,5 +68,7 @@ void TPMShutdown(void) {
   // Signal platform power off
   _plat__Signal_PowerOff();
 
+  TPM_TearDown();
+
   printf("TPM shutdown complete\n");
 }

@@ -5,10 +5,13 @@
  * https://github.com/TrustedComputingGroup/TPM source code.
  */
 
+#include <arpa/inet.h>
+
 #include <parser/byte_parser.h>
 #include <cstddef>
 #include <vector>
 #include <cstdio>
+#include <cstring>
 
 extern "C" {
 #include <harness/tpm_wrapper.h>
@@ -34,14 +37,12 @@ extern "C" int LLVMFuzzerInitialize(int *argc, char ***argv) {
 // Called for each fuzzing input
 extern "C" int LLVMFuzzerTestOneInput(const uint8_t* Data, size_t Size) {
   std::vector<std::vector<uint8_t>> commands;
-
   if (!parseCommands(Data, Size, commands)) {
-    return 1;
+    return 0;
   }
 
-  // TPM start up sequence
-  TPMSignalPowerOn(false);
-  TPMSignalNvOn();
+  TPMManufactureIfNeeded();
+  TPMStartup();
 
   for (auto& cmd : commands) {
     _IN_BUFFER request;
