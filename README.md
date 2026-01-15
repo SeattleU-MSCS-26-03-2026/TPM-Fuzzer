@@ -63,3 +63,13 @@ $ docker compose run --rm fuzzer
 # then shut down all containers
 $ docker compose down
 ```
+
+### Run Unit Test
+
+```sh
+# use this command to run available unit tests
+$ docker compose run --rm test
+
+# then shut down all containers
+$ docker compose down
+```
