@@ -23,7 +23,7 @@ FUZZER_EXTRA_ARGS=${FUZZER_EXTRA_ARGS:-''}
 
 main() {
     echo "Starting fuzzer... [1/3]"
-    ./build/Fuzzer -runs="$MAX_RUNS" "$FUZZER_EXTRA_ARGS" "$GENERATED_CORPUS_DIRECTORY" "$SEED_CORPUS_LIST"
+    LLVM_PROFILE_FILE=$PROFILE_FILE ./build/Fuzzer -runs="$MAX_RUNS" "$FUZZER_EXTRA_ARGS" "$GENERATED_CORPUS_DIRECTORY" "$SEED_CORPUS_LIST"
 
     echo "Creating coverage report... [2/3]"
     llvm-profdata merge -sparse "$PROFILE_FILE" -o "$PROFILE_DATA"
