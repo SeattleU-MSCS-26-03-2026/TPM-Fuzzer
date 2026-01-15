@@ -12,6 +12,7 @@
 #include <vector>
 #include <cstdio>
 #include <cstring>
+#include <cstdio>
 
 extern "C" {
 #include <harness/tpm_wrapper.h>
