@@ -33,11 +33,11 @@ void TPMStartup(void) {
   // Power on platform
   _plat__Signal_PowerOn();
 
+  // Reset the platform
+  _plat__Signal_Reset();
+
   // Enable NV memory
   _plat__NVEnable(NULL, 0);
-
-  // Initialize TPM
-  _TPM_Init();
 
   // Make NV memory available
   _plat__SetNvAvail();
