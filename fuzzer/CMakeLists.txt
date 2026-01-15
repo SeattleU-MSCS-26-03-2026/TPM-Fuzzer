@@ -58,6 +58,7 @@ target_sources(Fuzzer
   PRIVATE
     src/fuzzer.cc
     src/harness/tpm_wrapper.c
+    src/parser/byte_parser.cc
     vendor/TPM/TPMCmd/Simulator/src/TPMCmdp.c
     vendor/TPM/TPMCmd/Simulator/src/TcpServer.c
 )
