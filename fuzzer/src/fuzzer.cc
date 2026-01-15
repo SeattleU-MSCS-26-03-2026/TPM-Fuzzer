@@ -57,5 +57,7 @@ extern "C" int LLVMFuzzerTestOneInput(const uint8_t* Data, size_t Size) {
     TPMSendCommand(kDefaultLocality, request, &response);
   }
 
+  TPMShutdown();
+
   return 0;
 }
