@@ -15,6 +15,16 @@ set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 project(Fuzzer LANGUAGES CXX C)
 
 # -----------------------------------------------------------
+# Set RUN_UNIT_TESTS Flag
+# -----------------------------------------------------------
+
+option(RUN_UNIT_TESTS "run unit tests" OFF)
+
+if (ENABLE_TESTS)
+  message(STATUS "Running unit tests ....")
+endif()
+
+# -----------------------------------------------------------
 # Global Sanitizer & Coverage Flags
 # -----------------------------------------------------------
 
@@ -68,3 +78,12 @@ target_link_libraries(Fuzzer
     Tpm_PlatformLib::Tpm_PlatformLib
     Tpm_CoreLib::Tpm_CoreLib
 )
+
+# -----------------------------------------------------------
+# Add Test Directory
+# -----------------------------------------------------------
+
+if (RUN_UNIT_TESTS)
+  enable_testing()
+  add_subdirectory(test)
+endif()
