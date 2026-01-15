@@ -24,10 +24,8 @@ services:
       - ./corpus:/srv/corpus
       - ./coverage:/srv/build/coverage
     environment:
-      - LLVM_PROF_FILE=/srv/build/Fuzzer.profraw
-      - LLVM_PROF_DATA=/srv/build/Fuzzer.profdata
       - COVERAGE_OUTPUT_DIR=/srv/build/coverage
       - GEN_CORPUS_DIR=/srv/corpus
       - SEED_CORPUS_DIR=/srv/seeds
       - MAX_RUNS=100000
-      - FUZZER_EXTRA_ARGS="-seed 38912891"
+      - FUZZER_EXTRA_ARGS=-seed=38912891
