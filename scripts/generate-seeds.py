@@ -62,12 +62,8 @@ def wrap_tpm_commands(data: List[bytes]) -> List[bytes]:
 def tpm_get_rand_seeds() -> List[bytes]:
     """
     Generates seeds for the TPM2_GetRandom Command. This
-    function generates 4 seeds:
-        - 2 Variants of TPM_ST_NO_SESSIONS command
-        - 2 Variants of TPM_ST_SESSIONS command
-
-    The 2 variants for each command seed test the minimum and maximum
-    value allowed for the bytes requested.
+    function generates variants of the command based on
+    collected interesting seeds from previous testing.
 
     Command Structure:
       [TPMI_ST_COMMAND_TAG(tag i.e TPM_ST_NO_SESSIONS)][UINT32(Command Size)]
