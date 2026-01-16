@@ -15,8 +15,8 @@ extern "C" {
 #include <harness/tpm_wrapper.h>
 }
 
-#define MAX_BUFFER 1048576
-#define DEFAULT_LOCALITY 0
+const size_t kMaxBuffers = 1048576;
+const int kDefaultLocality = 0;
 
 extern "C" int LLVMFuzzerTestOneInput(const uint8_t* Data, size_t Size) {
   std::vector<std::vector<uint8_t>> commands;
@@ -34,12 +34,12 @@ extern "C" int LLVMFuzzerTestOneInput(const uint8_t* Data, size_t Size) {
     request.Buffer = cmd.data();
     request.BufferSize = cmd.size();
 
-    char OutputBuffer[MAX_BUFFER];
+    char OutputBuffer[kMaxBuffers];
     _OUT_BUFFER response;
     response.Buffer = (uint8_t*)OutputBuffer;
-    response.BufferSize = MAX_BUFFER;
+    response.BufferSize = kMaxBuffers;
 
-    TPMSendCommand(DEFAULT_LOCALITY, request, &response);
+    TPMSendCommand(kDefaultLocality, request, &response);
   }
 
   return 0;

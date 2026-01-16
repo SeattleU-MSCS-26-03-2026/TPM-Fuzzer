@@ -5,7 +5,7 @@
 #include <cstddef>
 #include <vector>
 
-bool parseCommands(const uint8_t* Data, size_t Size,
+bool parseCommands(const uint8_t* data, size_t size,
                    std::vector<std::vector<uint8_t>>& commands);
 
 #endif
