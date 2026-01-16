@@ -71,3 +71,21 @@ jobs:
           clang-format-version: '21'
           check-path: ${{ matrix.path }}
           fallback-style: 'Google'
+
+  unit-tests:
+    name: Run unit tests
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+        with:
+          submodules: recursive
+
+      - name: Build test image
+        run: |
+          docker build -f Dockerfile.test -t tpm-unit-tests .
+
+      - name: Run unit tests
+        run: |
+          docker run --rm tpm-unit-tests
