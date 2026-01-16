@@ -36,26 +36,27 @@ TPM_ST_SESSIONS = 0x8002
 TPM_CC_GETRANDOM = 0x0000017B
 
 
-def wrap_tpm_commands(data: List[bytes]) -> List[bytes]:
-    """
-    Wraps TPM Command with a header specifying locality
-    and command size.
+# OUTDATED
+# def wrap_tpm_commands(data: List[bytes]) -> List[bytes]:
+#     """
+#     Wraps TPM Command with a header specifying locality
+#     and command size.
 
-    TODO: Remove this.
-    """
-    ret: List[bytes] = []
-    locality = 0
+#     TODO: Remove this.
+#     """
+#     ret: List[bytes] = []
+#     locality = 0
 
-    for d in data:
-        command_size = len(d)
-        wrapped_data = (
-            locality.to_bytes(1, byteorder=BYTE_ORDER) +
-            command_size.to_bytes(4, byteorder=BYTE_ORDER) +
-            d
-        )
-        ret.append(wrapped_data)
+#     for d in data:
+#         command_size = len(d)
+#         wrapped_data = (
+#             locality.to_bytes(1, byteorder=BYTE_ORDER) +
+#             command_size.to_bytes(4, byteorder=BYTE_ORDER) +
+#             d
+#         )
+#         ret.append(wrapped_data)
 
-    return ret
+#     return ret
 
 
 def tpm_get_rand_seeds() -> List[bytes]:
@@ -110,8 +111,7 @@ def generate_seeds(directory: str, recreate: bool, seeds: Dict[str, SeedFunction
             if not recreate:
                 continue
 
-        # TODO: Remove this
-        seeds: List[bytes] = wrap_tpm_commands(func())
+        seeds: List[bytes] = func()
 
         for (i, seed) in enumerate(seeds):
             filename = f"{cmd}-variant{i}-{current_timestamp}"
