@@ -29,3 +29,7 @@ services:
       - SEED_CORPUS_DIR=/srv/seeds
       - MAX_RUNS=100000
       - FUZZER_EXTRA_ARGS=-seed=38912891
+  test:
+    build:
+      context: .
+      dockerfile: Dockerfile.test

@@ -13,6 +13,7 @@ target_sources(include
   FILES
     harness/common_headers.h
     harness/tpm_wrapper.h
+    parser/byte_parser.h
 )
 
 set_target_properties(include PROPERTIES LINKER_LANGUAGE C)

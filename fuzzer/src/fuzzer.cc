@@ -6,51 +6,40 @@
  * the `SendCommand` TPM API.
  */
 
-#include <arpa/inet.h>
+#include <parser/byte_parser.h>
 
 #include <cstddef>
-#include <cstring>
+#include <vector>
 
 extern "C" {
 #include <harness/tpm_wrapper.h>
 }
 
-#define MAX_BUFFER 1048576
+const size_t kMaxBuffers = 1048576;
+const int kDefaultLocality = 0;
 
 extern "C" int LLVMFuzzerTestOneInput(const uint8_t* Data, size_t Size) {
-  size_t offset = 0;
+  std::vector<std::vector<uint8_t>> commands;
+
+  if (!parseCommands(Data, Size, commands)) {
+    return 1;
+  }
 
   // TPM start up sequence
   TPMSignalPowerOn(false);
   TPMSignalNvOn();
 
-  while (offset + 5 <= Size) {
-    unsigned char locality = Data[offset];
-    offset += 1;
-
-    uint32_t length = 0;
-    memcpy(&length, Data + offset, 4);
-    length = ntohl(length);
-    offset += 4;
-
-    if (length > MAX_BUFFER || offset + length > Size) return -1;
-    if (Size < 5 + length) return -1;
-
-    char InputBuffer[MAX_BUFFER];
-
-    memcpy(InputBuffer, Data + offset, length);
-    offset += length;
-
+  for (auto& cmd : commands) {
     _IN_BUFFER request;
-    request.Buffer = (uint8_t*)InputBuffer;
-    request.BufferSize = length;
+    request.Buffer = cmd.data();
+    request.BufferSize = cmd.size();
 
-    char OutputBuffer[MAX_BUFFER];
+    char OutputBuffer[kMaxBuffers];
     _OUT_BUFFER response;
     response.Buffer = (uint8_t*)OutputBuffer;
-    response.BufferSize = MAX_BUFFER;
+    response.BufferSize = kMaxBuffers;
 
-    TPMSendCommand(locality, request, &response);
+    TPMSendCommand(kDefaultLocality, request, &response);
   }
 
   return 0;
