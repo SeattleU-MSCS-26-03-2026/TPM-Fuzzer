@@ -19,8 +19,8 @@
 !fuzzer/scripts/**/*
 !fuzzer/src
 !fuzzer/src/**/*
-!fuzzer/test
-!fuzzer/test/**/*
+!fuzzer/tests
+!fuzzer/tests/**/*
 !fuzzer/vendor
 !fuzzer/vendor/**/*
 !scripts/

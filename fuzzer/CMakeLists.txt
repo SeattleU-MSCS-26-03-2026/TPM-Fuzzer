@@ -85,5 +85,5 @@ target_link_libraries(Fuzzer
 
 if (RUN_UNIT_TESTS)
   enable_testing()
-  add_subdirectory(test)
+  add_subdirectory(tests)
 endif()
