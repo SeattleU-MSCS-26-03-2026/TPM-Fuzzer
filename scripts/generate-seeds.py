@@ -2,9 +2,8 @@
 
 """
 This script generates seed files for the TPM (Trusted Platform Module) commands
-to be used in fuzz testing.  The current implementation specifically targets the
-TPM2_GetRandom command. The seeds are defined by specified command structures
-utilizing TPM constants.
+to be used in fuzz testing. The seeds are defined by specified command
+structures utilizing TPM constants.
 
 The generated seed files are saved in a specified output directory. The script
 can also recreate existing seed files based on user input.
