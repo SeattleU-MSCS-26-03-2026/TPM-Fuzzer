@@ -39,7 +39,7 @@ extern "C" int LLVMFuzzerInitialize(int *argc, char ***argv) {
 extern "C" int LLVMFuzzerTestOneInput(const uint8_t* Data, size_t Size) {
   std::vector<std::vector<uint8_t>> commands;
   if (!parseCommands(Data, Size, commands)) {
-    return 0;
+    return 1;
   }
 
   TPMManufactureIfNeeded();
