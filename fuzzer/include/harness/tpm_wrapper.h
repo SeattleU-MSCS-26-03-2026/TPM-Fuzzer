@@ -34,4 +34,4 @@ void TPMShutdown(void);
 }
 #endif
 
-#endif // TPM_WRAPPER_H
+#endif  // TPM_WRAPPER_H
