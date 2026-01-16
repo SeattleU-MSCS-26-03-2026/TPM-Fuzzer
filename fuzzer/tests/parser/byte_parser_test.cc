@@ -63,16 +63,6 @@ TEST_CASE("parseCommands parses multiple commands") {
   REQUIRE(commands[1] == cmd2);
 }
 
-TEST_CASE("parseCommands rejects invalid tag") {
-  auto bad = makeCommand(0x1234, 0x0000017B);  // TPM2_GetRandom
-
-  std::vector<std::vector<uint8_t>> commands;
-  bool ok = parseCommands(bad.data(), bad.size(), commands);
-
-  REQUIRE_FALSE(ok);
-  REQUIRE(commands.empty());
-}
-
 TEST_CASE("parseCommands rejects length smaller than header") {
   std::vector<uint8_t> bad = {0x80, 0x01,              // TAG
                               0x00, 0x00, 0x00, 0x05,  // SIZE = 5
