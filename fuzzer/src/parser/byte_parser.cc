@@ -29,7 +29,7 @@ bool parseCommands(const uint8_t* data, size_t size,
     memcpy(&length, data + offset + kHeaderTagLen, kHeaderCommandSizeLen);
     length = ntohl(length);
 
-    if (length < kHeaderTagLen + kHeaderCommandSizeLen + kHeaderCommandCodeLen)
+    if (length <= kHeaderTagLen + kHeaderCommandSizeLen + kHeaderCommandCodeLen)
       return false;
     if (offset + length > size) return false;
 
