@@ -58,7 +58,7 @@ def wrap_frame(cmd: bytes, locality: int = 0) -> bytes:
     # libFuzzer harness frame: locality(1) + len(4 be) + cmd bytes
     return struct.pack(">B", locality) + struct.pack(">I", len(cmd)) + cmd
 
-out_dir = Path("corpus/TPM2_Hash")
+out_dir = Path("seeds")
 out_dir.mkdir(parents=True, exist_ok=True)
 
 seeds = [
