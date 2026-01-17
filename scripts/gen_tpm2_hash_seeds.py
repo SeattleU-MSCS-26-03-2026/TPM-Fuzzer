@@ -62,9 +62,9 @@ out_dir = Path("seeds")
 out_dir.mkdir(parents=True, exist_ok=True)
 
 seeds = [
-    ("seed_sha1_owner_test_hash_data.bin", b"test hash data", TPM_ALG_SHA1,   TPM_RH_OWNER),
-    ("seed_sha256_platform_another_test.bin", b"another test", TPM_ALG_SHA256, TPM_RH_PLATFORM),
-    ("seed_sha384_null_random_bytes.bin", b"random bytes", TPM_ALG_SHA384, TPM_RH_NULL),
+    ("TPMHash-sha1-owner.bin", b"test hash data", TPM_ALG_SHA1,   TPM_RH_OWNER),
+    ("TPMHash-sha256-platform.bin", b"another test", TPM_ALG_SHA256, TPM_RH_PLATFORM),
+    ("TPMHash-sha384-null-random.bin", b"random bytes", TPM_ALG_SHA384, TPM_RH_NULL),
 ]
 
 for name, data, alg, hier in seeds:
