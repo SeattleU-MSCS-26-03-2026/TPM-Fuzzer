@@ -1,3 +1,33 @@
+#!/usr/bin/env python3
+
+"""
+This script generates seed files for the TPM2_Hash command to be used in fuzz testing.
+The seeds are constructed as valid TPM2_Hash command frames using different
+hash algorithms and hierarchies to provide high-quality starting inputs for libFuzzer.
+
+Each generated seed represents a complete, well-formed TPM2_Hash command wrapped
+in the libFuzzer harness frame format:
+
+    [locality(1)][length(4)][
+        tag(2) | commandSize(4) | commandCode(4) |
+        TPM2B_MAX_BUFFER | hashAlg | hierarchy
+    ]
+
+The generated seed files are saved into the specified output directory and can be
+used as the initial seed corpus for fuzzing the TPM reference implementation.
+
+Usage:
+    python generate_hash_seeds.py [options]
+
+Options:
+    --output-dir: Specify a different output directory for the seed files (default is "seeds/").
+    --recreate:   Recreate all existing TPM2_Hash seed files.
+
+Resources:
+    - TPM Library Specification, Part 3: Commands
+      https://trustedcomputinggroup.org/resource/tpm-library-specification/
+"""
+
 import struct
 from pathlib import Path
 
