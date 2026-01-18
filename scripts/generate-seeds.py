@@ -36,9 +36,10 @@ TPM_ST_SESSIONS = 0x8002
 TPM_CC_GETRANDOM = 0x0000017B
 
 
-TPM_ST_NO_SESSIONS = 0x8001
+
 TPM_CC_HASH = 0x0000017D
 
+TPM_CC_CREATE = 0x00000153
 TPM_ALG_SHA1   = 0x0004
 TPM_ALG_SHA256 = 0x000B
 TPM_ALG_SHA384 = 0x000C
@@ -162,6 +163,7 @@ if __name__ == "__main__":
     seeds = {
         "TPMGetRandom": tpm_get_rand_seeds,
         "TPMHash": tpm_hash_seeds,
+        "TPMCreate": tpm_create_seeds,
     }
 
     parser = argparse.ArgumentParser(description='Generates the seed corpus for the Fuzzer.')
