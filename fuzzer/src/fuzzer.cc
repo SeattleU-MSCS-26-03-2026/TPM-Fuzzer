@@ -41,9 +41,6 @@ extern "C" int LLVMFuzzerTestOneInput(const uint8_t* Data, size_t Size) {
     return 1;
   }
 
-  TPMManufactureIfNeeded();
-  TPMStartup();
-
   for (auto& cmd : commands) {
     _IN_BUFFER request;
     request.Buffer = cmd.data();
