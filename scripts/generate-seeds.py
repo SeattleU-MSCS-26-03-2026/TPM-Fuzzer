@@ -39,6 +39,8 @@ TPM_CC_GETRANDOM = 0x0000017B
 
 TPM_CC_HASH = 0x0000017D
 
+TPM_ALG_RSA  = 0x0001
+TPM_ALG_NULL = 0x0010
 TPM_CC_CREATE = 0x00000153
 TPM_RS_PW = 0x40000009
 PARENT_HANDLE = 0x81000001
@@ -58,7 +60,9 @@ def auth_area_pw():
     auth_cmd = u32(TPM_RS_PW) + u16(0) + b"\x00" + u16(0)
     return u32(len(auth_cmd)) + auth_cmd
 
-def build_in_public(hash_alg: int, key_bits: int) -> bytes:
+def build_in_public(hash_alg: int, key_bits: int,
+                    type_alg: int = TPM_ALG_RSA,
+                    scheme_alg: int = TPM_ALG_NULL) -> bytes:
     """
     Minimal but structured TPM2B_PUBLIC (RSA) – enough to be parsed.
     """
@@ -68,8 +72,8 @@ def build_in_public(hash_alg: int, key_bits: int) -> bytes:
     auth_policy = u16(0)
 
     rsa_params = (
-        u16(0x0001) +        # TPM_ALG_RSA
-        u16(0x0010) +        # TPM_ALG_NULL (scheme)
+        u16(type_alg) +        # TPM_ALG_RSA
+        u16(scheme_alg) +        # TPM_ALG_NULL (scheme)
         u16(key_bits) +      # keyBits
         u32(0)               # exponent
     )
