@@ -1,5 +1,5 @@
-#ifndef TPM_WRAPPER_H
-#define TPM_WRAPPER_H
+#ifndef FUZZER_HARNESS_WRAPPER_H_
+#define FUZZER_HARNESS_WRAPPER_H_
 
 #ifdef __cplusplus
 extern "C" {
@@ -34,4 +34,4 @@ void TPMShutdown(void);
 }
 #endif
 
-#endif  // TPM_WRAPPER_H
+#endif  // FUZZER_HARNESS_WRAPPER_H_
