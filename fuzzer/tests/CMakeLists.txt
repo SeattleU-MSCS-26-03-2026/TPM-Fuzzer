@@ -2,7 +2,9 @@ find_package(Catch2 3 REQUIRED)
 
 add_executable(FUZZER_TESTS
   parser/byte_parser_test.cc
+  harness/tpm_wrapper_test.cc
   ${CMAKE_SOURCE_DIR}/src/parser/byte_parser.cc
+  ${CMAKE_SOURCE_DIR}/src/harness/tpm_wrapper.c
 )
 
 target_link_libraries(FUZZER_TESTS
@@ -12,7 +14,12 @@ target_link_libraries(FUZZER_TESTS
 
 target_include_directories(FUZZER_TESTS
   PRIVATE
+    ${CMAKE_SOURCE_DIR}/include
     ${CMAKE_SOURCE_DIR}/include/parser
+    ${CMAKE_SOURCE_DIR}/include/harness
+    ${CMAKE_SOURCE_DIR}/vendor/TPM/TPMCmd/tpm/include
+    ${CMAKE_SOURCE_DIR}/vendor/TPM/TPMCmd/Platform/include
+    ${CMAKE_SOURCE_DIR}/vendor/TPM/TPMCmd/TpmConfiguration
 )
 
 # Disable fuzz sanitizer for tests

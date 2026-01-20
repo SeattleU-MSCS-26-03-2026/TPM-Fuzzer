@@ -2,13 +2,15 @@
  * Fuzzer Binary
  *
  * This program is responsible for fuzzing the TPM Reference
- * https://github.com/TrustedComputingGroup/TPM source code. Specifically
- * the `SendCommand` TPM API.
+ * https://github.com/TrustedComputingGroup/TPM source code.
  */
 
+#include <arpa/inet.h>
 #include <parser/byte_parser.h>
 
 #include <cstddef>
+#include <cstdio>
+#include <cstring>
 #include <vector>
 
 extern "C" {
@@ -18,29 +20,30 @@ extern "C" {
 const size_t kMaxBuffers = 1048576;
 const int kDefaultLocality = 0;
 
+// Called for each fuzzing input
 extern "C" int LLVMFuzzerTestOneInput(const uint8_t* Data, size_t Size) {
   std::vector<std::vector<uint8_t>> commands;
-
   if (!parseCommands(Data, Size, commands)) {
     return 1;
   }
 
-  // TPM start up sequence
-  TPMSignalPowerOn(false);
-  TPMSignalNvOn();
+  TPMManufactureIfNeeded();
+  TPMStartup();
 
   for (auto& cmd : commands) {
-    _IN_BUFFER request;
-    request.Buffer = cmd.data();
-    request.BufferSize = cmd.size();
+    struct InBuffer request;
+    request.buffer = cmd.data();
+    request.buffer_size = cmd.size();
 
     char OutputBuffer[kMaxBuffers];
-    _OUT_BUFFER response;
-    response.Buffer = (uint8_t*)OutputBuffer;
-    response.BufferSize = kMaxBuffers;
+    struct OutBuffer response;
+    response.buffer = (uint8_t*)OutputBuffer;
+    response.buffer_size = kMaxBuffers;
 
     TPMSendCommand(kDefaultLocality, request, &response);
   }
+
+  TPMShutdown();
 
   return 0;
 }
