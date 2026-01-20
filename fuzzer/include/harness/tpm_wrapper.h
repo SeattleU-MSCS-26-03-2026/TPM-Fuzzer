@@ -6,16 +6,18 @@ extern "C" {
 #endif
 
 #include <stdbool.h>
+#include <stddef.h>
+#include <stdint.h>
 
-typedef struct {
-  unsigned char* Buffer;
-  unsigned int BufferSize;
-} _IN_BUFFER;
+struct InBuffer {
+  const uint8_t* buffer;
+  size_t buffer_size;
+};
 
-typedef struct {
-  unsigned char* Buffer;
-  unsigned int BufferSize;
-} _OUT_BUFFER;
+struct OutBuffer {
+  uint8_t* buffer;
+  size_t buffer_size;
+};
 
 // Manufacturing (call once ever, or when you want fresh TPM state)
 void TPMManufactureIfNeeded(void);
@@ -24,8 +26,8 @@ void TPMManufactureIfNeeded(void);
 void TPMStartup(void);
 
 // Send a command to the TPM
-void TPMSendCommand(unsigned char locality, _IN_BUFFER request,
-                    _OUT_BUFFER* response);
+void TPMSendCommand(unsigned char locality, struct InBuffer request,
+                    struct OutBuffer* response);
 
 // Shutdown TPM cleanly
 void TPMShutdown(void);

@@ -29,12 +29,12 @@ void TPMStartup(void) {
   _plat__SetNvAvail();
 }
 
-void TPMSendCommand(unsigned char locality, _IN_BUFFER request,
-                    _OUT_BUFFER* response) {
+void TPMSendCommand(unsigned char locality, struct InBuffer request,
+                    struct OutBuffer* response) {
   _plat__LocalitySet(locality);
 
-  _plat__RunCommand(request.BufferSize, request.Buffer, &response->BufferSize,
-                    &response->Buffer);
+  _plat__RunCommand(request.buffer_size, (unsigned char*)request.buffer,
+                    (uint32_t*)&response->buffer_size, &response->buffer);
 }
 
 void TPMShutdown(void) {

@@ -191,11 +191,11 @@ TEST_CASE("TPMStartup - functions called in correct order", "[tpm_wrapper][start
 TEST_CASE("TPMSendCommand - sets locality and runs command", "[tpm_wrapper][command]") {
     MockTPM::tracker.reset();
     
-    _IN_BUFFER request = {0};
-    request.BufferSize = 10;
-    request.Buffer = nullptr;
+    struct InBuffer request = {0};
+    request.buffer_size = 10;
+    request.buffer = nullptr;
     
-    _OUT_BUFFER response = {0};
+    struct OutBuffer response = {0};
     unsigned char locality = 3;
     
     TPMSendCommand(locality, request, &response);
@@ -208,8 +208,8 @@ TEST_CASE("TPMSendCommand - sets locality and runs command", "[tpm_wrapper][comm
 TEST_CASE("TPMSendCommand - handles different localities", "[tpm_wrapper][command]") {
     MockTPM::tracker.reset();
     
-    _IN_BUFFER request = {0};
-    _OUT_BUFFER response = {0};
+    struct InBuffer request = {0};
+    struct OutBuffer response = {0};
     
     SECTION("Locality 0") {
         TPMSendCommand(0, request, &response);
@@ -274,8 +274,8 @@ TEST_CASE("Full lifecycle - manufacture, startup, command, shutdown", "[tpm_wrap
     REQUIRE(MockTPM::tracker.signal_power_on_called == true);
     
     // Send command
-    _IN_BUFFER request = {0};
-    _OUT_BUFFER response = {0};
+    struct InBuffer request = {0};
+    struct OutBuffer response = {0};
     TPMSendCommand(0, request, &response);
     REQUIRE(MockTPM::tracker.run_command_called == true);
     

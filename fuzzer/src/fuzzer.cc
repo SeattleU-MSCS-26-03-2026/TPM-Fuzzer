@@ -31,14 +31,14 @@ extern "C" int LLVMFuzzerTestOneInput(const uint8_t* Data, size_t Size) {
   TPMStartup();
 
   for (auto& cmd : commands) {
-    _IN_BUFFER request;
-    request.Buffer = cmd.data();
-    request.BufferSize = cmd.size();
+    struct InBuffer request;
+    request.buffer = cmd.data();
+    request.buffer_size = cmd.size();
 
     char OutputBuffer[kMaxBuffers];
-    _OUT_BUFFER response;
-    response.Buffer = (uint8_t*)OutputBuffer;
-    response.BufferSize = kMaxBuffers;
+    struct OutBuffer response;
+    response.buffer = (uint8_t*)OutputBuffer;
+    response.buffer_size = kMaxBuffers;
 
     TPMSendCommand(kDefaultLocality, request, &response);
   }
