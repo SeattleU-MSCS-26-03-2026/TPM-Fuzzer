@@ -7,68 +7,43 @@
 #include <stdio.h>
 
 void TPMManufactureIfNeeded(void) {
-  // Enable NV to check if manufacturing needed
   _plat__NVEnable(NULL, 0);
 
-  // Check if TPM needs manufacturing
   if (_plat__NVNeedsManufacture()) {
-    printf("Manufacturing TPM\n");
-
     // Perform first-time manufacturing (0 = MANUF_FIRST_TIME)
     if (TPM_Manufacture(0) != 0) {
       fprintf(stderr, "ERROR: Manufacturing failed!\n");
       _plat__NVDisable((void*)TRUE, 0);
       return;
     }
-
-    printf("Manufacturing complete\n");
-  } else {
-    printf("TPM already manufactured, skipping\n");
   }
 }
 
 void TPMStartup(void) {
-  printf("Starting up TPM...\n");
-
-  // Power on platform
   _plat__Signal_PowerOn();
 
-  // Reset the platform
   _plat__Signal_Reset();
 
-  // Enable NV memory
   _plat__NVEnable(NULL, 0);
 
-  // Make NV memory available
   _plat__SetNvAvail();
-
-  printf("TPM startup complete\n");
 }
 
 void TPMSendCommand(unsigned char locality, _IN_BUFFER request,
                     _OUT_BUFFER* response) {
-  // Set the locality for the command
   _plat__LocalitySet(locality);
 
-  // Execute the TPM command directly via Platform API
   _plat__RunCommand(request.BufferSize, request.Buffer, &response->BufferSize,
                     &response->Buffer);
 }
 
 void TPMShutdown(void) {
-  printf("Shutting down TPM...\n");
-
-  // End hash operations cleanly
   _TPM_Hash_End();
 
-  // Commit and disable NV memory
   _plat__NvCommit();
   _plat__ClearNvAvail();
 
-  // Signal platform power off
   _plat__Signal_PowerOff();
 
   _plat__TearDown();
-
-  printf("TPM shutdown complete\n");
 }
