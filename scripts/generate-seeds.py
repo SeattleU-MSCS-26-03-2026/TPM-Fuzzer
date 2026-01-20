@@ -36,8 +36,14 @@ TPM_ST_SESSIONS = 0x8002
 TPM_CC_GETRANDOM = 0x0000017B
 
 
-TPM_ST_NO_SESSIONS = 0x8001
+
 TPM_CC_HASH = 0x0000017D
+
+TPM_ALG_RSA  = 0x0001
+TPM_ALG_NULL = 0x0010
+TPM_CC_CREATE = 0x00000153
+TPM_RS_PW = 0x40000009
+PARENT_HANDLE = 0x81000001
 
 TPM_ALG_SHA1   = 0x0004
 TPM_ALG_SHA256 = 0x000B
@@ -46,6 +52,64 @@ TPM_ALG_SHA384 = 0x000C
 TPM_RH_OWNER    = 0x40000001
 TPM_RH_NULL     = 0x40000007
 TPM_RH_PLATFORM = 0x4000000C
+def u16(x): return x.to_bytes(2, "big")
+def u32(x): return x.to_bytes(4, "big")
+
+def auth_area_pw():
+    # authAreaSize + TPMS_AUTH_COMMAND
+    auth_cmd = u32(TPM_RS_PW) + u16(0) + b"\x00" + u16(0)
+    return u32(len(auth_cmd)) + auth_cmd
+
+def build_in_public(hash_alg: int, key_bits: int,
+                    type_alg: int = TPM_ALG_RSA,
+                    scheme_alg: int = TPM_ALG_NULL) -> bytes:
+    """
+    Minimal but structured TPM2B_PUBLIC (RSA) – enough to be parsed.
+    """
+    # TPMT_PUBLIC
+    name_alg = u16(hash_alg)
+    object_attrs = u32(0x00060072)  # typical SRK-like attributes
+    auth_policy = u16(0)
+
+    rsa_params = (
+        u16(type_alg) +        # TPM_ALG_RSA
+        u16(scheme_alg) +        # TPM_ALG_NULL (scheme)
+        u16(key_bits) +      # keyBits
+        u32(0)               # exponent
+    )
+
+    unique = u16(0)          # empty unique field
+
+    tpm_public = name_alg + object_attrs + auth_policy + rsa_params + unique
+    return u16(len(tpm_public)) + tpm_public   # TPM2B_PUBLIC
+
+def build_create_cmd(hash_alg: int, key_bits: int) -> bytes:
+    handles = u32(PARENT_HANDLE)
+    auth = auth_area_pw()
+
+    in_sensitive = u16(0)
+    in_public = build_in_public(hash_alg, key_bits)
+    outside_info = u16(0)
+    creation_pcr = u32(0)
+
+    params = in_sensitive + in_public + outside_info + creation_pcr
+    body = handles + auth + params
+
+    size = 2 + 4 + 4 + len(body)
+    return u16(TPM_ST_SESSIONS) + u32(size) + u32(TPM_CC_CREATE) + body
+
+def tpm_create_seeds():
+    seeds = []
+    hash_algs = [TPM_ALG_SHA1, TPM_ALG_SHA256, TPM_ALG_SHA384]
+    key_bits = [1024, 2048]
+
+    for h in hash_algs:
+        for k in key_bits:
+            seeds.append(build_create_cmd(h, k))
+
+    return seeds
+
+
 
 
 def tpm_get_rand_seeds() -> List[bytes]:
@@ -162,6 +226,7 @@ if __name__ == "__main__":
     seeds = {
         "TPMGetRandom": tpm_get_rand_seeds,
         "TPMHash": tpm_hash_seeds,
+        "TPMCreate": tpm_create_seeds,
     }
 
     parser = argparse.ArgumentParser(description='Generates the seed corpus for the Fuzzer.')
