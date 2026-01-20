@@ -60,6 +60,11 @@ $ docker compose down
 # use this command to start fuzzing TPM send command
 $ docker compose run --rm fuzzer
 
+
+# run fuzzer with TPM2_Hash seed corpus only
+$ docker compose run --rm --entrypoint /srv/build/Fuzzer \
+  fuzzer -runs=1000 /srv/corpus/TPM2_Hash
+
 # then shut down all containers
 $ docker compose down
 ```
