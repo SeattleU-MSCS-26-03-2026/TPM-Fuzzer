@@ -108,7 +108,7 @@ extern "C" {
         MockTPM::tracker.signal_power_off_called = true;
     }
     
-    void TPM_TearDown(void) {
+    void _plat__TearDown(void) {
         MockTPM::tracker.tpm_teardown_called = true;
     }
 }
