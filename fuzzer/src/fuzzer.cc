@@ -29,7 +29,7 @@ const uint8_t kTPM2Startup[] = {
     0x00, 0x00  // startupType: TPM_SU_CLEAR (0x0000)
 };
 
-void sendTPMStartup() {
+void SendTPMStartup() {
   struct InBuffer startUpRequest;
   startUpRequest.buffer = kTPM2Startup;
   startUpRequest.buffer_size = sizeof(kTPM2Startup);
@@ -51,7 +51,7 @@ extern "C" int LLVMFuzzerTestOneInput(const uint8_t* Data, size_t Size) {
 
   TPMManufactureIfNeeded();
   TPMStartup();
-  sendTPMStartup();
+  SendTPMStartup();
 
   for (auto& cmd : commands) {
     struct InBuffer request;
