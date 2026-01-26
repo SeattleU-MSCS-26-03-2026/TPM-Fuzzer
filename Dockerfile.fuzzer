@@ -23,6 +23,17 @@ WORKDIR /srv/
 COPY . /srv/
 
 RUN git submodule update --init
+
+# Apply determinism patch to TPM submodule
+RUN if [ -f patches/determinism.patch ]; then \
+    cd fuzzer/vendor/TPM && \
+    git apply ../../../patches/determinism.patch && \
+    echo "Determinism patch applied successfully" || \
+    (echo "Failed to apply patch" && exit 1); \
+    else \
+    echo "No determinism patch found"; \
+    fi
+
 RUN cmake -B build -G Ninja -S /srv/fuzzer/
 RUN cmake --build build
 

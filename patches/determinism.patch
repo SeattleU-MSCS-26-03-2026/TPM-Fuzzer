@@ -1,0 +1,26 @@
+diff --git a/TPMCmd/TpmConfiguration/TpmConfiguration/TpmBuildSwitches.h b/TPMCmd/TpmConfiguration/TpmConfiguration/TpmBuildSwitches.h
+index b0d4811..b8eb0ef 100644
+--- a/TPMCmd/TpmConfiguration/TpmConfiguration/TpmBuildSwitches.h
++++ b/TPMCmd/TpmConfiguration/TpmConfiguration/TpmBuildSwitches.h
+@@ -77,7 +77,7 @@
+ // This provides fixed seeding of the RNG when doing debug on a simulator. This
+ // should allow consistent results on test runs as long as the input parameters
+ // to the functions remains the same.
+-#define USE_DEBUG_RNG               (NO  * DEBUG)
++#define USE_DEBUG_RNG               YES
+ 
+ ////////////////////////////////////////////////////////////////
+ // RSA DEBUG OPTIONS
+diff --git a/TPMCmd/TpmConfiguration/TpmConfiguration/TpmProfile_Common.h b/TPMCmd/TpmConfiguration/TpmConfiguration/TpmProfile_Common.h
+index 793a454..27a03ec 100644
+--- a/TPMCmd/TpmConfiguration/TpmConfiguration/TpmProfile_Common.h
++++ b/TPMCmd/TpmConfiguration/TpmConfiguration/TpmProfile_Common.h
+@@ -154,7 +154,7 @@
+ //***********************************************
+ // Defines controlling ACT
+ //***********************************************
+-#define ACT_SUPPORT                         YES
++#define ACT_SUPPORT                         NO
+ #define RH_ACT_0                                (YES * ACT_SUPPORT)
+ #define RH_ACT_1                                ( NO * ACT_SUPPORT)
+ #define RH_ACT_2                                ( NO * ACT_SUPPORT)

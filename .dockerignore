@@ -4,6 +4,7 @@
 # Allow only
 !scripts
 !fuzzer
+!patches
 !.gitmodules
 !.git
 !corpus/

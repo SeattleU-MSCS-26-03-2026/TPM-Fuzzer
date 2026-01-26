@@ -16,6 +16,18 @@ INSTALL_DIR=${INSTALL_DIR:-external/TPM_install}
 # Clone repository if not present
 if [ ! -d "$TPM_SRC" ]; then
   git clone https://github.com/TrustedComputingGroup/TPM.git "$TPM_SRC"
+  
+  # Apply determinism patch if it exists
+  PATCH_FILE="patches/determinism.patch"
+  if [ -f "$PATCH_FILE" ]; then
+    pushd "$TPM_SRC" >/dev/null
+    git apply "../../$PATCH_FILE" && \
+      echo "Determinism patch applied successfully" || \
+      (echo "Failed to apply patch" && exit 1)
+    popd >/dev/null
+  else
+    echo "No determinism patch found at $PATCH_FILE"
+  fi
 fi
 
 # Fuzz/coverage compile flags for objects (no libFuzzer runtime)

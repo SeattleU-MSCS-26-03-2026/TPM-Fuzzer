@@ -23,6 +23,8 @@
 !fuzzer/tests/**/*
 !fuzzer/vendor
 !fuzzer/vendor/**/*
+!patches/
+!patches/**/*
 !scripts/
 !scripts/**/*
 !seeds/
