@@ -46,8 +46,5 @@ target_link_libraries(vendor
 
 target_include_directories(vendor
   INTERFACE
-    TPM/TPMCmd/Simulator/include
-    TPM/TPMCmd/Simulator/include/prototypes
-    TPM/TPMCmd/tpm/include
-    TPM/TPMCmd/Simulator/src
+    TPM/TPMCmd/tpm/include   
 )
