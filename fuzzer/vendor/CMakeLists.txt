@@ -1,6 +1,23 @@
 # Build only the TPM Libraries
 set(Tpm_BuildOption_LibOnly TRUE)
 
+# -----------------------------------------------------------
+# Global Sanitizer & Coverage Flags
+# -----------------------------------------------------------
+
+add_compile_options(
+    -g
+    -fsanitize=fuzzer,address
+    -fprofile-instr-generate
+    -fcoverage-mapping
+)
+
+add_link_options(
+    -fsanitize=fuzzer,address
+    -fprofile-instr-generate
+    -fcoverage-mapping
+)
+
 # Provides:
 # - TpmVendorCommands_Handlers
 # - Tpm_CryptoLib_Math_Ossl

@@ -1,7 +1,43 @@
 # SUSE 26.03 Google
 
 ## Developer Guide
-### Running the TPM Simulator
+### Running the TPM fuzzer
+
+#### Script
+
+``` sh
+$ ./scripts/run-fuzzer.sh
+$ ls -l
+
+drwxr-xr-x 2 fuzzer users  20480 Jan 24 14:08 corpus
+drwxr-xr-x 3 fuzzer users   4096 Jan 24 14:04 coverage
+# Open Coverage in browser
+$ xdg-open coverage/index.html
+```
+
+#### Docker Compose
+
+```sh
+# build the docker compose images
+$ docker compose build
+
+# use this command to start fuzzing TPM send command
+$ docker compose run --rm fuzzer
+
+# run with environment overrides
+$ docker compose run -e MAX_RUNS=100000000000 --rm fuzzer
+```
+
+### Running the unit tests
+
+```sh
+# use this command to run available unit tests
+$ docker compose run --rm test
+
+# then shut down all containers
+$ docker compose down
+```
+### Running the TPM simulator
 
 The TPM Simulator can be run using [Docker](https://docs.docker.com/). We provide a Dockerfile (`Dockerfile.simulator`) which you can use to build and start the simulator from [this repository](https://github.com/TrustedComputingGroup/TPM/tree/main). This simulator is helpful for testing and developing applications that interact with the TPM 2.0 API without needing a physical TPM device.
 
@@ -23,20 +59,7 @@ d3f941e9909d   suse-26-03   "…"       ... minutes ago   Up ... minutes        
 $ docker container logs -f intelligent_gates
 ```
 
-### Running with Docker Compose
-
-```sh
-# 1. Run all available containers using docker compose
-$ docker compose up -d
-
-# 2. View simulator logs
-$ docker container logs -f intelligent_gates
-
-# 3. Shut all containers down
-$ docker compose down
-```
-
-### Interact with TPM simulator from another container
+#### Interact with TPM simulator from another container
 
 ```sh
 $ docker compose run --rm tools
@@ -54,27 +77,13 @@ $ docker compose run --rm tools
 $ docker compose down
 ```
 
-### Run TPM Fuzzer
+### Testing TPM commands against the fuzzer
 
-```sh
-# use this command to start fuzzing TPM send command
-$ docker compose run --rm fuzzer
+This project provides a testing binary that can be used to test TPM2.0 Commands against
+the configured fuzzer.
 
+Usage:
 
-# run fuzzer with TPM2_Hash seed corpus only
-$ docker compose run --rm --entrypoint /srv/build/Fuzzer \
-  fuzzer -runs=1000 /srv/corpus/TPM2_Hash
-
-# then shut down all containers
-$ docker compose down
-```
-
-### Run Unit Test
-
-```sh
-# use this command to run available unit tests
-$ docker compose run --rm test
-
-# then shut down all containers
-$ docker compose down
+``` sh
+$ ./build/Tester seeds/TPM_SEED
 ```

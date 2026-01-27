@@ -2,6 +2,8 @@ name: CI
 
 on:
   push:
+    branches:
+      - main
   pull_request:
     branches:
       - main
@@ -9,8 +11,10 @@ on:
 jobs:
   build-fuzzer:
     name: Build Fuzzer binary
-    # Provides OpenSSL 3.0.2
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-24.04
+    env:
+      CC: clang-18
+      CXX: clang++-18
     steps:
       - name: Checkout
         uses: actions/checkout@v5
@@ -20,17 +24,31 @@ jobs:
       - name: Dependencies
         run: |
           sudo apt-get update
-          sudo apt-get install -y cmake clang llvm libssl-dev ninja-build
+          sudo apt-get install -y \
+            cmake ninja-build pkg-config \
+            clang-18 \
+            llvm \
+            libssl-dev
+
+          echo "Compiler:"
+          ${CXX} --version
+          echo "OpenSSL:"
+          openssl version
 
       - name: Configure
-        run: cmake -S fuzzer -B fuzzer/build -G Ninja
+        run: |
+          cmake -S fuzzer -B fuzzer/build -G Ninja \
+            -DCMAKE_C_COMPILER="${CC}" \
+            -DCMAKE_CXX_COMPILER="${CXX}" \
+            -DCMAKE_CXX_STANDARD=23 \
+            -DCMAKE_CXX_STANDARD_REQUIRED=ON \
+            -DOPENSSL_ROOT_DIR=/usr
 
       - name: Build
         run: cmake --build fuzzer/build
 
       - name: Verify
         run: ./fuzzer/build/Fuzzer -help=1
-
   docker-build-fuzzer:
     name: Test Docker Build
     runs-on: ubuntu-latest

@@ -24,23 +24,6 @@ if (ENABLE_TESTS)
   message(STATUS "Running unit tests ....")
 endif()
 
-# -----------------------------------------------------------
-# Global Sanitizer & Coverage Flags
-# -----------------------------------------------------------
-
-add_compile_options(
-    -g
-    -fsanitize=fuzzer,address
-    -fprofile-instr-generate
-    -fcoverage-mapping
-)
-
-add_link_options(
-    -fsanitize=fuzzer,address
-    -fprofile-instr-generate
-    -fcoverage-mapping
-)
-
 #-----------------------------
 # Vendor Libraries
 #-----------------------------
@@ -77,6 +60,55 @@ target_link_libraries(Fuzzer
     include
     Tpm_PlatformLib::Tpm_PlatformLib
     Tpm_CoreLib::Tpm_CoreLib
+)
+
+target_compile_options(Fuzzer
+    PRIVATE
+        -g
+        -fsanitize=fuzzer,address
+        -fprofile-instr-generate
+        -fcoverage-mapping
+)
+
+target_link_options(Fuzzer
+    PRIVATE
+        -fsanitize=fuzzer,address
+        -fprofile-instr-generate
+        -fcoverage-mapping
+)
+
+#-----------------------------
+# Tester Binary
+#-----------------------------
+add_executable(Tester)
+
+target_sources(Tester
+  PRIVATE
+    src/tester.cc
+    src/harness/tpm_wrapper.c
+    src/parser/byte_parser.cc
+)
+
+target_link_libraries(Tester
+  PRIVATE
+    include
+    Tpm_PlatformLib::Tpm_PlatformLib
+    Tpm_CoreLib::Tpm_CoreLib
+)
+
+target_compile_options(Tester
+    PRIVATE
+        -g
+        -fsanitize=address
+        -fprofile-instr-generate
+        -fcoverage-mapping
+)
+
+target_link_options(Tester
+    PRIVATE
+        -fsanitize=address
+        -fprofile-instr-generate
+        -fcoverage-mapping
 )
 
 # -----------------------------------------------------------
