@@ -12,6 +12,7 @@ set -e
 PROFILE_FILE=${LLVM_PROF_FILE:-'/srv/build/Fuzzer.profraw'}
 PROFILE_DATA=${LLVM_PROF_DATA:-'/srv/build/Fuzzer.profdata'}
 COVERAGE_OUTPUT_DIR=${FUZZER_COVERAGE_OUT_DIR:-'/srv/build/coverage'}
+SRC_COVERAGE_OUTPUT_DIR=${FUZZER_SRC_COVERAGE_OUT_DIR:-'/srv/build/src-coverage'}
 
 # ----------------------------------
 # Fuzzer Configurations
@@ -28,12 +29,21 @@ main() {
     echo "Creating coverage report... [2/3]"
     llvm-profdata merge -sparse "$PROFILE_FILE" -o "$PROFILE_DATA"
 
-    echo "Generating coverage output... [3/3]"
+    echo "Generating coverage output... [3/4]"
     llvm-cov show /srv/build/Fuzzer \
         -instr-profile="$PROFILE_DATA" \
         -format=html \
+        -coverage-watermark=70,5 \
         -output-dir="$COVERAGE_OUTPUT_DIR" \
-        $(find /srv/fuzzer/src /srv/fuzzer/vendor/TPM -type f \( -name '*.c' -o -name '*.cc' \))
+        $(find /srv/fuzzer/vendor/TPM -type f \( -name '*.c' -o -name '*.cc' \))
+
+    echo "Generating coverage report for Fuzzer source code... [4/4]"
+    llvm-cov show /srv/build/Fuzzer \
+        -instr-profile="$PROFILE_DATA" \
+        -format=html \
+        -coverage-watermark=70,5 \
+        -output-dir="$SRC_COVERAGE_OUTPUT_DIR" \
+        $(find /srv/fuzzer/ -type f \( -name '*.cc' \))
 
     echo "Fuzzer execution completed successfully!"
 }
