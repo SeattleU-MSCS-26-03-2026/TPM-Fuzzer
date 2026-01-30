@@ -8,24 +8,6 @@
 #include "parser/byte_parser.h"
 
 // -----------------------------------------------------------------------------
-// Constants
-// -----------------------------------------------------------------------------
-
-// Maximum size for TPM I/O buffers.
-const size_t kMaxBuffers = 1048576;
-
-// Default locality used when sending TPM commands.
-const int kDefaultLocality = 0;
-
-// Predefined TPM2_Startup command buffer.
-const uint8_t kTPM2Startup[] = {
-    0x80, 0x01,              // Tag
-    0x00, 0x00, 0x00, 0x0C,  // Command size
-    0x00, 0x00, 0x01, 0x44,  // Command code (TPM2_Startup)
-    0x00, 0x00               // Startup type
-};
-
-// -----------------------------------------------------------------------------
 // Forward declarations
 // -----------------------------------------------------------------------------
 
@@ -90,18 +72,6 @@ std::vector<uint8_t> SendCommand(std::vector<uint8_t> command);
  */
 void PrintResponse(std::vector<uint8_t> response);
 
-/**
- * Sends the TPM2_Startup command.
- *
- * This function constructs an InBuffer from the pre-defined kTPM2Startup
- * command and sends it to the TPM using TPMSendCommand with the default
- * locality and a temporary output buffer sized at kMaxBuffers.
- *
- * Errors in TPMSendCommand are not handled here and are expected to be
- * managed by the underlying TPM wrapper or caller logic.
- */
-static void SendTPMStartup();
-
 // -----------------------------------------------------------------------------
 // Function definitions
 // -----------------------------------------------------------------------------
@@ -135,13 +105,14 @@ int main(int argc, char* argv[]) {
   // Prepare TPM and perform startup.
   TPMManufactureIfNeeded();
   TPMStartup();
-  SendTPMStartup();
+  SendTPM2StartupCommand();
 
   // Send all parsed commands and print their responses.
   for (auto command : commands) {
     PrintResponse(SendCommand(command));
   }
 
+  SendTPM2ShutdownCommand();
   TPMShutdown();
 
   return 0;
@@ -346,17 +317,4 @@ void PrintResponse(std::vector<uint8_t> response) {
 
   std::println("");
   std::println("");
-}
-
-static void SendTPMStartup() {
-  InBuffer startUpRequest;
-  startUpRequest.buffer = kTPM2Startup;
-  startUpRequest.buffer_size = sizeof(kTPM2Startup);
-
-  char OutputBuffer[kMaxBuffers];
-  OutBuffer response;
-  response.buffer = reinterpret_cast<uint8_t*>(OutputBuffer);
-  response.buffer_size = kMaxBuffers;
-
-  TPMSendCommand(kDefaultLocality, startUpRequest, &response);
 }
