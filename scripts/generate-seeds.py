@@ -39,6 +39,7 @@ TPM_CC_STARTAUTHSESSION = 0x00000176
 TPM_CC_CREATEPRIMARY = 0x00000131
 TPM_CC_CREATE = 0x00000153
 TPM_CC_HASH = 0x0000017D
+TPM_CC_GETTESTRESULT = 0x0000017C
 
 TPM_RH_NULL = 0x40000007
 TPM_RH_OWNER = 0x40000001
@@ -389,6 +390,22 @@ def tpm_create_primary_seeds(
     return [cmd]
 
 
+def tpm_get_test_result_seeds():
+    """
+    Create seeds for the TPM2_GetTestResult command.
+    """
+    tag = TPM_ST_NO_SESSIONS
+    cc = TPM_CC_GETTESTRESULT
+    command_size = 2 + 4 + 4
+    cmd = (
+        tag.to_bytes(2, BYTE_ORDER)
+        + command_size.to_bytes(4, BYTE_ORDER)
+        + cc.to_bytes(4, BYTE_ORDER)
+    )
+
+    return [cmd]
+
+
 def _run_commands(
     directory: str,
     cmd: str,
@@ -464,6 +481,7 @@ if __name__ == "__main__":
     seeds = {
         "TPMGetRandom": tpm_get_rand_seeds,
         "TPMHash": tpm_hash_seeds,
+        "TPMGetTestResult": tpm_get_test_result_seeds,
         "TPMCreatePrimary": [
             [tpm_create_primary_seeds(TPM_ALG_SHA256, 2048), tpm_get_rand_seeds(16)],
             [tpm_get_rand_seeds(32), tpm_create_primary_seeds(TPM_ALG_SHA256, 2048)],
