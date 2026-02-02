@@ -36,7 +36,7 @@ static std::vector<uint8_t> makeCommand(
 }
 
 TEST_CASE("parseCommands parses a single valid command") {
-  auto cmd = makeCommand(0x8001, 0x0000017B);  // TPM2_GetRandom
+  auto cmd = makeCommand(0x8001, 0x0000017B, {0xFF});  // TPM2_GetRandom
 
   std::vector<std::vector<uint8_t>> commands;
   bool ok = parseCommands(cmd.data(), cmd.size(), commands);
@@ -47,7 +47,7 @@ TEST_CASE("parseCommands parses a single valid command") {
 }
 
 TEST_CASE("parseCommands parses multiple commands") {
-  auto cmd1 = makeCommand(0x8001, 0x0000017B);                // TPM2_GetRandom
+  auto cmd1 = makeCommand(0x8001, 0x0000017B, {0xAA, 0xBB, 0xCC});                // TPM2_GetRandom
   auto cmd2 = makeCommand(0x8002, 0x00000144, {0x00, 0x10});  // TPM2_Startup
 
   std::vector<uint8_t> input;
@@ -84,3 +84,20 @@ TEST_CASE("parseCommands rejects length exceeding buffer") {
 
   REQUIRE_FALSE(ok);
 }
+
+TEST_CASE("parseCommands accepts header-only command") {
+  std::vector<uint8_t> header_only = {
+      0x80, 0x01,              // TAG
+      0x00, 0x00, 0x00, 0x0A,  // SIZE = 10
+      0x00, 0x00, 0x00, 0x00   // COMMAND CODE
+  };
+
+  std::vector<std::vector<uint8_t>> commands;
+  bool ok = parseCommands(header_only.data(), header_only.size(), commands);
+
+  REQUIRE(ok);
+  REQUIRE(commands.size() == 1);
+  REQUIRE(commands[0] == header_only);
+}
+
+
