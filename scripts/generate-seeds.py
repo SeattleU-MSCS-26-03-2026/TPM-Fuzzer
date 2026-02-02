@@ -41,6 +41,7 @@ TPM_CC_CREATE = 0x00000153
 TPM_CC_HASH = 0x0000017D
 TPM_CC_GETTESTRESULT = 0x0000017C
 TPM_CC_SELFTEST = 0x00000143
+TPM_CC_INCREMENTALSELFTEST = 0x00000142
 
 TPM_RH_NULL = 0x40000007
 TPM_RH_OWNER = 0x40000001
@@ -79,6 +80,48 @@ RSA_STORAGE_OBJECT_ATTRS = (
     | TPMA_OBJECT_DECRYPT
     | TPMA_OBJECT_RESTRICTED
 )
+
+
+def tpm_incremental_self_test_seeds() -> List[bytes]:
+    """
+    Generates seeds for TPM2_IncrementalSelfTest.
+
+    Command Structure:
+        [TPM_ST_NO_SESSIONS][UINT32 commandSize]
+        [TPM_CC_INCREMENTALSELFTEST][TPML_ALG toTest]
+
+    TPML_ALG:
+        [UINT32 count][TPM_ALG_ID * count]
+    """
+    seeds: List[bytes] = []
+    tag = TPM_ST_NO_SESSIONS
+    cc = TPM_CC_INCREMENTALSELFTEST
+
+    # variants: empty list, one alg, two algs
+    variants = [
+        [],  # count=0
+        [TPM_ALG_SHA256],  # count=1
+        [TPM_ALG_SHA1, TPM_ALG_SHA256],  # count=2
+    ]
+
+    for algs in variants:
+        # TPML_ALG: count (4) + each algId (2)
+        params = len(algs).to_bytes(4, BYTE_ORDER)
+        for a in algs:
+            params += a.to_bytes(2, BYTE_ORDER)
+
+        command_size = 2 + 4 + 4 + len(params)
+
+        cmd = (
+            tag.to_bytes(2, BYTE_ORDER)
+            + command_size.to_bytes(4, BYTE_ORDER)
+            + cc.to_bytes(4, BYTE_ORDER)
+            + params
+        )
+
+        seeds.append(cmd)
+
+    return seeds
 
 
 def build_in_public(alg: int, keybits: int) -> bytes:
@@ -554,6 +597,7 @@ if __name__ == "__main__":
                 ),
             ],
         ],
+        "TPMIncrementalSelfTest": tpm_incremental_self_test_seeds,
     }
 
     parser = argparse.ArgumentParser(
