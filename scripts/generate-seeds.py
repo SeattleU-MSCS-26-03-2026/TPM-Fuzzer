@@ -40,6 +40,7 @@ TPM_CC_CREATEPRIMARY = 0x00000131
 TPM_CC_CREATE = 0x00000153
 TPM_CC_HASH = 0x0000017D
 TPM_CC_GETTESTRESULT = 0x0000017C
+TPM_CC_SELFTEST = 0x00000143
 
 TPM_RH_NULL = 0x40000007
 TPM_RH_OWNER = 0x40000001
@@ -389,6 +390,33 @@ def tpm_create_primary_seeds(
 
     return [cmd]
 
+def tpm_self_test_seeds() -> List[bytes]:
+    """
+    Generates seeds for TPM2_SelfTest.
+
+    Command Structure:
+      [TPM_ST_NO_SESSIONS][UINT32 commandSize]
+      [TPM_CC_SELFTEST][TPMI_YES_NO fullTest]
+    """
+    seeds: List[bytes] = []
+    tag = TPM_ST_NO_SESSIONS
+    cc = TPM_CC_SELFTEST
+    
+    for param_list in [0x00, 0x01]:  # NO, YES
+        params = param_list.to_bytes(1, BYTE_ORDER)
+        command_size = 2 + 4 + 4 + len(params)
+
+        cmd = (
+            tag.to_bytes(2, BYTE_ORDER)
+            + command_size.to_bytes(4, BYTE_ORDER)
+            + cc.to_bytes(4, BYTE_ORDER)
+            + params
+        )
+
+        seeds.append(cmd)
+
+    return seeds
+
 
 def tpm_get_test_result_seeds():
     """
@@ -482,6 +510,7 @@ if __name__ == "__main__":
         "TPMGetRandom": tpm_get_rand_seeds,
         "TPMHash": tpm_hash_seeds,
         "TPMGetTestResult": tpm_get_test_result_seeds,
+        "TPMSelfTest": tpm_self_test_seeds,
         "TPMCreatePrimary": [
             [tpm_create_primary_seeds(TPM_ALG_SHA256, 2048), tpm_get_rand_seeds(16)],
             [tpm_get_rand_seeds(32), tpm_create_primary_seeds(TPM_ALG_SHA256, 2048)],
