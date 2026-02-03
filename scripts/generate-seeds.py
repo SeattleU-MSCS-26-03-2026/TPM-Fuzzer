@@ -34,6 +34,7 @@ TPM_ST_NULL = 0x8000
 TPM_ST_NO_SESSIONS = 0x8001
 TPM_ST_SESSIONS = 0x8002
 
+TPM_CC_GETCAPABILITY = 0x0000017A
 TPM_CC_GETRANDOM = 0x0000017B
 TPM_CC_STARTAUTHSESSION = 0x00000176
 TPM_CC_CREATEPRIMARY = 0x00000131
@@ -65,6 +66,24 @@ TPMA_OBJECT_USERWITHAUTH = 1 << 6
 TPMA_OBJECT_NODA = 1 << 10
 TPMA_OBJECT_DECRYPT = 1 << 17
 TPMA_OBJECT_RESTRICTED = 1 << 16
+
+TPM_CAP_ALGS = 0x00000000
+TPM_CAP_HANDLES = 0x00000001
+TPM_CAP_COMMANDS = 0x00000002
+TPM_CAP_PP_COMMANDS = 0x00000003
+TPM_CAP_AUDIT_COMMANDS = 0x00000004
+TPM_CAP_PCRS = 0x00000005
+TPM_CAP_TPM_PROPERTIES = 0x00000006
+TPM_CAP_PCR_PROPERTIES = 0x00000007
+TPM_CAP_ECC_CURVES = 0x00000008
+TPM_CAP_AUTH_POLICIES = 0x00000009
+TPM_CAP_ACT = 0x0000000A
+TPM_CAP_PUB_KEYS = 0x0000000B
+TPM_CAP_SPDM_SESSION_INFO = 0x0000000C
+TPM_CAP_VENDOR_PROPERTY = 0x00000100
+
+# TPM Public Key identifiers for SPDM
+TPM_PUB_KEY_TPM_SPDM_00 = 0x00000000
 
 # The First HMAC Session is typically this.
 # Subsequent ones should be around the same HMAC Session
@@ -311,6 +330,66 @@ def tpm_start_auth_session_seeds() -> bytes:
         + params
     )
     return [cmd]
+
+def tpm_get_capability_seeds() -> List[bytes]:
+    """
+    Generates seeds for the TPM2_GetCapability command.
+    Query TPM for capabilities and properties.
+    
+    Command Structure:
+      [TPMI_ST_COMMAND_TAG][UINT32(Command Size)][TPM_CC_GETCAPABILITY]
+      [TPM_CAP(capability)][UINT32(property)][UINT32(propertyCount)]
+    
+    Parameters:
+      - capability: Which type of capability to query (4 bytes)
+      - property: Starting property value (4 bytes)
+      - propertyCount: How many properties to return (4 bytes)
+    """
+    seeds: List[bytes] = []
+    test_cases = [
+        # TPM_CAP_HANDLES - All 7 valid handle types
+        (TPM_CAP_HANDLES, 0x80000000, 10, "HT_TRANSIENT"),
+        (TPM_CAP_HANDLES, 0x81000000, 10, "HT_PERSISTENT"),
+        (TPM_CAP_HANDLES, 0x01000000, 10, "HT_NV_INDEX"),
+        (TPM_CAP_HANDLES, 0x02000000, 10, "HT_LOADED_SESSION"),
+        (TPM_CAP_HANDLES, 0x03000000, 10, "HT_SAVED_SESSION"),
+        (TPM_CAP_HANDLES, 0x00000000, 10, "HT_PCR"),
+        (TPM_CAP_HANDLES, 0x40000000, 10, "HT_PERMANENT"),
+        
+        # Minimal diversity to seed other switch cases (fuzzer explores from here)
+        (TPM_CAP_ALGS, 0x0001, 10, "Algorithms"),
+        (TPM_CAP_COMMANDS, 0x0000017A, 10, "Commands"),
+        (TPM_CAP_PCRS, 0x00000000, 16, "PCRs"),
+        (TPM_CAP_TPM_PROPERTIES, 0x00000100, 64, "TPM properties"),
+        (TPM_CAP_ECC_CURVES, 0x0000, 10, "ECC curves"),
+        
+        # Special cases requiring specific values (fuzzer unlikely to find)
+        (TPM_CAP_AUTH_POLICIES, 0x40000001, 10, "Auth policies - permanent handle"),
+        (TPM_CAP_PUB_KEYS, TPM_PUB_KEY_TPM_SPDM_00, 1, "SPDM key - exact value required"),
+        (TPM_CAP_ACT, 0x00000000, 1, "ACT - disabled feature, hits error path"),
+    ]
+    
+    # Generate seeds with single tag type only - fuzzer mutates tag field easily
+    for st in [TPM_ST_NO_SESSIONS]:
+        for capability, property_val, property_count, _desc in test_cases:
+            params = (
+                capability.to_bytes(4, byteorder=BYTE_ORDER)        # TPM_CAP
+                + property_val.to_bytes(4, byteorder=BYTE_ORDER)    # property
+                + property_count.to_bytes(4, byteorder=BYTE_ORDER)  # propertyCount
+            )
+
+            command_size = 2 + 4 + 4 + len(params)
+            
+            cmd = (
+                st.to_bytes(2, byteorder=BYTE_ORDER)
+                + command_size.to_bytes(4, byteorder=BYTE_ORDER)
+                + TPM_CC_GETCAPABILITY.to_bytes(4, byteorder=BYTE_ORDER)
+                + params
+            )
+            
+            seeds.append(cmd)
+    
+    return seeds
 
 
 def tpm_hash_seeds() -> List[bytes]:
@@ -598,6 +677,7 @@ if __name__ == "__main__":
             ],
         ],
         "TPMIncrementalSelfTest": tpm_incremental_self_test_seeds,
+        "TPMGetCapability": tpm_get_capability_seeds,
     }
 
     parser = argparse.ArgumentParser(
