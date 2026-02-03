@@ -43,6 +43,7 @@ TPM_CC_HASH = 0x0000017D
 TPM_CC_GETTESTRESULT = 0x0000017C
 TPM_CC_SELFTEST = 0x00000143
 TPM_CC_INCREMENTALSELFTEST = 0x00000142
+TPM_CC_READCLOCK = 0x00000181
 
 TPM_RH_NULL = 0x40000007
 TPM_RH_OWNER = 0x40000001
@@ -552,7 +553,24 @@ def tpm_get_test_result_seeds():
         + command_size.to_bytes(4, BYTE_ORDER)
         + cc.to_bytes(4, BYTE_ORDER)
     )
+    
+    return [cmd]
 
+
+def tpm_read_clock_seeds() -> List[bytes]:
+    """
+    Generates seeds for the TPM2_ReadClock command.
+    """
+    
+    tag = TPM_ST_NO_SESSIONS
+    cc = TPM_CC_READCLOCK
+    command_size = 2 + 4 + 4
+    cmd = (
+        tag.to_bytes(2, BYTE_ORDER)
+        + command_size.to_bytes(4, BYTE_ORDER)
+        + cc.to_bytes(4, BYTE_ORDER)
+    )
+    
     return [cmd]
 
 
@@ -633,6 +651,7 @@ if __name__ == "__main__":
         "TPMHash": tpm_hash_seeds,
         "TPMGetTestResult": tpm_get_test_result_seeds,
         "TPMSelfTest": tpm_self_test_seeds,
+        "TPMReadClock": tpm_read_clock_seeds,
         "TPMCreatePrimary": [
             [tpm_create_primary_seeds(TPM_ALG_SHA256, 2048), tpm_get_rand_seeds(16)],
             [tpm_get_rand_seeds(32), tpm_create_primary_seeds(TPM_ALG_SHA256, 2048)],
