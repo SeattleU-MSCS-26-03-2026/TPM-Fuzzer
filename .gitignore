@@ -34,3 +34,6 @@
 !test_runner/
 !test_runner/**/*
 
+
+# Always disallow
+__pycache__/

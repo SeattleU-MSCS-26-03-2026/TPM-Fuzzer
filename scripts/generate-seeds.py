@@ -18,70 +18,20 @@ Options:
 Resources:
     - TPM Specification: https://trustedcomputinggroup.org/resource/tpm-library-specification/
 """
+import subprocess
 
 from typing import List, Callable, Dict, Optional
 import os
 import argparse
 import time
+import difflib
+import re
+from python_util import *
 
 SeedFunction = Callable[[], List[bytes]]
 
 DEFAULT_SEED_DIRECTORY = "seeds/"
 BYTE_ORDER = "big"
-
-# TPM Constants
-TPM_ST_NULL = 0x8000
-TPM_ST_NO_SESSIONS = 0x8001
-TPM_ST_SESSIONS = 0x8002
-
-TPM_CC_GETCAPABILITY = 0x0000017A
-TPM_CC_GETRANDOM = 0x0000017B
-TPM_CC_STARTAUTHSESSION = 0x00000176
-TPM_CC_CREATEPRIMARY = 0x00000131
-TPM_CC_CREATE = 0x00000153
-TPM_CC_HASH = 0x0000017D
-TPM_CC_GETTESTRESULT = 0x0000017C
-TPM_CC_SELFTEST = 0x00000143
-TPM_CC_INCREMENTALSELFTEST = 0x00000142
-TPM_CC_READCLOCK = 0x00000181
-
-TPM_RH_NULL = 0x40000007
-TPM_RH_OWNER = 0x40000001
-TPM_RH_PLATFORM = 0x4000000C
-
-TPM_ALG_RSA = 0x0001
-TPM_ALG_SHA1 = 0x0004
-TPM_ALG_SHA256 = 0x000B
-TPM_ALG_SHA384 = 0x000C
-TPM_ALG_AES = 0x0006
-TPM_ALG_CFB = 0x0043
-TPM_ALG_NULL = 0x0010
-
-TPM_SE_HMAC = 0x00
-TPM_RS_PW = 0x40000009
-
-TPMA_OBJECT_FIXEDTPM = 1 << 1
-TPMA_OBJECT_FIXEDPARENT = 1 << 4
-TPMA_OBJECT_SENSITIVEDATAORIGIN = 1 << 5
-TPMA_OBJECT_USERWITHAUTH = 1 << 6
-TPMA_OBJECT_NODA = 1 << 10
-TPMA_OBJECT_DECRYPT = 1 << 17
-TPMA_OBJECT_RESTRICTED = 1 << 16
-
-TPM_CAP_ALGS = 0x00000000
-TPM_CAP_HANDLES = 0x00000001
-TPM_CAP_COMMANDS = 0x00000002
-TPM_CAP_PP_COMMANDS = 0x00000003
-TPM_CAP_AUDIT_COMMANDS = 0x00000004
-TPM_CAP_PCRS = 0x00000005
-TPM_CAP_TPM_PROPERTIES = 0x00000006
-TPM_CAP_PCR_PROPERTIES = 0x00000007
-TPM_CAP_ECC_CURVES = 0x00000008
-TPM_CAP_AUTH_POLICIES = 0x00000009
-TPM_CAP_ACT = 0x0000000A
-TPM_CAP_PUB_KEYS = 0x0000000B
-TPM_CAP_SPDM_SESSION_INFO = 0x0000000C
-TPM_CAP_VENDOR_PROPERTY = 0x00000100
 
 # TPM Public Key identifiers for SPDM
 TPM_PUB_KEY_TPM_SPDM_00 = 0x00000000
@@ -90,16 +40,6 @@ TPM_PUB_KEY_TPM_SPDM_00 = 0x00000000
 # Subsequent ones should be around the same HMAC Session
 # Handle Range
 TPM_FIRST_HMAC_SESSION_HANDLE = 0x02000000
-
-RSA_STORAGE_OBJECT_ATTRS = (
-    TPMA_OBJECT_FIXEDTPM
-    | TPMA_OBJECT_FIXEDPARENT
-    | TPMA_OBJECT_SENSITIVEDATAORIGIN
-    | TPMA_OBJECT_USERWITHAUTH
-    | TPMA_OBJECT_NODA
-    | TPMA_OBJECT_DECRYPT
-    | TPMA_OBJECT_RESTRICTED
-)
 
 
 def tpm_incremental_self_test_seeds() -> List[bytes]:
@@ -113,156 +53,21 @@ def tpm_incremental_self_test_seeds() -> List[bytes]:
     TPML_ALG:
         [UINT32 count][TPM_ALG_ID * count]
     """
-    seeds: List[bytes] = []
-    tag = TPM_ST_NO_SESSIONS
-    cc = TPM_CC_INCREMENTALSELFTEST
-
+    seeds: list[bytes] = []
     # variants: empty list, one alg, two algs
     variants = [
         [],  # count=0
-        [TPM_ALG_SHA256],  # count=1
-        [TPM_ALG_SHA1, TPM_ALG_SHA256],  # count=2
+        [TPM_ALG.SHA256],  # count=1
+        [TPM_ALG.SHA1, TPM_ALG.SHA256],  # count=2
     ]
 
     for algs in variants:
-        # TPML_ALG: count (4) + each algId (2)
-        params = len(algs).to_bytes(4, BYTE_ORDER)
-        for a in algs:
-            params += a.to_bytes(2, BYTE_ORDER)
-
-        command_size = 2 + 4 + 4 + len(params)
-
-        cmd = (
-            tag.to_bytes(2, BYTE_ORDER)
-            + command_size.to_bytes(4, BYTE_ORDER)
-            + cc.to_bytes(4, BYTE_ORDER)
-            + params
-        )
-
-        seeds.append(cmd)
+        seeds.append(bytes(TPMIncrementalSelfTest(algs)))
 
     return seeds
 
 
-def build_in_public(alg: int, keybits: int) -> bytes:
-    # -------------------------
-    # inPublic: TPM2B_PUBLIC containing TPMT_PUBLIC
-    # TPMT_PUBLIC = type | nameAlg | objectAttributes | authPolicy | parameters | unique
-    # We'll build an RSA 2048 storage key template:
-    # - type: RSA
-    # - nameAlg: <alg>
-    # - attrs: fixedTPM|fixedParent|sensitiveDataOrigin|userWithAuth|restricted|decrypt
-    # - authPolicy: empty
-    # - parameters: RSA detail (AES-128-CFB symmetric, scheme NULL, <keybits> bits, exponent 0)
-    # - unique: empty (TPM generates)
-    # -------------------------
-    public_type = TPM_ALG_RSA.to_bytes(2, BYTE_ORDER)
-    name_alg = alg.to_bytes(2, BYTE_ORDER)
-    object_attrs = RSA_STORAGE_OBJECT_ATTRS.to_bytes(4, BYTE_ORDER)
-
-    auth_policy = (0).to_bytes(2, BYTE_ORDER)  # TPM2B_DIGEST size = 0
-
-    # TPMT_SYM_DEF_OBJECT for storage keys: algorithm AES, keyBits 128, mode CFB
-    sym_alg = TPM_ALG_AES.to_bytes(2, BYTE_ORDER)
-    sym_keybits = (128).to_bytes(2, BYTE_ORDER)
-    sym_mode = TPM_ALG_CFB.to_bytes(2, BYTE_ORDER)
-    symmetric_def_object = sym_alg + sym_keybits + sym_mode  # 6 bytes
-
-    # TPMT_RSA_SCHEME: scheme = NULL (no extra details)
-    rsa_scheme = TPM_ALG_NULL.to_bytes(2, BYTE_ORDER)
-    rsa_keybits = (keybits).to_bytes(2, BYTE_ORDER)
-    rsa_exponent = (0).to_bytes(4, BYTE_ORDER)
-    rsa_parameters = symmetric_def_object + rsa_scheme + rsa_keybits + rsa_exponent
-
-    # unique: TPM2B_PUBLIC_KEY_RSA = size(2) + bytes, empty requests TPM generate it
-    unique_rsa = (0).to_bytes(2, BYTE_ORDER)
-
-    public_area = (
-        public_type
-        + name_alg
-        + object_attrs
-        + auth_policy
-        + rsa_parameters
-        + unique_rsa
-    )
-
-    in_public = len(public_area).to_bytes(2, BYTE_ORDER) + public_area
-    return in_public
-
-
-def tpm_create_seeds(
-    parent_handle: int, hash_alg: int, key_bits: int, session_handle: int = TPM_RS_PW
-) -> bytes:
-    tag = TPM_ST_SESSIONS
-    cc = TPM_CC_CREATE
-    # parent_handle = TPM_RH_OWNER
-
-    # -------------------------
-    # Authorization area
-    # -------------------------
-    # TPMS_AUTH_COMMAND:
-    #   sessionHandle (4) = session_handle
-    #   nonceTPM.size (2) = 0
-    #   sessionAttributes (1) = 0
-    #   hmac.size (2) = password length (0 for empty)
-    auth_cmd = (
-        session_handle.to_bytes(4, BYTE_ORDER)
-        + (0).to_bytes(2, BYTE_ORDER)  # nonce size = 0
-        + b"\x00"  # sessionAttributes
-        + (0).to_bytes(2, BYTE_ORDER)  # password size = 0 (empty)
-    )
-    auth_area_size = len(auth_cmd).to_bytes(4, BYTE_ORDER)  # should be 9
-
-    # -------------------------
-    # inSensitive: TPM2B_SENSITIVE_CREATE
-    # Empty payload is fine structurally.
-    # -------------------------
-    sensitive_payload = (0).to_bytes(2, BYTE_ORDER) + (0).to_bytes(2, BYTE_ORDER)
-    in_sensitive = len(sensitive_payload).to_bytes(2, BYTE_ORDER) + sensitive_payload
-
-    # -------------------------
-    # inpublic: TPM2B_PUBLIC (RSA)
-    # -------------------------
-    in_public = build_in_public(hash_alg, key_bits)
-
-    # -------------------------
-    # outsideInfo: TPM2B_DATA (empty)
-    # -------------------------
-    outside_info = (0).to_bytes(2, BYTE_ORDER)
-
-    # -------------------------
-    # creationPCR: TPML_PCR_SELECTION with count = 0 (4 bytes)
-    # -------------------------
-    creation_pcr = (0).to_bytes(4, BYTE_ORDER)
-
-    # -------------------------
-    # Assemble command body
-    # IMPORTANT: for TPM_ST_SESSIONS:
-    #   handle(s) | authSize | authArea | parameters...
-    # -------------------------
-    body = (
-        parent_handle.to_bytes(4, BYTE_ORDER)
-        + auth_area_size
-        + auth_cmd
-        + in_sensitive
-        + in_public
-        + outside_info
-        + creation_pcr
-    )
-
-    command_size = 2 + 4 + 4 + len(body)
-
-    cmd = (
-        tag.to_bytes(2, BYTE_ORDER)
-        + command_size.to_bytes(4, BYTE_ORDER)
-        + cc.to_bytes(4, BYTE_ORDER)
-        + body
-    )
-
-    return [cmd]
-
-
-def tpm_get_rand_seeds(specific_bytes: Optional[int] = None) -> List[bytes]:
+def tpm_get_rand_seeds() -> List[bytes]:
     """
     Generates seeds for the TPM2_GetRandom Command. This
     function generates variants of the command based on
@@ -272,75 +77,23 @@ def tpm_get_rand_seeds(specific_bytes: Optional[int] = None) -> List[bytes]:
       [TPMI_ST_COMMAND_TAG(tag i.e TPM_ST_NO_SESSIONS)][UINT32(Command Size)]
       [TPM_CC(Command Code)][UINT16 (Bytes Requested Parameter)]
     """
-    request_bytes = [specific_bytes] if specific_bytes else [16, 32, 64, 0, 48]
     seeds: List[bytes] = []
-    for st in [TPM_ST_NO_SESSIONS, TPM_ST_SESSIONS]:
-        for bytes_requested in request_bytes:
-            # NOTE: Command Size is Total number of input bytes including
-            #       tag and command size.
-            command_size = 2 + 4 + 4 + 2
-            seed = (
-                st.to_bytes(2, byteorder=BYTE_ORDER)
-                + command_size.to_bytes(4, byteorder=BYTE_ORDER)
-                + TPM_CC_GETRANDOM.to_bytes(4, byteorder=BYTE_ORDER)
-                + bytes_requested.to_bytes(2, byteorder=BYTE_ORDER)
-            )
-            seeds.append(seed)
+    test_cases = [16, 32, 64, 0, 48]
+    for st in [TPM_ST.NO_SESSIONS, TPM_ST.SESSIONS]:
+        for bytes_requested in test_cases:
+            seeds.append(bytes(TPMGetRandom(bytes_requested, st)))
     return seeds
 
-
-def tpm_start_auth_session_seeds() -> bytes:
-    """
-    Build a TPM2_StartAuthSession command. The TPM will *return* a
-    real session handle, but for fuzzing we only care about the command.
-    This is a minimal, plausible HMAC session. The return session
-    is in range 0x02xxxxxx; First one is 0x02000000
-    """
-    tag = TPM_ST_NO_SESSIONS
-    cc = TPM_CC_STARTAUTHSESSION
-
-    # TPM2_StartAuthSession parameters:
-    # TPMI_DH_OBJECT tpmKey        (4 bytes)  – use TPM_RH_NULL
-    # TPMI_DH_ENTITY bind          (4 bytes)  – use TPM_RH_NULL
-    # TPM2B_NONCE nonceCaller      (2 + N)    – make empty (N=0)
-    # TPM2B_ENCRYPTED_SECRET salt  (2 + N)    – empty
-    # TPM_SE sessionType           (1 byte)   – HMAC
-    # TPMT_SYM_DEF symmetric       (2 + 2 + 2) – alg, keyBits, mode (use ALG_NULL)
-    # TPMI_ALG_HASH authHash       (2 bytes)  – SHA256
-
-    tpm_key = TPM_RH_NULL.to_bytes(4, BYTE_ORDER)
-    bind = TPM_RH_NULL.to_bytes(4, BYTE_ORDER)
-    nonce_bytes = os.urandom(16)
-    nonce = len(nonce_bytes).to_bytes(2, BYTE_ORDER) + nonce_bytes  # TPM2B nonces
-    salt = (0).to_bytes(2, BYTE_ORDER)  # TPM2B
-    session_type = TPM_SE_HMAC.to_bytes(1, BYTE_ORDER)
-
-    # symmetric = TPMT_SYM_DEF with algorithm = TPM_ALG_NULL
-    symmetric = TPM_ALG_NULL.to_bytes(2, BYTE_ORDER)
-
-    auth_hash = TPM_ALG_SHA256.to_bytes(2, BYTE_ORDER)
-
-    params = tpm_key + bind + nonce + salt + session_type + symmetric + auth_hash
-
-    command_size = 2 + 4 + 4 + len(params)
-
-    cmd = (
-        tag.to_bytes(2, BYTE_ORDER)
-        + command_size.to_bytes(4, BYTE_ORDER)
-        + cc.to_bytes(4, BYTE_ORDER)
-        + params
-    )
-    return [cmd]
 
 def tpm_get_capability_seeds() -> List[bytes]:
     """
     Generates seeds for the TPM2_GetCapability command.
     Query TPM for capabilities and properties.
-    
+
     Command Structure:
       [TPMI_ST_COMMAND_TAG][UINT32(Command Size)][TPM_CC_GETCAPABILITY]
       [TPM_CAP(capability)][UINT32(property)][UINT32(propertyCount)]
-    
+
     Parameters:
       - capability: Which type of capability to query (4 bytes)
       - property: Starting property value (4 bytes)
@@ -349,47 +102,34 @@ def tpm_get_capability_seeds() -> List[bytes]:
     seeds: List[bytes] = []
     test_cases = [
         # TPM_CAP_HANDLES - All 7 valid handle types
-        (TPM_CAP_HANDLES, 0x80000000, 10, "HT_TRANSIENT"),
-        (TPM_CAP_HANDLES, 0x81000000, 10, "HT_PERSISTENT"),
-        (TPM_CAP_HANDLES, 0x01000000, 10, "HT_NV_INDEX"),
-        (TPM_CAP_HANDLES, 0x02000000, 10, "HT_LOADED_SESSION"),
-        (TPM_CAP_HANDLES, 0x03000000, 10, "HT_SAVED_SESSION"),
-        (TPM_CAP_HANDLES, 0x00000000, 10, "HT_PCR"),
-        (TPM_CAP_HANDLES, 0x40000000, 10, "HT_PERMANENT"),
-        
+        (TPM_CAP.HANDLES, 0x80000000, 10, "HT_TRANSIENT"),
+        (TPM_CAP.HANDLES, 0x81000000, 10, "HT_PERSISTENT"),
+        (TPM_CAP.HANDLES, 0x01000000, 10, "HT_NV_INDEX"),
+        (TPM_CAP.HANDLES, 0x02000000, 10, "HT_LOADED_SESSION"),
+        (TPM_CAP.HANDLES, 0x03000000, 10, "HT_SAVED_SESSION"),
+        (TPM_CAP.HANDLES, 0x00000000, 10, "HT_PCR"),
+        (TPM_CAP.HANDLES, 0x40000000, 10, "HT_PERMANENT"),
         # Minimal diversity to seed other switch cases (fuzzer explores from here)
-        (TPM_CAP_ALGS, 0x0001, 10, "Algorithms"),
-        (TPM_CAP_COMMANDS, 0x0000017A, 10, "Commands"),
-        (TPM_CAP_PCRS, 0x00000000, 16, "PCRs"),
-        (TPM_CAP_TPM_PROPERTIES, 0x00000100, 64, "TPM properties"),
-        (TPM_CAP_ECC_CURVES, 0x0000, 10, "ECC curves"),
-        
+        (TPM_CAP.ALGS, 0x0001, 10, "Algorithms"),
+        (TPM_CAP.COMMANDS, 0x0000017A, 10, "Commands"),
+        (TPM_CAP.PCRS, 0x00000000, 16, "PCRs"),
+        (TPM_CAP.TPM_PROPERTIES, 0x00000100, 64, "TPM properties"),
+        (TPM_CAP.ECC_CURVES, 0x0000, 10, "ECC curves"),
         # Special cases requiring specific values (fuzzer unlikely to find)
-        (TPM_CAP_AUTH_POLICIES, 0x40000001, 10, "Auth policies - permanent handle"),
-        (TPM_CAP_PUB_KEYS, TPM_PUB_KEY_TPM_SPDM_00, 1, "SPDM key - exact value required"),
-        (TPM_CAP_ACT, 0x00000000, 1, "ACT - disabled feature, hits error path"),
+        (TPM_CAP.AUTH_POLICIES, 0x40000001, 10, "Auth policies - permanent handle"),
+        (
+            TPM_CAP.PUB_KEYS,
+            TPM_PUB_KEY_TPM_SPDM_00,
+            1,
+            "SPDM key - exact value required",
+        ),
+        (TPM_CAP.ACT, 0x00000000, 1, "ACT - disabled feature, hits error path"),
     ]
-    
-    # Generate seeds with single tag type only - fuzzer mutates tag field easily
-    for st in [TPM_ST_NO_SESSIONS]:
-        for capability, property_val, property_count, _desc in test_cases:
-            params = (
-                capability.to_bytes(4, byteorder=BYTE_ORDER)        # TPM_CAP
-                + property_val.to_bytes(4, byteorder=BYTE_ORDER)    # property
-                + property_count.to_bytes(4, byteorder=BYTE_ORDER)  # propertyCount
-            )
 
-            command_size = 2 + 4 + 4 + len(params)
-            
-            cmd = (
-                st.to_bytes(2, byteorder=BYTE_ORDER)
-                + command_size.to_bytes(4, byteorder=BYTE_ORDER)
-                + TPM_CC_GETCAPABILITY.to_bytes(4, byteorder=BYTE_ORDER)
-                + params
-            )
-            
-            seeds.append(cmd)
-    
+    # Generate seeds with single tag type only - fuzzer mutates tag field easily
+    for capability, property_val, property_count, _desc in test_cases:
+        seeds.append(bytes(TPMGetCapability(capability, property_val, property_count)))
+
     return seeds
 
 
@@ -409,211 +149,102 @@ def tpm_hash_seeds() -> List[bytes]:
 
     # Exactly the same 3 cases as your standalone script
     cases = [
-        ("sha1-owner", b"test hash data", TPM_ALG_SHA1, TPM_RH_OWNER),
-        ("sha256-platform", b"another test", TPM_ALG_SHA256, TPM_RH_PLATFORM),
-        ("sha384-null-random", b"random bytes", TPM_ALG_SHA384, TPM_RH_NULL),
+        ("sha1-owner", b"test hash data", TPM_ALG.SHA1, TPM_RH.OWNER),
+        ("sha256-platform", b"another test", TPM_ALG.SHA256, TPM_RH.PLATFORM),
+        ("sha384-null-random", b"random bytes", TPM_ALG.SHA384, TPM_RH.NULL),
     ]
 
-    st = TPM_ST_NO_SESSIONS  # Same as standalone script
-
     for _name, data, alg, hier in cases:
-        # TPM2B_MAX_BUFFER: UINT16 size + bytes
-        params = (
-            len(data).to_bytes(2, byteorder=BYTE_ORDER)
-            + data
-            + alg.to_bytes(2, byteorder=BYTE_ORDER)
-            + hier.to_bytes(4, byteorder=BYTE_ORDER)
-        )
-
-        # Header: tag(2) + commandSize(4) + commandCode(4)
-        command_size = 2 + 4 + 4 + len(params)
-        cmd = (
-            st.to_bytes(2, byteorder=BYTE_ORDER)
-            + command_size.to_bytes(4, byteorder=BYTE_ORDER)
-            + TPM_CC_HASH.to_bytes(4, byteorder=BYTE_ORDER)
-            + params
-        )
-
-        seeds.append(cmd)
+        seeds.append(bytes(TPMHash(data, alg, hier)))
 
     return seeds
 
 
-def tpm_create_primary_seeds(
-    hash_alg: int, key_bits: int, session_handle: int = TPM_RS_PW
-) -> List[bytes]:
-    """
-    Single seed that create a transient parent handle.
-    """
-    tag = TPM_ST_SESSIONS
-    cc = TPM_CC_CREATEPRIMARY
-    primary_handle = TPM_RH_OWNER
+def _create_variant(name: str, timestamp: str, directory: str, content: bytes, force: Optional[bool] = False):
+    def request_section(input: str) -> str:
+        pattern = (
+            r"=+\n\s*REQUEST\s*\n=+\n"
+            r"(.*?)"
+            r"(?==+\n\s*RESPONSE\s*\n=+)"
+           )
 
-    # -------------------------
-    # Authorization area
-    # -------------------------
-    # TPMS_AUTH_COMMAND:
-    #   sessionHandle (4) = session_handle
-    #   nonceTPM.size (2) = 0
-    #   sessionAttributes (1) = 0
-    #   hmac.size (2) = password length (0 for empty)
-    auth_cmd = (
-        session_handle.to_bytes(4, BYTE_ORDER)
-        + (0).to_bytes(2, BYTE_ORDER)  # nonce size = 0
-        + b"\x00"  # sessionAttributes
-        + (0).to_bytes(2, BYTE_ORDER)  # password size = 0 (empty)
-    )
-    auth_area_size = len(auth_cmd).to_bytes(4, BYTE_ORDER)  # should be 9
+        match = re.search(pattern, input, re.DOTALL)
+        if not match:
+            print(f"Input: {input}")
+            raise ValueError("REQUEST section not found")
 
-    # -------------------------
-    # inSensitive: TPM2B_SENSITIVE_CREATE
-    # Empty payload is fine structurally.
-    # -------------------------
-    sensitive_payload = (0).to_bytes(2, BYTE_ORDER) + (0).to_bytes(2, BYTE_ORDER)
-    in_sensitive = len(sensitive_payload).to_bytes(2, BYTE_ORDER) + sensitive_payload
+        section = match.group(0)
+        return section.rstrip()
 
-    # -------------------------
-    # inpublic: TPM2B_PUBLIC (RSA)
-    # -------------------------
-    in_public = build_in_public(hash_alg, key_bits)
+    existing_items = [ p for p in os.listdir("seeds/") if p.startswith(f"{name}-") ]
+    if len(existing_items) > 0:
+        out = os.path.join(directory, existing_items[0]);
+        with open(out, "rb") as f:
+            data = f.read()
 
-    # -------------------------
-    # outsideInfo: TPM2B_DATA (empty)
-    # -------------------------
-    outside_info = (0).to_bytes(2, BYTE_ORDER)
+        if data != content and force:
+            print(f"EXPECTED BYTES CHANGED: {name}\n")
+            pwd = os.getcwd()
+            actual = request_section(subprocess.run(
+                [f"{pwd}/scripts/test_seed.sh", out],
+                capture_output=True,
+                text=True,
+                check=True,
+            ).stdout)
 
-    # -------------------------
-    # creationPCR: TPML_PCR_SELECTION with count = 0 (4 bytes)
-    # -------------------------
-    creation_pcr = (0).to_bytes(4, BYTE_ORDER)
+            current = os.path.join(directory, f"{name}-{timestamp}");
+            with open(current, "wb") as f:
+                f.write(content)
 
-    # -------------------------
-    # Assemble command body
-    # IMPORTANT: for TPM_ST_SESSIONS:
-    #   handle(s) | authSize | authArea | parameters...
-    # -------------------------
-    body = (
-        primary_handle.to_bytes(4, BYTE_ORDER)
-        + auth_area_size
-        + auth_cmd
-        + in_sensitive
-        + in_public
-        + outside_info
-        + creation_pcr
-    )
+            expected = request_section(subprocess.run(
+                [f"{pwd}/scripts/test_seed.sh", current],
+                capture_output=True,
+                text=True,
+                check=True,
+            ).stdout)
 
-    command_size = 2 + 4 + 4 + len(body)
+            diff = difflib.unified_diff(
+                actual.splitlines(keepends=True),
+                expected.splitlines(keepends=True),
+            )
 
-    cmd = (
-        tag.to_bytes(2, BYTE_ORDER)
-        + command_size.to_bytes(4, BYTE_ORDER)
-        + cc.to_bytes(4, BYTE_ORDER)
-        + body
-    )
-
-    return [cmd]
-
-def tpm_self_test_seeds() -> List[bytes]:
-    """
-    Generates seeds for TPM2_SelfTest.
-
-    Command Structure:
-      [TPM_ST_NO_SESSIONS][UINT32 commandSize]
-      [TPM_CC_SELFTEST][TPMI_YES_NO fullTest]
-    """
-    seeds: List[bytes] = []
-    tag = TPM_ST_NO_SESSIONS
-    cc = TPM_CC_SELFTEST
-    
-    for param_list in [0x00, 0x01]:  # NO, YES
-        params = param_list.to_bytes(1, BYTE_ORDER)
-        command_size = 2 + 4 + 4 + len(params)
-
-        cmd = (
-            tag.to_bytes(2, BYTE_ORDER)
-            + command_size.to_bytes(4, BYTE_ORDER)
-            + cc.to_bytes(4, BYTE_ORDER)
-            + params
-        )
-
-        seeds.append(cmd)
-
-    return seeds
-
-
-def tpm_get_test_result_seeds():
-    """
-    Create seeds for the TPM2_GetTestResult command.
-    """
-    tag = TPM_ST_NO_SESSIONS
-    cc = TPM_CC_GETTESTRESULT
-    command_size = 2 + 4 + 4
-    cmd = (
-        tag.to_bytes(2, BYTE_ORDER)
-        + command_size.to_bytes(4, BYTE_ORDER)
-        + cc.to_bytes(4, BYTE_ORDER)
-    )
-    
-    return [cmd]
-
-
-def tpm_read_clock_seeds() -> List[bytes]:
-    """
-    Generates seeds for the TPM2_ReadClock command.
-    """
-    
-    tag = TPM_ST_NO_SESSIONS
-    cc = TPM_CC_READCLOCK
-    command_size = 2 + 4 + 4
-    cmd = (
-        tag.to_bytes(2, BYTE_ORDER)
-        + command_size.to_bytes(4, BYTE_ORDER)
-        + cc.to_bytes(4, BYTE_ORDER)
-    )
-    
-    return [cmd]
+            changes = "".join(diff)
+            if len(changes.strip()) > 0:
+                print(f"{changes}\n")
+            os.remove(out)
+    else:
+        out = os.path.join(directory, f"{name}-{timestamp}");
+        with open(out, "wb") as f:
+            f.write(content)
+        print(f"Generated seed file: {out}")
 
 
 def _run_commands(
     directory: str,
     cmd: str,
-    command: SeedFunction | List[SeedFunction | bytes],
+    command: SeedFunction | TPMCommand | List[List[TPMCommand]],
     timestamp: str,
+    force: bool,
 ):
-    if callable(command):
-        seeds: List[bytes] = []
-        seeds = command()
 
+    if isinstance(command, TPMCommand):
+        _create_variant(f"{cmd}-variant0", timestamp, directory, bytes(command), force)
+    elif callable(command):
+        seeds = command()
         for i, seed in enumerate(seeds):
-            filename = f"{cmd}-variant{i}-{timestamp}"
-            filepath = os.path.join(directory, filename)
-            with open(filepath, "wb") as f:
-                f.write(seed)
-            print(f"Generated seed file: {filename}")
+             _create_variant(f"{cmd}-variant{i}", timestamp, directory, seed, force)
     elif isinstance(command, list):
         for i, sequence in enumerate(command):
-            seeds: List[bytes] = []
-
+            seed = b''
             for f in sequence:
-                if callable(f):
-                    seeds.extend(f())
-                elif isinstance(f, bytes):
-                    seeds.append(f)
-                elif isinstance(f, list):
-                    seeds.extend(f)
-
-            filename = f"{cmd}-variant{i}-{timestamp}"
-            filepath = os.path.join(directory, filename)
-            with open(filepath, "wb") as f:
-                for seed in seeds:
-                    f.write(seed)
-            print(f"Generated seed file: {filename}")
+                seed += bytes(f)
+            _create_variant(f"{cmd}-variant{i}", timestamp, directory, seed, force)
 
 
 def _generate_seeds(
     directory: str,
     recreate: bool,
-    seeds: Dict[str, SeedFunction | List[SeedFunction | bytes]],
+    seeds: Dict[str, Union[SeedFunction | TPMCommand | List[List[TPMCommand]]]],
 ):
     """
     Generate seeds for all supported TPM Commands.
@@ -629,19 +260,7 @@ def _generate_seeds(
 
     for cmd, _cmd in seeds.items():
         seed_files = [f for f in os.listdir(directory) if f.startswith(cmd)]
-
-        if seed_files:
-            for seed_file in seed_files:
-                if recreate:
-                    print(f"Deleting seed file: {seed_file}")
-                    os.remove(os.path.join(directory, seed_file))
-                else:
-                    print(f"Skipping existing seed file: {seed_file}")
-
-            if not recreate:
-                continue
-
-        _run_commands(directory, cmd, _cmd, current_timestamp)
+        _run_commands(directory, cmd, _cmd, current_timestamp, force=recreate)
 
 
 if __name__ == "__main__":
@@ -649,50 +268,48 @@ if __name__ == "__main__":
     seeds = {
         "TPMGetRandom": tpm_get_rand_seeds,
         "TPMHash": tpm_hash_seeds,
-        "TPMGetTestResult": tpm_get_test_result_seeds,
-        "TPMSelfTest": tpm_self_test_seeds,
-        "TPMReadClock": tpm_read_clock_seeds,
-        "TPMCreatePrimary": [
-            [tpm_create_primary_seeds(TPM_ALG_SHA256, 2048), tpm_get_rand_seeds(16)],
-            [tpm_get_rand_seeds(32), tpm_create_primary_seeds(TPM_ALG_SHA256, 2048)],
-            [
-                tpm_create_primary_seeds(TPM_ALG_SHA256, 2048),
-                tpm_create_primary_seeds(TPM_ALG_SHA256, 2048),
-            ],
-        ],
+        "TPMGetTestResult": TPMGetTestResult(),
+        "TPMSelfTest": [[TPMSelfTest(TPMI_YES_NO.YES)], [TPMSelfTest(TPMI_YES_NO.NO)]],
+        "TPMReadClock": TPMReadClock(),
         "TPMCreate": [
             [
-                tpm_create_primary_seeds(TPM_ALG_SHA256, 2048),
-                tpm_create_seeds(0x80000000, TPM_ALG_SHA256, 2048),
+                TPMCreatePrimary(TPM_RS.PW, TPM_ALG.SHA256, 2048),
+                TPMCreate(0x80000000, TPM_RS.PW, TPM_ALG.SHA256, 2048),
             ],
             [
-                tpm_create_primary_seeds(TPM_ALG_SHA256, 2048),
-                tpm_create_seeds(0x80000000, TPM_ALG_SHA256, 1024),
+                TPMCreatePrimary(TPM_RS.PW, TPM_ALG.SHA256, 2048),
+                TPMCreate(0x80000000, TPM_RS.PW, TPM_ALG.SHA256, 1024),
             ],
             [
-                tpm_create_primary_seeds(TPM_ALG_SHA256, 2048),
-                tpm_create_seeds(0x80000000, TPM_ALG_SHA1, 2048),
+                TPMCreatePrimary(TPM_RS.PW, TPM_ALG.SHA256, 2048),
+                TPMCreate(0x80000000, TPM_RS.PW, TPM_ALG.SHA1, 2048),
             ],
             [
-                tpm_create_primary_seeds(TPM_ALG_SHA256, 2048),
-                tpm_create_seeds(0x80000000, TPM_ALG_SHA1, 1024),
+                TPMCreatePrimary(TPM_RS.PW, TPM_ALG.SHA256, 2048),
+                TPMCreate(0x80000000, TPM_RS.PW, TPM_ALG.SHA1, 1024),
             ],
             [
-                tpm_create_primary_seeds(TPM_ALG_SHA256, 2048),
-                tpm_create_seeds(0x80000000, TPM_ALG_SHA384, 2048),
+                TPMCreatePrimary(TPM_RS.PW, TPM_ALG.SHA256, 2048),
+                TPMCreate(0x80000000, TPM_RS.PW, TPM_ALG.SHA384, 2048),
             ],
             [
-                tpm_create_primary_seeds(TPM_ALG_SHA256, 2048),
-                tpm_create_seeds(0x80000000, TPM_ALG_SHA384, 1024),
+                TPMCreatePrimary(TPM_RS.PW, TPM_ALG.SHA256, 2048),
+                TPMCreate(0x80000000, TPM_RS.PW, TPM_ALG.SHA384, 1024),
+            ],
+        ],
+        "TPMCreatePrimary": [
+            [TPMCreatePrimary(TPM_RS.PW, TPM_ALG.SHA256, 2048), TPMGetRandom(16)],
+            [TPMGetRandom(32), TPMCreatePrimary(TPM_RS.PW, TPM_ALG.SHA256, 2048)],
+            [
+                TPMCreatePrimary(TPM_RS.PW, TPM_ALG.SHA256, 2048),
+                TPMCreatePrimary(TPM_RS.PW, TPM_ALG.SHA256, 2048),
             ],
         ],
         "TPMStartAuthSessionHMAC": [
-            [tpm_start_auth_session_seeds],
+            [TPMStartAuthSession(TPM_RH.NULL, TPM_RH.NULL, session_type=TPM_SE.HMAC)],
             [
-                tpm_start_auth_session_seeds(),
-                tpm_create_primary_seeds(
-                    TPM_ALG_SHA256, 2048, TPM_FIRST_HMAC_SESSION_HANDLE
-                ),
+                TPMStartAuthSession(TPM_RH.NULL, TPM_RH.NULL, session_type=TPM_SE.HMAC),
+                TPMCreatePrimary(TPM_FIRST_HMAC_SESSION_HANDLE, TPM_ALG.SHA256, 2048),
             ],
         ],
         "TPMIncrementalSelfTest": tpm_incremental_self_test_seeds,
