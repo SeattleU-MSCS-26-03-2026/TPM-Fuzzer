@@ -38,6 +38,20 @@ class TPMIncrementalSelfTest(TPMCommand):
 
         super().__init__(TPM_ST.NO_SESSIONS, TPM_CC.INCREMENTALSELFTEST, count + algIds)
 
+class TPMStirRandom(TPMCommand):
+    def __init__(self, data: bytes):
+        # TPM2B_SENSITIVE_DATA = UINT16 size + buffer
+        params = (
+            len(data).to_bytes(2, BYTE_ORDER)
+            + data
+        )
+
+        super().__init__(
+            TPM_ST.NO_SESSIONS,
+            TPM_CC.STIRRANDOM,
+            params
+        )
+
 class TPMVendorTCGTest(TPMCommand):
     def __init__(self, data: bytes):
         params = (

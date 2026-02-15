@@ -67,6 +67,22 @@ def tpm_incremental_self_test_seeds() -> List[bytes]:
     return seeds
 
 
+
+def tpm_stir_random_seeds() -> List[bytes]:
+    """
+    Generates seed corpus for TPM2_StirRandom using TPMCommand abstraction.
+    """
+
+    payloads = [b""]
+
+    seeds: List[bytes] = []
+
+    for data in payloads:
+        seeds.append(bytes(TPMStirRandom(data)))
+
+    return seeds
+
+
 def tpm_get_rand_seeds() -> List[bytes]:
     """
     Generates seeds for the TPM2_GetRandom Command. This
@@ -279,6 +295,7 @@ if __name__ == "__main__":
     # NOTE: Update this to include a seed function
     seeds = {
         "TPMGetRandom": tpm_get_rand_seeds,
+        "TPMStirRandom": tpm_stir_random_seeds,
         "TPMHash": tpm_hash_seeds,
         "TPMGetTestResult": TPMGetTestResult(),
         "TPMSelfTest": [[TPMSelfTest(TPMI_YES_NO.YES)], [TPMSelfTest(TPMI_YES_NO.NO)]],
