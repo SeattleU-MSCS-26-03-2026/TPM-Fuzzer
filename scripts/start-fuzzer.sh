@@ -23,13 +23,13 @@ MAX_RUNS=${FUZZER_MAX_RUNS:-100000}
 FUZZER_EXTRA_ARGS=${FUZZER_EXTRA_ARGS:-''}
 
 main() {
-    echo "Starting fuzzer... [1/3]"
+    echo "Starting fuzzer... [1/5]"
     LLVM_PROFILE_FILE=$PROFILE_FILE ./build/Fuzzer -runs="$MAX_RUNS" "$FUZZER_EXTRA_ARGS" "$GENERATED_CORPUS_DIRECTORY" "$SEED_CORPUS_LIST"
 
-    echo "Creating coverage report... [2/3]"
+    echo "Creating coverage report... [2/5]"
     llvm-profdata merge -sparse "$PROFILE_FILE" -o "$PROFILE_DATA"
 
-    echo "Generating coverage output... [3/4]"
+    echo "Generating coverage output... [3/5]"
     llvm-cov show /srv/build/Fuzzer \
         -instr-profile="$PROFILE_DATA" \
         -format=html \
@@ -37,7 +37,12 @@ main() {
         -output-dir="$COVERAGE_OUTPUT_DIR" \
         $(find /srv/fuzzer/vendor/TPM -type f \( -name '*.c' -o -name '*.cc' \))
 
-    echo "Generating coverage report for Fuzzer source code... [4/4]"
+    echo "Coverage Report... [4/5]"
+    llvm-cov report /srv/build/Fuzzer \
+        -instr-profile="$PROFILE_DATA" \
+        $(find /srv/fuzzer/vendor/TPM -type f \( -name '*.c' -o -name '*.cc' \)) >"$COVERAGE_OUTPUT_DIR/report.txt"
+
+    echo "Generating coverage report for Fuzzer source code... [5/5]"
     llvm-cov show /srv/build/Fuzzer \
         -instr-profile="$PROFILE_DATA" \
         -format=html \

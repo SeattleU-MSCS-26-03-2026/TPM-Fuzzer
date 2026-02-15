@@ -83,12 +83,20 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v5
 
+      - name: Install clang-format
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y clang-format
+
       - name: Check format
-        uses: jidicula/clang-format-action@v4.16.0
-        with:
-          clang-format-version: '21'
-          check-path: ${{ matrix.path }}
-          fallback-style: 'Google'
+        run: |
+          cd ${{ matrix.path }}
+          files=$(find . -type f \( -name '*.c' -o -name '*.cc' -o -name '*.h' -o -name '*.hpp' \))
+          if [ -z "$files" ]; then
+            echo "No C/C++ files found in ${{ matrix.path }}"
+            exit 0
+          fi
+          clang-format --style=Google --dry-run --Werror $files
 
   unit-tests:
     name: Run unit tests

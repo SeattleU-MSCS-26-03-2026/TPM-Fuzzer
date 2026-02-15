@@ -29,11 +29,8 @@
 !scripts/**/*
 !seeds/
 !seeds/**/*
-
-# Allow new test runner directory
-!test_runner/
-!test_runner/**/*
-
+!coverage-history/
+!coverage-history/**/*
 
 # Always disallow
 __pycache__/
