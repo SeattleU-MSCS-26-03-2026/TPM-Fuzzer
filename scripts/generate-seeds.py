@@ -95,28 +95,7 @@ def tpm_vendor_tcg_test_seeds() -> List[bytes]:
     Behavior:
       outputData = inputData
     """
-    seeds: List[bytes] = []
-    tag = TPM_ST.NO_SESSIONS.value
-    cc = TPM_CC.VENDORTCGTEST.value
-
-    payloads = [
-        b"",                  # size = 0 (edge case)
-    ]
-
-    for data in payloads:
-        # TPM2B: UINT16 size + buffer
-        input_data = len(data).to_bytes(2, BYTE_ORDER) + data
-
-        command_size = 2 + 4 + 4 + len(input_data)
-        cmd = (
-            tag.to_bytes(2, BYTE_ORDER)
-            + command_size.to_bytes(4, BYTE_ORDER)
-            + cc.to_bytes(4, BYTE_ORDER)
-            + input_data
-        )
-        seeds.append(cmd)
-
-    return seeds
+    return [ bytes(TPMVendorTCGTest(b"")) ]
 
 def tpm_get_capability_seeds() -> List[bytes]:
     """

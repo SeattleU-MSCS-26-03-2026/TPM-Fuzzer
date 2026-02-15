@@ -38,6 +38,19 @@ class TPMIncrementalSelfTest(TPMCommand):
 
         super().__init__(TPM_ST.NO_SESSIONS, TPM_CC.INCREMENTALSELFTEST, count + algIds)
 
+class TPMVendorTCGTest(TPMCommand):
+    def __init__(self, data: bytes):
+        params = (
+            len(data).to_bytes(2, BYTE_ORDER)  # TPM2B size
+            + data                             # buffer
+        )
+
+        super().__init__(
+            TPM_ST.NO_SESSIONS,
+            TPM_CC.VENDORTCGTEST,
+            params
+        )
+
 
 class TPMCreate(TPMCommand):
     def __init__(
