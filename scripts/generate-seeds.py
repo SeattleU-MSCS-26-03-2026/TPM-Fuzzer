@@ -84,6 +84,39 @@ def tpm_get_rand_seeds() -> List[bytes]:
             seeds.append(bytes(TPMGetRandom(bytes_requested, st)))
     return seeds
 
+def tpm_vendor_tcg_test_seeds() -> List[bytes]:
+    """
+    Seed corpus for TPM2_Vendor_TCG_Test.
+
+    Command Structure:
+      [TPM_ST_NO_SESSIONS][UINT32 commandSize][TPM_CC_VENDOR_TCG_TEST]
+      [TPM2B inputData]
+
+    Behavior:
+      outputData = inputData
+    """
+    seeds: List[bytes] = []
+    tag = TPM_ST.NO_SESSIONS.value
+    cc = TPM_CC.VENDORTCGTEST.value
+
+    payloads = [
+        b"",                  # size = 0 (edge case)
+    ]
+
+    for data in payloads:
+        # TPM2B: UINT16 size + buffer
+        input_data = len(data).to_bytes(2, BYTE_ORDER) + data
+
+        command_size = 2 + 4 + 4 + len(input_data)
+        cmd = (
+            tag.to_bytes(2, BYTE_ORDER)
+            + command_size.to_bytes(4, BYTE_ORDER)
+            + cc.to_bytes(4, BYTE_ORDER)
+            + input_data
+        )
+        seeds.append(cmd)
+
+    return seeds
 
 def tpm_get_capability_seeds() -> List[bytes]:
     """
@@ -271,6 +304,7 @@ if __name__ == "__main__":
         "TPMGetTestResult": TPMGetTestResult(),
         "TPMSelfTest": [[TPMSelfTest(TPMI_YES_NO.YES)], [TPMSelfTest(TPMI_YES_NO.NO)]],
         "TPMReadClock": TPMReadClock(),
+        "TPMVendorTCGTest": tpm_vendor_tcg_test_seeds,
         "TPMCreate": [
             [
                 TPMCreatePrimary(TPM_RS.PW, TPM_ALG.SHA256, 2048),
