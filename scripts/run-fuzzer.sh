@@ -54,7 +54,7 @@ CSV
 
 archive_coverage() {
     local coverage_directory="${1:-coverage/}"
-    local timestamp="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
+    local timestamp="$(date -u +%Y-%m-%dT%H-%M-%SZ)"
     local sha="$(git rev-parse --short HEAD 2>/dev/null || echo unknown)"
     local out="coverage-history/coverage-$timestamp-$sha.tar.gz"
     if [ ! -d "$coverage_directory" ]; then
