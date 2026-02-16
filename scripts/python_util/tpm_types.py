@@ -42,6 +42,7 @@ class TPM_CC(Enum):
     VENDORTCGTEST = 0x20000000
     STIRRANDOM = 0x00000146
     ECC_PARAMETERS = 0x00000178
+    LOADEXTERNAL = 0x00000167
 
 
 class TPM_RH(Enum):
@@ -156,6 +157,11 @@ class TPMS_SYM_DEF_OBJECT:
 
     def to_bytes(self) -> bytes:
         alg = _alg_to_int(self.algorithm).to_bytes(2, BYTE_ORDER)
+        
+        # ALG NULL should return without key bits and mode
+        if _alg_to_int(self.algorithm) == TPM_ALG.NULL.value:
+            return alg
+        
         key_bits = self.key_bits.to_bytes(2, BYTE_ORDER)
         mode = _alg_to_int(self.mode).to_bytes(2, BYTE_ORDER)
         return alg + key_bits + mode
@@ -386,3 +392,27 @@ class TPML_PCR_SELECTION:
         count = len(self.selections).to_bytes(4, BYTE_ORDER)
         body = b"".join(s.to_bytes() for s in self.selections)
         return count + body
+
+@dataclass
+class TPM2B_SENSITIVE:
+    sensitive_type: Union[int, TPM_ALG] = TPM_ALG.RSA
+    auth_value: bytes = b""
+    seed_value: bytes = b""
+    private_key: bytes = b""
+
+    def to_bytes(self) -> bytes:
+        stype = _alg_to_int(self.sensitive_type).to_bytes(2, BYTE_ORDER)
+
+        auth_size = len(self.auth_value).to_bytes(2, BYTE_ORDER)
+        auth = auth_size + self.auth_value
+
+        seed_size = len(self.seed_value).to_bytes(2, BYTE_ORDER)
+        seed = seed_size + self.seed_value
+
+        pk_size = len(self.private_key).to_bytes(2, BYTE_ORDER)
+        pk = pk_size + self.private_key
+
+        inner = stype + auth + seed + pk
+
+        size = len(inner).to_bytes(2, BYTE_ORDER)
+        return size + inner

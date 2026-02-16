@@ -237,3 +237,57 @@ class TPMECCParameters(TPMCommand):
             TPM_CC.ECC_PARAMETERS,
             params=params,
         )
+        
+
+class TPMLoadExternal(TPMCommand):
+    def __init__(
+        self,
+        hash_alg: TPM_ALG,
+        key_bits: int,
+        hierarchy: TPM_RH = TPM_RH.NULL,
+        include_private: bool = False,
+    ):
+
+        key_bytes = key_bits // 8
+        
+        
+        if include_private:
+            key_bytes = key_bits // 8
+
+            private_key = b"\x80" + b"\x01" * ((key_bytes // 2) - 1)
+
+            in_private = TPM2B_SENSITIVE(
+                sensitive_type=TPM_ALG.RSA,
+                private_key=private_key,
+            ).to_bytes()
+
+        else:
+            in_private = (0).to_bytes(2, BYTE_ORDER)
+        
+        public_key = b"\x80" + b"\x01" * (key_bytes - 1)
+
+        public_area = TPMT_PUBLIC(
+            type=TPM_ALG.RSA,
+            name_alg=hash_alg,
+            object_attributes=[
+                TPMA_OBJECT.FIXEDTPM,
+                TPMA_OBJECT.USERWITHAUTH,
+            ],
+            rsa_parameters=TPMS_RSA_PARMS(
+                symmetric=TPMS_SYM_DEF_OBJECT(
+                    algorithm=TPM_ALG.NULL,
+                ),
+                scheme=TPM_ALG.NULL,
+                key_bits=key_bits,
+                exponent=0,
+            ),
+            unique=public_key,
+        )
+
+        in_public = TPM2B_PUBLIC(public_area=public_area).to_bytes()
+
+        hierarchy_bytes = hierarchy.value.to_bytes(4, BYTE_ORDER)
+
+        params = in_private + in_public + hierarchy_bytes
+
+        super().__init__(TPM_ST.NO_SESSIONS, TPM_CC.LOADEXTERNAL, params)
