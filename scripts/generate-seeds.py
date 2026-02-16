@@ -68,21 +68,6 @@ def tpm_incremental_self_test_seeds() -> List[bytes]:
 
 
 
-def tpm_stir_random_seeds() -> List[bytes]:
-    """
-    Generates seed corpus for TPM2_StirRandom using TPMCommand abstraction.
-    """
-
-    payloads = [b""]
-
-    seeds: List[bytes] = []
-
-    for data in payloads:
-        seeds.append(bytes(TPMStirRandom(data)))
-
-    return seeds
-
-
 def tpm_get_rand_seeds() -> List[bytes]:
     """
     Generates seeds for the TPM2_GetRandom Command. This
@@ -100,18 +85,6 @@ def tpm_get_rand_seeds() -> List[bytes]:
             seeds.append(bytes(TPMGetRandom(bytes_requested, st)))
     return seeds
 
-def tpm_vendor_tcg_test_seeds() -> List[bytes]:
-    """
-    Seed corpus for TPM2_Vendor_TCG_Test.
-
-    Command Structure:
-      [TPM_ST_NO_SESSIONS][UINT32 commandSize][TPM_CC_VENDOR_TCG_TEST]
-      [TPM2B inputData]
-
-    Behavior:
-      outputData = inputData
-    """
-    return [ bytes(TPMVendorTCGTest(b"")) ]
 
 def tpm_get_capability_seeds() -> List[bytes]:
     """
@@ -295,12 +268,12 @@ if __name__ == "__main__":
     # NOTE: Update this to include a seed function
     seeds = {
         "TPMGetRandom": tpm_get_rand_seeds,
-        "TPMStirRandom": tpm_stir_random_seeds,
+        "TPMStirRandom": TPMStirRandom(b""),
         "TPMHash": tpm_hash_seeds,
         "TPMGetTestResult": TPMGetTestResult(),
         "TPMSelfTest": [[TPMSelfTest(TPMI_YES_NO.YES)], [TPMSelfTest(TPMI_YES_NO.NO)]],
         "TPMReadClock": TPMReadClock(),
-        "TPMVendorTCGTest": tpm_vendor_tcg_test_seeds,
+        "TPMVendorTCGTest":TPMVendorTCGTest(b""),
         "TPMCreate": [
             [
                 TPMCreatePrimary(TPM_RS.PW, TPM_ALG.SHA256, 2048),
