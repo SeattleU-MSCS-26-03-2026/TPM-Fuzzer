@@ -225,3 +225,15 @@ class TPMHash(TPMCommand):
 class TPMGetTestResult(TPMCommand):
     def __init__(self):
         super().__init__(TPM_ST.NO_SESSIONS, TPM_CC.GETTESTRESULT, b"")
+
+
+class TPMECCParameters(TPMCommand):
+    def __init__(self, curve: Union[int, TPM_ECC_CURVE]):
+        curve_value = curve.value if isinstance(curve, TPM_ECC_CURVE) else curve
+        params = curve_value.to_bytes(2, BYTE_ORDER)
+
+        super().__init__(
+            TPM_ST.NO_SESSIONS,
+            TPM_CC.ECC_PARAMETERS,
+            params=params,
+        )

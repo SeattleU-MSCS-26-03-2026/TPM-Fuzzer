@@ -317,6 +317,7 @@ if __name__ == "__main__":
         ],
         "TPMIncrementalSelfTest": tpm_incremental_self_test_seeds,
         "TPMGetCapability": tpm_get_capability_seeds,
+        "TPMECCParameters": TPMECCParameters(TPM_ECC_CURVE.NIST_P192),
     }
 
     parser = argparse.ArgumentParser(

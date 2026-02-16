@@ -41,6 +41,7 @@ class TPM_CC(Enum):
     READCLOCK = 0x00000181
     VENDORTCGTEST = 0x20000000
     STIRRANDOM = 0x00000146
+    ECC_PARAMETERS = 0x00000178
 
 
 class TPM_RH(Enum):
@@ -134,6 +135,13 @@ def _attrs_to_int(attrs: Union[int, TPMA_OBJECT, list[TPMA_OBJECT]]) -> int:
     for a in attrs:
         val |= a.value
     return val
+
+
+class TPM_ECC_CURVE(Enum):
+    """
+    Parameter values for curveID
+    """
+    NIST_P192 = 0x0001
 
 
 @dataclass
