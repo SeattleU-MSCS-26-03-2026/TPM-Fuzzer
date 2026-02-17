@@ -38,32 +38,20 @@ class TPMIncrementalSelfTest(TPMCommand):
 
         super().__init__(TPM_ST.NO_SESSIONS, TPM_CC.INCREMENTALSELFTEST, count + algIds)
 
+
 class TPMStirRandom(TPMCommand):
     def __init__(self, data: bytes):
         # TPM2B_SENSITIVE_DATA = UINT16 size + buffer
-        params = (
-            len(data).to_bytes(2, BYTE_ORDER)
-            + data
-        )
+        params = len(data).to_bytes(2, BYTE_ORDER) + data
 
-        super().__init__(
-            TPM_ST.NO_SESSIONS,
-            TPM_CC.STIRRANDOM,
-            params
-        )
+        super().__init__(TPM_ST.NO_SESSIONS, TPM_CC.STIRRANDOM, params)
+
 
 class TPMVendorTCGTest(TPMCommand):
     def __init__(self, data: bytes):
-        params = (
-            len(data).to_bytes(2, BYTE_ORDER)  # TPM2B size
-            + data                             # buffer
-        )
+        params = len(data).to_bytes(2, BYTE_ORDER) + data  # TPM2B size  # buffer
 
-        super().__init__(
-            TPM_ST.NO_SESSIONS,
-            TPM_CC.VENDORTCGTEST,
-            params
-        )
+        super().__init__(TPM_ST.NO_SESSIONS, TPM_CC.VENDORTCGTEST, params)
 
 
 class TPMCreate(TPMCommand):
@@ -239,7 +227,7 @@ class TPMECCParameters(TPMCommand):
             TPM_CC.ECC_PARAMETERS,
             params=params,
         )
-        
+
 
 class TPMLoadExternal(TPMCommand):
     def __init__(
@@ -251,8 +239,7 @@ class TPMLoadExternal(TPMCommand):
     ):
 
         key_bytes = key_bits // 8
-        
-        
+
         if include_private:
             key_bytes = key_bits // 8
 
@@ -265,7 +252,7 @@ class TPMLoadExternal(TPMCommand):
 
         else:
             in_private = (0).to_bytes(2, BYTE_ORDER)
-        
+
         public_key = b"\x80" + b"\x01" * (key_bytes - 1)
 
         public_area = TPMT_PUBLIC(
@@ -366,9 +353,7 @@ class TPMPCRExtend(TPMCommand):
         digests: TPML_DIGEST_VALUES,
         session_handle: Union[int, TPM_RS] = TPM_RS.PW,
     ):
-        pcr_handle = (
-            pcr_handle.value if isinstance(pcr_handle, TPM_RH) else pcr_handle
-        )
+        pcr_handle = pcr_handle.value if isinstance(pcr_handle, TPM_RH) else pcr_handle
         session_handle = (
             session_handle.value
             if isinstance(session_handle, TPM_RS)
@@ -410,9 +395,12 @@ class TPMPCRReset(TPMCommand):
         auth = TPMS_AUTH_COMMAND(session_handle=session_handle)
         auth_area = TPM_AUTH_AREA(commands=[auth])
 
-        params = (
-            pcr_handle.to_bytes(4, BYTE_ORDER)
-            + auth_area.to_bytes()
-        )
+        params = pcr_handle.to_bytes(4, BYTE_ORDER) + auth_area.to_bytes()
 
         super().__init__(TPM_ST.SESSIONS, TPM_CC.PCR_RESET, params=params)
+
+
+class TPMTestParms(TPMCommand):
+    def __init__(self, params: Optional[TPMT_PUBLIC_PARMS] = None):
+        params = params or TPMT_PUBLIC_PARMS(TPM_ALG.RSA)
+        super().__init__(TPM_ST.NO_SESSIONS, TPM_CC.TESTPARMS, params.to_bytes())

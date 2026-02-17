@@ -1,4 +1,5 @@
 #include <cstdlib>
+#include <cstring>
 #include <fstream>
 #include <iostream>
 #include <print>
@@ -185,12 +186,10 @@ std::vector<uint8_t> SendCommand(std::vector<uint8_t> command) {
 
   // Print the session tag and command length in hex, if available.
   if (command.size() >= 6) {
-    uint16_t tag = static_cast<uint16_t>(command[0]) << 8 |
-                   static_cast<uint16_t>(command[1]);
-    uint32_t length = (static_cast<uint32_t>(command[2]) << 24) |
-                      (static_cast<uint32_t>(command[3]) << 16) |
-                      (static_cast<uint32_t>(command[4]) << 8) |
-                      static_cast<uint32_t>(command[5]);
+    uint16_t tag;
+    uint32_t length;
+    memcpy(&tag, command.data(), 2);
+    memcpy(&length, command.data() + 2, 4);
     std::println(stdout, "TPM Command Tag (hex): 0x{:04x}", tag);
     std::println(stdout, "TPM Command Length (hex): 0x{:08x}", length);
   } else {
@@ -204,10 +203,8 @@ std::vector<uint8_t> SendCommand(std::vector<uint8_t> command) {
 
   // Print the command code in hex, if available.
   if (command.size() >= 10) {
-    uint32_t code = (static_cast<uint32_t>(command[6]) << 24) |
-                    (static_cast<uint32_t>(command[7]) << 16) |
-                    (static_cast<uint32_t>(command[8]) << 8) |
-                    static_cast<uint32_t>(command[9]);
+    uint32_t code;
+    memcpy(&code, command.data() + 6, 4);
     std::println(stdout, "TPM Command Code (hex): 0x{:08x}", code);
   } else {
     std::println(stdout,
@@ -273,12 +270,10 @@ void PrintResponse(std::vector<uint8_t> response) {
 
   // Print response tag and size if available.
   if (response.size() >= 6) {
-    uint16_t tag = (static_cast<uint16_t>(response[0]) << 8) |
-                   static_cast<uint16_t>(response[1]);
-    uint32_t size = (static_cast<uint32_t>(response[2]) << 24) |
-                    (static_cast<uint32_t>(response[3]) << 16) |
-                    (static_cast<uint32_t>(response[4]) << 8) |
-                    static_cast<uint32_t>(response[5]);
+    uint16_t tag;
+    uint32_t size;
+    memcpy(&tag, response.data(), 2);
+    memcpy(&size, response.data() + 2, 4);
 
     std::println(stdout, "TPM Response Tag (hex): 0x{:04x}", tag);
     std::println(stdout, "TPM Response Size (hex): 0x{:08x}", size);

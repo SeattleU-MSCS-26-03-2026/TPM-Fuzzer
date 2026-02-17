@@ -48,6 +48,7 @@ class TPM_CC(Enum):
     PCR_READ = 0x0000017E
     PCR_EXTEND = 0x00000182
     PCR_RESET = 0x0000013D
+    TESTPARMS = 0x0000018A
 
 
 class TPM_RH(Enum):
@@ -150,6 +151,7 @@ class TPM_ECC_CURVE(Enum):
     """
     Parameter values for curveID
     """
+
     NIST_P192 = 0x0001
 
 
@@ -165,11 +167,11 @@ class TPMS_SYM_DEF_OBJECT:
 
     def to_bytes(self) -> bytes:
         alg = _alg_to_int(self.algorithm).to_bytes(2, BYTE_ORDER)
-        
+
         # ALG NULL should return without key bits and mode
         if _alg_to_int(self.algorithm) == TPM_ALG.NULL.value:
             return alg
-        
+
         key_bits = self.key_bits.to_bytes(2, BYTE_ORDER)
         mode = _alg_to_int(self.mode).to_bytes(2, BYTE_ORDER)
         return alg + key_bits + mode
@@ -194,7 +196,10 @@ class TPMS_RSA_PARMS:
     def to_bytes(self) -> bytes:
         sym = self.symmetric.to_bytes()
         scheme = _alg_to_int(self.scheme).to_bytes(2, BYTE_ORDER)
-        if _alg_to_int(self.scheme) != TPM_ALG.NULL.value and self.scheme_hash is not None:
+        if (
+            _alg_to_int(self.scheme) != TPM_ALG.NULL.value
+            and self.scheme_hash is not None
+        ):
             scheme += _alg_to_int(self.scheme_hash).to_bytes(2, BYTE_ORDER)
         key_bits = self.key_bits.to_bytes(2, BYTE_ORDER)
         exponent = self.exponent.to_bytes(4, BYTE_ORDER)
@@ -404,6 +409,7 @@ class TPML_PCR_SELECTION:
         body = b"".join(s.to_bytes() for s in self.selections)
         return count + body
 
+
 @dataclass
 class TPMT_SIG_SCHEME:
     """
@@ -436,7 +442,11 @@ class TPMT_TK_HASHCHECK:
 
     def to_bytes(self) -> bytes:
         tag = TPM_ST.HASHCHECK.value.to_bytes(2, BYTE_ORDER)
-        h = (self.hierarchy.value if isinstance(self.hierarchy, TPM_RH) else self.hierarchy).to_bytes(4, BYTE_ORDER)
+        h = (
+            self.hierarchy.value
+            if isinstance(self.hierarchy, TPM_RH)
+            else self.hierarchy
+        ).to_bytes(4, BYTE_ORDER)
         d_size = len(self.digest).to_bytes(2, BYTE_ORDER)
         return tag + h + d_size + self.digest
 
@@ -496,3 +506,23 @@ class TPML_DIGEST_VALUES:
         count = len(self.digests).to_bytes(4, BYTE_ORDER)
         body = b"".join(d.to_bytes() for d in self.digests)
         return count + body
+
+
+class TPMT_PUBLIC_PARMS:
+    alg_type: Union[int, TPM_ALG]
+
+    rsa_parameters: Optional[TPMS_RSA_PARMS] = field(
+        default_factory=lambda: TPMS_RSA_PARMS()
+    )
+
+    def to_bytes(self) -> bytes:
+        alg = _alg_to_int(self.alg_type).to_bytes(2, BYTE_ORDER)
+
+        if _alg_to_int(self.alg_type) == TPM_ALG.RSA.value:
+            if self.rsa_parameters is None:
+                raise ValueError("rsa_parameters must be set for RSA public area")
+
+            parameters = self.rsa_parameters.to_bytes()
+        else:
+            raise NotImplementedError("Only RSA TPMT_PUBLIC_PARAMS is implemented")
+        return alg + parameters

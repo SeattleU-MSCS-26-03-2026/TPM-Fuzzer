@@ -67,7 +67,6 @@ def tpm_incremental_self_test_seeds() -> List[bytes]:
     return seeds
 
 
-
 def tpm_get_rand_seeds() -> List[bytes]:
     """
     Generates seeds for the TPM2_GetRandom Command. This
@@ -170,8 +169,8 @@ def tpm_pcr_read_seeds() -> List[bytes]:
 
     test_cases = [
         # (hash_alg, pcrSelect_bytes, description)
-        (TPM_ALG.SHA256, bytes.fromhex('010000'), "SHA256, PCR 0"),
-        (TPM_ALG.SHA1, bytes.fromhex('FFFFFF'), "SHA1, all PCRs 0-23"),
+        (TPM_ALG.SHA256, bytes.fromhex("010000"), "SHA256, PCR 0"),
+        (TPM_ALG.SHA1, bytes.fromhex("FFFFFF"), "SHA1, all PCRs 0-23"),
     ]
 
     for hash_alg, pcr_select, _desc in test_cases:
@@ -192,21 +191,23 @@ def tpm_pcr_extend_seeds() -> List[bytes]:
 
     # Normal extend — covers PCRIsExtendAllowed, PCRIsStateSaved, PCRExtend
     digests = TPML_DIGEST_VALUES(
-        digests=[TPMT_HA(hash_alg=TPM_ALG.SHA256, digest=bytes.fromhex('00' * 32))]
+        digests=[TPMT_HA(hash_alg=TPM_ALG.SHA256, digest=bytes.fromhex("00" * 32))]
     )
     seeds.append(bytes(TPMPCRExtend(0x00000000, digests)))
 
     # NULL handle — covers the early return branch (TPM_RH_NULL == 0x40000007)
     digests = TPML_DIGEST_VALUES(
-        digests=[TPMT_HA(hash_alg=TPM_ALG.SHA256, digest=bytes.fromhex('00' * 32))]
+        digests=[TPMT_HA(hash_alg=TPM_ALG.SHA256, digest=bytes.fromhex("00" * 32))]
     )
     seeds.append(bytes(TPMPCRExtend(TPM_RH.NULL.value, digests)))
 
     # Multi-digest (count=2) — covers loop iteration i > 0
-    multi_digests = TPML_DIGEST_VALUES(digests=[
-        TPMT_HA(hash_alg=TPM_ALG.SHA1, digest=bytes.fromhex('11' * 20)),
-        TPMT_HA(hash_alg=TPM_ALG.SHA256, digest=bytes.fromhex('22' * 32)),
-    ])
+    multi_digests = TPML_DIGEST_VALUES(
+        digests=[
+            TPMT_HA(hash_alg=TPM_ALG.SHA1, digest=bytes.fromhex("11" * 20)),
+            TPMT_HA(hash_alg=TPM_ALG.SHA256, digest=bytes.fromhex("22" * 32)),
+        ]
+    )
     seeds.append(bytes(TPMPCRExtend(0x00000000, multi_digests)))
 
     return seeds
@@ -230,13 +231,15 @@ def tpm_pcr_reset_seeds() -> List[bytes]:
     return seeds
 
 
-def _create_variant(name: str, timestamp: str, directory: str, content: bytes, force: Optional[bool] = False):
+def _create_variant(
+    name: str,
+    timestamp: str,
+    directory: str,
+    content: bytes,
+    force: Optional[bool] = False,
+):
     def request_section(input: str) -> str:
-        pattern = (
-            r"=+\n\s*REQUEST\s*\n=+\n"
-            r"(.*?)"
-            r"(?==+\n\s*RESPONSE\s*\n=+)"
-           )
+        pattern = r"=+\n\s*REQUEST\s*\n=+\n" r"(.*?)" r"(?==+\n\s*RESPONSE\s*\n=+)"
 
         match = re.search(pattern, input, re.DOTALL)
         if not match:
@@ -246,32 +249,36 @@ def _create_variant(name: str, timestamp: str, directory: str, content: bytes, f
         section = match.group(0)
         return section.rstrip()
 
-    existing_items = [ p for p in os.listdir("seeds/") if p.startswith(f"{name}-") ]
+    existing_items = [p for p in os.listdir("seeds/") if p.startswith(f"{name}-")]
     if len(existing_items) > 0:
-        out = os.path.join(directory, existing_items[0]);
+        out = os.path.join(directory, existing_items[0])
         with open(out, "rb") as f:
             data = f.read()
 
         if data != content and force:
             print(f"EXPECTED BYTES CHANGED: {name}\n")
             pwd = os.getcwd()
-            actual = request_section(subprocess.run(
-                [f"{pwd}/scripts/test_seed.sh", out],
-                capture_output=True,
-                text=True,
-                check=True,
-            ).stdout)
+            actual = request_section(
+                subprocess.run(
+                    [f"{pwd}/scripts/test_seed.sh", out],
+                    capture_output=True,
+                    text=True,
+                    check=True,
+                ).stdout
+            )
 
-            current = os.path.join(directory, f"{name}-{timestamp}");
+            current = os.path.join(directory, f"{name}-{timestamp}")
             with open(current, "wb") as f:
                 f.write(content)
 
-            expected = request_section(subprocess.run(
-                [f"{pwd}/scripts/test_seed.sh", current],
-                capture_output=True,
-                text=True,
-                check=True,
-            ).stdout)
+            expected = request_section(
+                subprocess.run(
+                    [f"{pwd}/scripts/test_seed.sh", current],
+                    capture_output=True,
+                    text=True,
+                    check=True,
+                ).stdout
+            )
 
             diff = difflib.unified_diff(
                 actual.splitlines(keepends=True),
@@ -283,7 +290,7 @@ def _create_variant(name: str, timestamp: str, directory: str, content: bytes, f
                 print(f"{changes}\n")
             os.remove(out)
     else:
-        out = os.path.join(directory, f"{name}-{timestamp}");
+        out = os.path.join(directory, f"{name}-{timestamp}")
         with open(out, "wb") as f:
             f.write(content)
         print(f"Generated seed file: {out}")
@@ -302,10 +309,10 @@ def _run_commands(
     elif callable(command):
         seeds = command()
         for i, seed in enumerate(seeds):
-             _create_variant(f"{cmd}-variant{i}", timestamp, directory, seed, force)
+            _create_variant(f"{cmd}-variant{i}", timestamp, directory, seed, force)
     elif isinstance(command, list):
         for i, sequence in enumerate(command):
-            seed = b''
+            seed = b""
             for f in sequence:
                 seed += bytes(f)
             _create_variant(f"{cmd}-variant{i}", timestamp, directory, seed, force)
@@ -342,7 +349,7 @@ if __name__ == "__main__":
         "TPMGetTestResult": TPMGetTestResult(),
         "TPMSelfTest": [[TPMSelfTest(TPMI_YES_NO.YES)], [TPMSelfTest(TPMI_YES_NO.NO)]],
         "TPMReadClock": TPMReadClock(),
-        "TPMVendorTCGTest":TPMVendorTCGTest(b""),
+        "TPMVendorTCGTest": TPMVendorTCGTest(b""),
         "TPMCreate": [
             [
                 TPMCreatePrimary(TPM_RS.PW, TPM_ALG.SHA256, 2048),
@@ -387,12 +394,12 @@ if __name__ == "__main__":
         "TPMIncrementalSelfTest": tpm_incremental_self_test_seeds,
         "TPMGetCapability": tpm_get_capability_seeds,
         "TPMECCParameters": TPMECCParameters(TPM_ECC_CURVE.NIST_P192),
-        "TPMLoadExternal":[
+        "TPMLoadExternal": [
             [
-                TPMLoadExternal(TPM_ALG.SHA256,2048),
+                TPMLoadExternal(TPM_ALG.SHA256, 2048),
             ],
             [
-                TPMLoadExternal(TPM_ALG.SHA256,2048,include_private=True),
+                TPMLoadExternal(TPM_ALG.SHA256, 2048, include_private=True),
             ],
         ],
         # --- TPM2_Sign seeds ---
@@ -597,6 +604,7 @@ if __name__ == "__main__":
         "TPMPCRRead": tpm_pcr_read_seeds,
         "TPMPCRExtend": tpm_pcr_extend_seeds,
         "TPMPCRReset": tpm_pcr_reset_seeds,
+        "TPMTestParms": TPMTestParms(),
     }
 
     parser = argparse.ArgumentParser(
