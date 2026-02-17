@@ -106,6 +106,7 @@ class TPMCreatePrimary(TPMCommand):
         hashAlg: TPM_ALG,
         keyBits: int,
         primary_handle: Union[int | TPM_RH] = TPM_RH.OWNER,
+        public_template: Optional[TPM2B_PUBLIC] = None,
     ):
         session_handle = (
             session_handle.value
@@ -120,11 +121,12 @@ class TPMCreatePrimary(TPMCommand):
 
         auth = TPMS_AUTH_COMMAND(session_handle=session_handle)
         auth = TPM_AUTH_AREA(commands=[auth])
-        public_template = TPM2B_PUBLIC(
-            public_area=TPMT_PUBLIC(
-                name_alg=hashAlg, rsa_parameters=TPMS_RSA_PARMS(key_bits=keyBits)
+        if public_template is None:
+            public_template = TPM2B_PUBLIC(
+                public_area=TPMT_PUBLIC(
+                    name_alg=hashAlg, rsa_parameters=TPMS_RSA_PARMS(key_bits=keyBits)
+                )
             )
-        )
 
         params = (
             primary_handle.to_bytes(4, BYTE_ORDER)
@@ -291,3 +293,43 @@ class TPMLoadExternal(TPMCommand):
         params = in_private + in_public + hierarchy_bytes
 
         super().__init__(TPM_ST.NO_SESSIONS, TPM_CC.LOADEXTERNAL, params)
+
+
+class TPMSign(TPMCommand):
+    """
+    TPM2_Sign command.
+
+    Command structure (TPM_ST_SESSIONS):
+      keyHandle(4) | authArea | digest: TPM2B_DIGEST |
+      inScheme: TPMT_SIG_SCHEME | validation: TPMT_TK_HASHCHECK
+    """
+
+    def __init__(
+        self,
+        key_handle: int,
+        digest: bytes,
+        in_scheme: TPMT_SIG_SCHEME,
+        validation: TPMT_TK_HASHCHECK,
+        session_handle: Union[int, TPM_RS] = TPM_RS.PW,
+    ):
+        session_handle = (
+            session_handle.value
+            if isinstance(session_handle, TPM_RS)
+            else session_handle
+        )
+
+        auth = TPMS_AUTH_COMMAND(session_handle=session_handle)
+        auth_area = TPM_AUTH_AREA(commands=[auth])
+
+        # TPM2B_DIGEST: size(2) + bytes
+        digest_bytes = len(digest).to_bytes(2, BYTE_ORDER) + digest
+
+        params = (
+            key_handle.to_bytes(4, BYTE_ORDER)
+            + auth_area.to_bytes()
+            + digest_bytes
+            + in_scheme.to_bytes()
+            + validation.to_bytes()
+        )
+
+        super().__init__(TPM_ST.SESSIONS, TPM_CC.SIGN, params=params)

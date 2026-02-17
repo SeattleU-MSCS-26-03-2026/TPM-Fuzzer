@@ -22,6 +22,7 @@ class TPM_ST(Enum):
     NULL = 0x8000
     NO_SESSIONS = 0x8001
     SESSIONS = 0x8002
+    HASHCHECK = 0x8024
 
 
 class TPM_CC(Enum):
@@ -43,6 +44,7 @@ class TPM_CC(Enum):
     STIRRANDOM = 0x00000146
     ECC_PARAMETERS = 0x00000178
     LOADEXTERNAL = 0x00000167
+    SIGN = 0x0000015D
 
 
 class TPM_RH(Enum):
@@ -85,6 +87,7 @@ class TPM_ALG(Enum):
     AES = 0x0006
     CFB = 0x0043
     NULL = 0x0010
+    RSASSA = 0x0014
 
 
 class TPMA_OBJECT(Enum):
@@ -99,6 +102,8 @@ class TPMA_OBJECT(Enum):
     NODA = 1 << 10
     DECRYPT = 1 << 17
     RESTRICTED = 1 << 16
+    SIGN_ENCRYPT = 1 << 18
+    X509SIGN = 1 << 19
 
 
 class TPM_CAP(Enum):
@@ -179,12 +184,15 @@ class TPMS_RSA_PARMS:
         default_factory=lambda: TPMS_SYM_DEF_OBJECT()
     )
     scheme: Union[int, TPM_ALG] = TPM_ALG.NULL
+    scheme_hash: Optional[Union[int, TPM_ALG]] = None
     key_bits: int = 2048
     exponent: int = 0  # 0 == default 0x00010001
 
     def to_bytes(self) -> bytes:
         sym = self.symmetric.to_bytes()
         scheme = _alg_to_int(self.scheme).to_bytes(2, BYTE_ORDER)
+        if _alg_to_int(self.scheme) != TPM_ALG.NULL.value and self.scheme_hash is not None:
+            scheme += _alg_to_int(self.scheme_hash).to_bytes(2, BYTE_ORDER)
         key_bits = self.key_bits.to_bytes(2, BYTE_ORDER)
         exponent = self.exponent.to_bytes(4, BYTE_ORDER)
         return sym + scheme + key_bits + exponent
@@ -392,6 +400,43 @@ class TPML_PCR_SELECTION:
         count = len(self.selections).to_bytes(4, BYTE_ORDER)
         body = b"".join(s.to_bytes() for s in self.selections)
         return count + body
+
+@dataclass
+class TPMT_SIG_SCHEME:
+    """
+    TPMT_SIG_SCHEME
+
+    scheme(2) | [hashAlg(2) if scheme != NULL]
+    """
+
+    scheme: Union[int, TPM_ALG] = TPM_ALG.NULL
+    hash_alg: Union[int, TPM_ALG] = TPM_ALG.SHA256
+
+    def to_bytes(self) -> bytes:
+        s = _alg_to_int(self.scheme).to_bytes(2, BYTE_ORDER)
+        if _alg_to_int(self.scheme) == TPM_ALG.NULL.value:
+            return s
+        h = _alg_to_int(self.hash_alg).to_bytes(2, BYTE_ORDER)
+        return s + h
+
+
+@dataclass
+class TPMT_TK_HASHCHECK:
+    """
+    TPMT_TK_HASHCHECK
+
+    tag(2) | hierarchy(4) | digest: TPM2B_DIGEST
+    """
+
+    hierarchy: Union[int, TPM_RH] = TPM_RH.NULL
+    digest: bytes = b""
+
+    def to_bytes(self) -> bytes:
+        tag = TPM_ST.HASHCHECK.value.to_bytes(2, BYTE_ORDER)
+        h = (self.hierarchy.value if isinstance(self.hierarchy, TPM_RH) else self.hierarchy).to_bytes(4, BYTE_ORDER)
+        d_size = len(self.digest).to_bytes(2, BYTE_ORDER)
+        return tag + h + d_size + self.digest
+
 
 @dataclass
 class TPM2B_SENSITIVE:

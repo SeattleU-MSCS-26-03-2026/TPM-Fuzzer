@@ -326,6 +326,205 @@ if __name__ == "__main__":
                 TPMLoadExternal(TPM_ALG.SHA256,2048,include_private=True),
             ],
         ],
+        # --- TPM2_Sign seeds ---
+        # CreatePrimary produces a signing key at handle 0x80000000,
+        # then Sign operates on it. Six variants cover the major
+        # code-paths in Sign.c to achieve 97.4% coverage.
+        "TPMSign": [
+            # Variant 0 – success: unrestricted signing key + correct digest
+            [
+                TPMCreatePrimary(
+                    session_handle=TPM_RS.PW,
+                    hashAlg=TPM_ALG.SHA256,
+                    keyBits=2048,
+                    public_template=TPM2B_PUBLIC(
+                        public_area=TPMT_PUBLIC(
+                            type=TPM_ALG.RSA,
+                            name_alg=TPM_ALG.SHA256,
+                            object_attributes=[
+                                TPMA_OBJECT.FIXEDTPM,
+                                TPMA_OBJECT.FIXEDPARENT,
+                                TPMA_OBJECT.SENSITIVEDATAORIGIN,
+                                TPMA_OBJECT.USERWITHAUTH,
+                                TPMA_OBJECT.NODA,
+                                TPMA_OBJECT.SIGN_ENCRYPT,
+                            ],
+                            rsa_parameters=TPMS_RSA_PARMS(
+                                symmetric=TPMS_SYM_DEF_OBJECT(algorithm=TPM_ALG.NULL),
+                                scheme=TPM_ALG.NULL,
+                                key_bits=2048,
+                            ),
+                        )
+                    ),
+                ),
+                TPMSign(
+                    key_handle=0x80000000,
+                    digest=b"\x00" * 32,
+                    in_scheme=TPMT_SIG_SCHEME(
+                        scheme=TPM_ALG.RSASSA, hash_alg=TPM_ALG.SHA256
+                    ),
+                    validation=TPMT_TK_HASHCHECK(hierarchy=TPM_RH.NULL),
+                ),
+            ],
+            # Variant 1 – !IsSigningObject: storage key (DECRYPT, no SIGN)
+            [
+                TPMCreatePrimary(TPM_RS.PW, TPM_ALG.SHA256, 2048),
+                TPMSign(
+                    key_handle=0x80000000,
+                    digest=b"\x00" * 32,
+                    in_scheme=TPMT_SIG_SCHEME(
+                        scheme=TPM_ALG.RSASSA, hash_alg=TPM_ALG.SHA256
+                    ),
+                    validation=TPMT_TK_HASHCHECK(hierarchy=TPM_RH.NULL),
+                ),
+            ],
+            # Variant 2 – wrong digest size: 16 bytes != SHA256 (32)
+            [
+                TPMCreatePrimary(
+                    session_handle=TPM_RS.PW,
+                    hashAlg=TPM_ALG.SHA256,
+                    keyBits=2048,
+                    public_template=TPM2B_PUBLIC(
+                        public_area=TPMT_PUBLIC(
+                            type=TPM_ALG.RSA,
+                            name_alg=TPM_ALG.SHA256,
+                            object_attributes=[
+                                TPMA_OBJECT.FIXEDTPM,
+                                TPMA_OBJECT.FIXEDPARENT,
+                                TPMA_OBJECT.SENSITIVEDATAORIGIN,
+                                TPMA_OBJECT.USERWITHAUTH,
+                                TPMA_OBJECT.NODA,
+                                TPMA_OBJECT.SIGN_ENCRYPT,
+                            ],
+                            rsa_parameters=TPMS_RSA_PARMS(
+                                symmetric=TPMS_SYM_DEF_OBJECT(algorithm=TPM_ALG.NULL),
+                                scheme=TPM_ALG.NULL,
+                                key_bits=2048,
+                            ),
+                        )
+                    ),
+                ),
+                TPMSign(
+                    key_handle=0x80000000,
+                    digest=b"\x00" * 16,  # Wrong size for SHA256
+                    in_scheme=TPMT_SIG_SCHEME(
+                        scheme=TPM_ALG.RSASSA, hash_alg=TPM_ALG.SHA256
+                    ),
+                    validation=TPMT_TK_HASHCHECK(hierarchy=TPM_RH.NULL),
+                ),
+            ],
+            # Variant 3 – ticket validation path: non-empty validation digest
+            [
+                TPMCreatePrimary(
+                    session_handle=TPM_RS.PW,
+                    hashAlg=TPM_ALG.SHA256,
+                    keyBits=2048,
+                    public_template=TPM2B_PUBLIC(
+                        public_area=TPMT_PUBLIC(
+                            type=TPM_ALG.RSA,
+                            name_alg=TPM_ALG.SHA256,
+                            object_attributes=[
+                                TPMA_OBJECT.FIXEDTPM,
+                                TPMA_OBJECT.FIXEDPARENT,
+                                TPMA_OBJECT.SENSITIVEDATAORIGIN,
+                                TPMA_OBJECT.USERWITHAUTH,
+                                TPMA_OBJECT.NODA,
+                                TPMA_OBJECT.SIGN_ENCRYPT,
+                            ],
+                            rsa_parameters=TPMS_RSA_PARMS(
+                                symmetric=TPMS_SYM_DEF_OBJECT(algorithm=TPM_ALG.NULL),
+                                scheme=TPM_ALG.NULL,
+                                key_bits=2048,
+                            ),
+                        )
+                    ),
+                ),
+                TPMSign(
+                    key_handle=0x80000000,
+                    digest=b"\x00" * 32,
+                    in_scheme=TPMT_SIG_SCHEME(
+                        scheme=TPM_ALG.RSASSA, hash_alg=TPM_ALG.SHA256
+                    ),
+                    validation=TPMT_TK_HASHCHECK(
+                        hierarchy=TPM_RH.NULL, digest=b"\x01" * 32
+                    ),
+                ),
+            ],
+            # Variant 4 – scheme mismatch: key has fixed RSASSA/SHA256,
+            #   Sign requests RSASSA/SHA384 → CryptSelectSignScheme fails
+            [
+                TPMCreatePrimary(
+                    session_handle=TPM_RS.PW,
+                    hashAlg=TPM_ALG.SHA256,
+                    keyBits=2048,
+                    public_template=TPM2B_PUBLIC(
+                        public_area=TPMT_PUBLIC(
+                            type=TPM_ALG.RSA,
+                            name_alg=TPM_ALG.SHA256,
+                            object_attributes=[
+                                TPMA_OBJECT.FIXEDTPM,
+                                TPMA_OBJECT.FIXEDPARENT,
+                                TPMA_OBJECT.SENSITIVEDATAORIGIN,
+                                TPMA_OBJECT.USERWITHAUTH,
+                                TPMA_OBJECT.NODA,
+                                TPMA_OBJECT.SIGN_ENCRYPT,
+                            ],
+                            rsa_parameters=TPMS_RSA_PARMS(
+                                symmetric=TPMS_SYM_DEF_OBJECT(algorithm=TPM_ALG.NULL),
+                                scheme=TPM_ALG.RSASSA,
+                                scheme_hash=TPM_ALG.SHA256,
+                                key_bits=2048,
+                            ),
+                        )
+                    ),
+                ),
+                TPMSign(
+                    key_handle=0x80000000,
+                    digest=b"\x00" * 48,  # SHA384 size (mismatch)
+                    in_scheme=TPMT_SIG_SCHEME(
+                        scheme=TPM_ALG.RSASSA, hash_alg=TPM_ALG.SHA384
+                    ),
+                    validation=TPMT_TK_HASHCHECK(hierarchy=TPM_RH.NULL),
+                ),
+            ],
+            # Variant 5 – x509sign attribute: key has x509sign set,
+            #   Sign should reject with TPM_RCS_ATTRIBUTES (L45-47)
+            [
+                TPMCreatePrimary(
+                    session_handle=TPM_RS.PW,
+                    hashAlg=TPM_ALG.SHA256,
+                    keyBits=2048,
+                    public_template=TPM2B_PUBLIC(
+                        public_area=TPMT_PUBLIC(
+                            type=TPM_ALG.RSA,
+                            name_alg=TPM_ALG.SHA256,
+                            object_attributes=[
+                                TPMA_OBJECT.FIXEDTPM,
+                                TPMA_OBJECT.FIXEDPARENT,
+                                TPMA_OBJECT.SENSITIVEDATAORIGIN,
+                                TPMA_OBJECT.USERWITHAUTH,
+                                TPMA_OBJECT.NODA,
+                                TPMA_OBJECT.SIGN_ENCRYPT,
+                                TPMA_OBJECT.X509SIGN,
+                            ],
+                            rsa_parameters=TPMS_RSA_PARMS(
+                                symmetric=TPMS_SYM_DEF_OBJECT(algorithm=TPM_ALG.NULL),
+                                scheme=TPM_ALG.NULL,
+                                key_bits=2048,
+                            ),
+                        )
+                    ),
+                ),
+                TPMSign(
+                    key_handle=0x80000000,
+                    digest=b"\x00" * 32,
+                    in_scheme=TPMT_SIG_SCHEME(
+                        scheme=TPM_ALG.RSASSA, hash_alg=TPM_ALG.SHA256
+                    ),
+                    validation=TPMT_TK_HASHCHECK(hierarchy=TPM_RH.NULL),
+                ),
+            ],
+        ],
     }
 
     parser = argparse.ArgumentParser(
