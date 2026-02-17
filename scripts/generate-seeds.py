@@ -161,6 +161,75 @@ def tpm_hash_seeds() -> List[bytes]:
     return seeds
 
 
+def tpm_pcr_read_seeds() -> List[bytes]:
+    """
+    Generates seeds for the TPM2_PCR_Read command targeting line
+    coverage of PCR_Read.c.
+    """
+    seeds: List[bytes] = []
+
+    test_cases = [
+        # (hash_alg, pcrSelect_bytes, description)
+        (TPM_ALG.SHA256, bytes.fromhex('010000'), "SHA256, PCR 0"),
+        (TPM_ALG.SHA1, bytes.fromhex('FFFFFF'), "SHA1, all PCRs 0-23"),
+    ]
+
+    for hash_alg, pcr_select, _desc in test_cases:
+        sel = TPML_PCR_SELECTION(
+            selections=[TPMS_PCR_SELECTION(hash=hash_alg, pcr_select=pcr_select)]
+        )
+        seeds.append(bytes(TPMPCRRead(sel)))
+
+    return seeds
+
+
+def tpm_pcr_extend_seeds() -> List[bytes]:
+    """
+    Generates seeds for the TPM2_PCR_Extend command targeting line
+    coverage of PCR_Extend.c.
+    """
+    seeds: List[bytes] = []
+
+    # Normal extend — covers PCRIsExtendAllowed, PCRIsStateSaved, PCRExtend
+    digests = TPML_DIGEST_VALUES(
+        digests=[TPMT_HA(hash_alg=TPM_ALG.SHA256, digest=bytes.fromhex('00' * 32))]
+    )
+    seeds.append(bytes(TPMPCRExtend(0x00000000, digests)))
+
+    # NULL handle — covers the early return branch (TPM_RH_NULL == 0x40000007)
+    digests = TPML_DIGEST_VALUES(
+        digests=[TPMT_HA(hash_alg=TPM_ALG.SHA256, digest=bytes.fromhex('00' * 32))]
+    )
+    seeds.append(bytes(TPMPCRExtend(TPM_RH.NULL.value, digests)))
+
+    # Multi-digest (count=2) — covers loop iteration i > 0
+    multi_digests = TPML_DIGEST_VALUES(digests=[
+        TPMT_HA(hash_alg=TPM_ALG.SHA1, digest=bytes.fromhex('11' * 20)),
+        TPMT_HA(hash_alg=TPM_ALG.SHA256, digest=bytes.fromhex('22' * 32)),
+    ])
+    seeds.append(bytes(TPMPCRExtend(0x00000000, multi_digests)))
+
+    return seeds
+
+
+def tpm_pcr_reset_seeds() -> List[bytes]:
+    """
+    Generates seeds for the TPM2_PCR_Reset command targeting line
+    coverage of PCR_Reset.c.
+    """
+    seeds: List[bytes] = []
+
+    test_pcr_handles = [
+        0x00000000,
+        0x00000010,
+    ]
+
+    for pcr_handle in test_pcr_handles:
+        seeds.append(bytes(TPMPCRReset(pcr_handle)))
+
+    return seeds
+
+
 def _create_variant(name: str, timestamp: str, directory: str, content: bytes, force: Optional[bool] = False):
     def request_section(input: str) -> str:
         pattern = (
@@ -525,6 +594,9 @@ if __name__ == "__main__":
                 ),
             ],
         ],
+        "TPMPCRRead": tpm_pcr_read_seeds,
+        "TPMPCRExtend": tpm_pcr_extend_seeds,
+        "TPMPCRReset": tpm_pcr_reset_seeds,
     }
 
     parser = argparse.ArgumentParser(

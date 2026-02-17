@@ -333,3 +333,86 @@ class TPMSign(TPMCommand):
         )
 
         super().__init__(TPM_ST.SESSIONS, TPM_CC.SIGN, params=params)
+
+
+class TPMPCRRead(TPMCommand):
+    """
+    TPM2_PCR_Read — read PCR values.
+
+    Command Structure (TPM_ST_NO_SESSIONS):
+      [tag][commandSize][TPM_CC_PCR_READ][TPML_PCR_SELECTION]
+    """
+
+    def __init__(self, pcr_selection: TPML_PCR_SELECTION):
+        super().__init__(
+            TPM_ST.NO_SESSIONS,
+            TPM_CC.PCR_READ,
+            params=pcr_selection.to_bytes(),
+        )
+
+
+class TPMPCRExtend(TPMCommand):
+    """
+    TPM2_PCR_Extend — extend a PCR with one or more digests.
+
+    Command Structure (TPM_ST_SESSIONS):
+      [tag][commandSize][TPM_CC_PCR_EXTEND]
+      [pcrHandle][authArea][TPML_DIGEST_VALUES]
+    """
+
+    def __init__(
+        self,
+        pcr_handle: Union[int, TPM_RH],
+        digests: TPML_DIGEST_VALUES,
+        session_handle: Union[int, TPM_RS] = TPM_RS.PW,
+    ):
+        pcr_handle = (
+            pcr_handle.value if isinstance(pcr_handle, TPM_RH) else pcr_handle
+        )
+        session_handle = (
+            session_handle.value
+            if isinstance(session_handle, TPM_RS)
+            else session_handle
+        )
+
+        auth = TPMS_AUTH_COMMAND(session_handle=session_handle)
+        auth_area = TPM_AUTH_AREA(commands=[auth])
+
+        params = (
+            pcr_handle.to_bytes(4, BYTE_ORDER)
+            + auth_area.to_bytes()
+            + digests.to_bytes()
+        )
+
+        super().__init__(TPM_ST.SESSIONS, TPM_CC.PCR_EXTEND, params=params)
+
+
+class TPMPCRReset(TPMCommand):
+    """
+    TPM2_PCR_Reset — reset a resettable PCR to zero.
+
+    Command Structure (TPM_ST_SESSIONS):
+      [tag][commandSize][TPM_CC_PCR_RESET]
+      [pcrHandle][authArea]
+    """
+
+    def __init__(
+        self,
+        pcr_handle: int,
+        session_handle: Union[int, TPM_RS] = TPM_RS.PW,
+    ):
+        session_handle = (
+            session_handle.value
+            if isinstance(session_handle, TPM_RS)
+            else session_handle
+        )
+
+        auth = TPMS_AUTH_COMMAND(session_handle=session_handle)
+        auth_area = TPM_AUTH_AREA(commands=[auth])
+
+        params = (
+            pcr_handle.to_bytes(4, BYTE_ORDER)
+            + auth_area.to_bytes()
+        )
+
+        super().__init__(TPM_ST.SESSIONS, TPM_CC.PCR_RESET, params=params)

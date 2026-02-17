@@ -45,6 +45,9 @@ class TPM_CC(Enum):
     ECC_PARAMETERS = 0x00000178
     LOADEXTERNAL = 0x00000167
     SIGN = 0x0000015D
+    PCR_READ = 0x0000017E
+    PCR_EXTEND = 0x00000182
+    PCR_RESET = 0x0000013D
 
 
 class TPM_RH(Enum):
@@ -461,3 +464,35 @@ class TPM2B_SENSITIVE:
 
         size = len(inner).to_bytes(2, BYTE_ORDER)
         return size + inner
+
+
+@dataclass
+class TPMT_HA:
+    """
+    TPMT_HA
+
+    hashAlg(2) | digest(variable length based on hash algorithm)
+    """
+
+    hash_alg: Union[int, TPM_ALG]
+    digest: bytes
+
+    def to_bytes(self) -> bytes:
+        alg = _alg_to_int(self.hash_alg).to_bytes(2, BYTE_ORDER)
+        return alg + self.digest
+
+
+@dataclass
+class TPML_DIGEST_VALUES:
+    """
+    TPML_DIGEST_VALUES
+
+    count(4) | digests[count]
+    """
+
+    digests: List[TPMT_HA] = field(default_factory=list)
+
+    def to_bytes(self) -> bytes:
+        count = len(self.digests).to_bytes(4, BYTE_ORDER)
+        body = b"".join(d.to_bytes() for d in self.digests)
+        return count + body
