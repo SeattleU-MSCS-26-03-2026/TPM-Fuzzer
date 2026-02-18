@@ -508,6 +508,7 @@ class TPML_DIGEST_VALUES:
         return count + body
 
 
+@dataclass
 class TPMT_PUBLIC_PARMS:
     alg_type: Union[int, TPM_ALG]
 
