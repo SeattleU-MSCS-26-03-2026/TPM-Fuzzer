@@ -404,3 +404,34 @@ class TPMTestParms(TPMCommand):
     def __init__(self, params: Optional[TPMT_PUBLIC_PARMS] = None):
         params = params or TPMT_PUBLIC_PARMS(TPM_ALG.RSA)
         super().__init__(TPM_ST.NO_SESSIONS, TPM_CC.TESTPARMS, params.to_bytes())
+
+
+class TPMNVDefineSpace(TPMCommand):
+    def __init__(self):
+        attributes = [
+            TPMA_NV.AUTHREAD,
+            TPMA_NV.AUTHWRITE,
+        ]
+
+        auth_cmd = TPMS_AUTH_COMMAND(session_handle=TPM_RS.PW.value)
+        auth_area = TPM_AUTH_AREA(commands=[auth_cmd])
+
+        auth_value = TPM2B_DATA()
+
+        nv_public = TPM2B_NV_PUBLIC(
+            TPMS_NV_PUBLIC(
+                nv_index=TPM_HT.NV_INDEX.value << 24,
+                name_alg=TPM_ALG.SHA256,
+                attributes=attributes,
+                data_size=32,
+            )
+        )
+
+        params = (
+            TPM_RH.OWNER.value.to_bytes(4, BYTE_ORDER)
+            + auth_area.to_bytes()
+            + auth_value.to_bytes()
+            + nv_public.to_bytes()
+        )
+
+        super().__init__(TPM_ST.SESSIONS, TPM_CC.NV_DEFINESPACE, params)

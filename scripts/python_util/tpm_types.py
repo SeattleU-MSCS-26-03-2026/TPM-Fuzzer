@@ -49,6 +49,7 @@ class TPM_CC(Enum):
     PCR_EXTEND = 0x00000182
     PCR_RESET = 0x0000013D
     TESTPARMS = 0x0000018A
+    NV_DEFINESPACE = 0x0000012A
 
 
 class TPM_RH(Enum):
@@ -77,6 +78,14 @@ class TPM_SE(Enum):
     HMAC = 0x00
     POLICY = 0x01
     TRIAL = 0x03
+
+
+class TPM_HT(Enum):
+    """
+    TPM Handle Types
+    """
+
+    NV_INDEX = 0x01
 
 
 class TPM_ALG(Enum):
@@ -130,6 +139,15 @@ class TPM_CAP(Enum):
     PUB_KEYS = 0x0000000B
     SPDM_SESSION_INFO = 0x0000000C
     VENDOR_PROPERTY = 0x00000100
+    
+
+class TPMA_NV(Enum):
+    """
+    NV Index Attributes (subset)
+    """
+
+    AUTHWRITE = 1 << 2
+    AUTHREAD = 1 << 18
 
 
 def _alg_to_int(a: Union[int, TPM_ALG]) -> int:
@@ -527,3 +545,45 @@ class TPMT_PUBLIC_PARMS:
         else:
             raise NotImplementedError("Only RSA TPMT_PUBLIC_PARAMS is implemented")
         return alg + parameters
+
+
+@dataclass
+class TPM2B_NV_PUBLIC:
+    public_info: TPMS_NV_PUBLIC
+
+    def to_bytes(self) -> bytes:
+        inner = self.public_info.to_bytes()
+        size = len(inner).to_bytes(2, BYTE_ORDER)
+        return size + inner
+
+
+@dataclass
+class TPMS_NV_PUBLIC:
+    nv_index: int
+    name_alg: Union[int, TPM_ALG] = TPM_ALG.SHA256
+    attributes: Union[int, TPMA_NV, List[TPMA_NV]] = field(default_factory=list)
+    auth_policy: bytes = b""
+    data_size: int = 32
+
+    def to_bytes(self) -> bytes:
+        index = self.nv_index.to_bytes(4, BYTE_ORDER)
+        name = _alg_to_int(self.name_alg).to_bytes(2, BYTE_ORDER)
+
+        # Convert attributes bitmask
+        if isinstance(self.attributes, int):
+            attrs_val = self.attributes
+        elif isinstance(self.attributes, TPMA_NV):
+            attrs_val = self.attributes.value
+        else:
+            attrs_val = 0
+            for a in self.attributes:
+                attrs_val |= a.value
+
+        attrs = attrs_val.to_bytes(4, BYTE_ORDER)
+
+        policy_size = len(self.auth_policy).to_bytes(2, BYTE_ORDER)
+        policy = policy_size + self.auth_policy
+
+        size = self.data_size.to_bytes(2, BYTE_ORDER)
+
+        return index + name + attrs + policy + size

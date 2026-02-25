@@ -605,6 +605,7 @@ if __name__ == "__main__":
         "TPMPCRExtend": tpm_pcr_extend_seeds,
         "TPMPCRReset": tpm_pcr_reset_seeds,
         "TPMTestParms": TPMTestParms(),
+        "TPMNVDefineSpace": TPMNVDefineSpace(),
     }
 
     parser = argparse.ArgumentParser(
