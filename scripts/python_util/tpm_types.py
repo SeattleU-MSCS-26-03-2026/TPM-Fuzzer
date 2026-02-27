@@ -50,6 +50,7 @@ class TPM_CC(Enum):
     PCR_RESET = 0x0000013D
     TESTPARMS = 0x0000018A
     NV_DEFINESPACE = 0x0000012A
+    NV_WRITELOCK = 0x00000138
 
 
 class TPM_RH(Enum):
@@ -139,14 +140,19 @@ class TPM_CAP(Enum):
     PUB_KEYS = 0x0000000B
     SPDM_SESSION_INFO = 0x0000000C
     VENDOR_PROPERTY = 0x00000100
-    
+
 
 class TPMA_NV(Enum):
     """
     NV Index Attributes (subset)
     """
 
+    PPWRITE = 1 << 0
+    OWNERWRITE = 1 << 1
     AUTHWRITE = 1 << 2
+    WRITEDEFINE = 1 << 13
+    PPREAD = 1 << 16
+    OWNERREAD = 1 << 17
     AUTHREAD = 1 << 18
 
 
@@ -548,16 +554,6 @@ class TPMT_PUBLIC_PARMS:
 
 
 @dataclass
-class TPM2B_NV_PUBLIC:
-    public_info: TPMS_NV_PUBLIC
-
-    def to_bytes(self) -> bytes:
-        inner = self.public_info.to_bytes()
-        size = len(inner).to_bytes(2, BYTE_ORDER)
-        return size + inner
-
-
-@dataclass
 class TPMS_NV_PUBLIC:
     nv_index: int
     name_alg: Union[int, TPM_ALG] = TPM_ALG.SHA256
@@ -587,3 +583,13 @@ class TPMS_NV_PUBLIC:
         size = self.data_size.to_bytes(2, BYTE_ORDER)
 
         return index + name + attrs + policy + size
+
+
+@dataclass
+class TPM2B_NV_PUBLIC:
+    public_info: TPMS_NV_PUBLIC
+
+    def to_bytes(self) -> bytes:
+        inner = self.public_info.to_bytes()
+        size = len(inner).to_bytes(2, BYTE_ORDER)
+        return size + inner

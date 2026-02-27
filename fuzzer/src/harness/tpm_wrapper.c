@@ -94,5 +94,8 @@ void TPMShutdown(void) {
 
   _plat__Signal_PowerOff();
 
-  _plat__TearDown();
+  // Actual reference implementation doesn't remove the NVChip.
+  // We want it gone for a fresh start each run.
+  // _plat__TearDown();
+  _plat__NVDisable((void*)1, 0);
 }

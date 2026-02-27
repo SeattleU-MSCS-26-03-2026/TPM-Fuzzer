@@ -606,6 +606,41 @@ if __name__ == "__main__":
         "TPMPCRReset": tpm_pcr_reset_seeds,
         "TPMTestParms": TPMTestParms(),
         "TPMNVDefineSpace": TPMNVDefineSpace(),
+        "TPMNVWriteLock": [
+            # Lock once success
+            [
+                TPMNVDefineSpace(
+                    attributes=[
+                        TPMA_NV.OWNERREAD,
+                        TPMA_NV.OWNERWRITE,
+                        TPMA_NV.WRITEDEFINE,
+                    ]
+                ),
+                TPMNVWriteLock(TPM_HT.NV_INDEX.value << 24),
+            ],
+            # Locking twice success
+            [
+                TPMNVDefineSpace(
+                    attributes=[
+                        TPMA_NV.OWNERREAD,
+                        TPMA_NV.OWNERWRITE,
+                        TPMA_NV.WRITEDEFINE,
+                    ]
+                ),
+                TPMNVWriteLock(TPM_HT.NV_INDEX.value << 24),
+                TPMNVWriteLock(TPM_HT.NV_INDEX.value << 24),
+            ],
+            # TPMA_NV_WRITEDEFINE & TPMA_NV_WRITE_STCLEAR not set. Can't lock fail.
+            [
+                TPMNVDefineSpace(
+                    attributes=[
+                        TPMA_NV.OWNERREAD,
+                        TPMA_NV.OWNERWRITE,
+                    ]
+                ),
+                TPMNVWriteLock(TPM_HT.NV_INDEX.value << 24),
+            ],
+        ],
     }
 
     parser = argparse.ArgumentParser(

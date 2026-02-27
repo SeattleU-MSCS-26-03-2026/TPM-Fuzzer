@@ -98,8 +98,6 @@ void _plat__ClearNvAvail(void) {
 void _plat__Signal_PowerOff(void) {
   MockTPM::tracker.signal_power_off_called = true;
 }
-
-void _plat__TearDown(void) { MockTPM::tracker.tpm_teardown_called = true; }
 }
 
 // ============================================================================
@@ -253,7 +251,7 @@ TEST_CASE("TPMShutdown - calls all cleanup functions",
   REQUIRE(MockTPM::tracker.nv_commit_called == true);
   REQUIRE(MockTPM::tracker.clear_nv_avail_called == true);
   REQUIRE(MockTPM::tracker.signal_power_off_called == true);
-  REQUIRE(MockTPM::tracker.tpm_teardown_called == true);
+  REQUIRE(MockTPM::tracker.nv_disable_called == true);
 }
 
 TEST_CASE("TPMShutdown - cleanup functions called in correct order",
@@ -267,7 +265,7 @@ TEST_CASE("TPMShutdown - cleanup functions called in correct order",
   REQUIRE(MockTPM::tracker.nv_commit_called == true);
   REQUIRE(MockTPM::tracker.clear_nv_avail_called == true);
   REQUIRE(MockTPM::tracker.signal_power_off_called == true);
-  REQUIRE(MockTPM::tracker.tpm_teardown_called == true);
+  REQUIRE(MockTPM::tracker.nv_disable_called == true);
 }
 
 // ============================================================================
