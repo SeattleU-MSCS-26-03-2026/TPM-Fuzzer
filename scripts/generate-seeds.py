@@ -18,6 +18,7 @@ Options:
 Resources:
     - TPM Specification: https://trustedcomputinggroup.org/resource/tpm-library-specification/
 """
+
 import subprocess
 
 from typing import List, Callable, Dict, Optional
@@ -640,6 +641,19 @@ if __name__ == "__main__":
                 ),
                 TPMNVWriteLock(TPM_HT.NV_INDEX.value << 24),
             ],
+        ],
+        "TPMNVWrite": [
+            [
+                TPMNVDefineSpace(
+                    attributes=[
+                        TPMA_NV.OWNERREAD,
+                        TPMA_NV.OWNERWRITE,
+                    ]
+                ),
+                TPMNVWrite(
+                    TPM_HT.NV_INDEX.value << 24, b"\xaa" * 32, auth_handle=TPM_RH.OWNER
+                ),
+            ]
         ],
     }
 

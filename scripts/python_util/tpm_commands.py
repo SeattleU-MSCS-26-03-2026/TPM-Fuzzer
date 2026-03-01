@@ -456,3 +456,60 @@ class TPMNVWriteLock(TPMCommand):
         )
 
         super().__init__(TPM_ST.SESSIONS, TPM_CC.NV_WRITELOCK, params)
+
+
+class TPMNVWrite(TPMCommand):
+    """
+    TPM2_NV_Write command.
+
+    Command structure (TPM_ST_SESSIONS):
+      authHandle(4) | nvIndex(4) | authArea | data: TPM2B_MAX_NV_BUFFER | offset(UINT16)
+
+    Typical usage after NV_DefineSpace with AUTHWRITE and empty authValue:
+      TPMNVWrite(nv_index, b"\\xAA"*32, 0)
+    """
+
+    def __init__(
+        self,
+        nv_index: Union[int, TPM_HT],
+        data: bytes,
+        offset: int = 0,
+        auth_handle: Optional[Union[int, TPM_RH]] = None,
+        session_handle: Union[int, TPM_RS] = TPM_RS.PW,
+    ):
+        # Resolve session handle
+        session_handle_val = (
+            session_handle.value
+            if isinstance(session_handle, TPM_RS)
+            else session_handle
+        )
+
+        # Resolve nv_index (allow passing TPM_HT, but usually caller gives int)
+        nv_index_val = nv_index.value if isinstance(nv_index, TPM_HT) else int(nv_index)
+
+        # Default authHandle = nvIndex (NV index authorization)
+        if auth_handle is None:
+            auth_handle_val = nv_index_val
+        else:
+            auth_handle_val = (
+                auth_handle.value
+                if isinstance(auth_handle, TPM_RH)
+                else int(auth_handle)
+            )
+
+        # Build auth area: password session, empty nonce/hmac is fine for empty authValue
+        auth_cmd = TPMS_AUTH_COMMAND(session_handle=session_handle_val)
+        auth_area = TPM_AUTH_AREA(commands=[auth_cmd])
+
+        # TPM2B_MAX_NV_BUFFER (we encode as UINT16 size + buffer)
+        data_2b = len(data).to_bytes(2, BYTE_ORDER) + data
+
+        params = (
+            auth_handle_val.to_bytes(4, BYTE_ORDER)
+            + nv_index_val.to_bytes(4, BYTE_ORDER)
+            + auth_area.to_bytes()
+            + data_2b
+            + int(offset).to_bytes(2, BYTE_ORDER)
+        )
+
+        super().__init__(TPM_ST.SESSIONS, TPM_CC.NV_WRITE, params=params)
