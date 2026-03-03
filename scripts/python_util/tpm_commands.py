@@ -58,27 +58,49 @@ class TPMCreate(TPMCommand):
     def __init__(
         self,
         parent_handle: int,
-        session_handle: Union[int | TPM_RS],
+        session_handle: Union[int, TPM_RS],
         hashAlg: TPM_ALG,
+        key_type: TPM_ALG,
         keyBits: int,
+        object_attributes: Optional[Union[int, list]] = None,
+        rsa_parameters: Optional[TPMS_RSA_PARMS] = None,
+        keyedhash_scheme: Optional[TPMS_KEYEDHASH_PARMS] = None,
+        sensitive_data: bytes = b"",
     ):
-        session_handle = (
+        session_handle_val = (
             session_handle.value
             if isinstance(session_handle, TPM_RS)
             else session_handle
         )
-        auth = TPMS_AUTH_COMMAND(session_handle=session_handle)
-        auth = TPM_AUTH_AREA(commands=[auth])
+        auth = TPMS_AUTH_COMMAND(session_handle=session_handle_val)
+        auth_area = TPM_AUTH_AREA(commands=[auth])
+
+        sensitive = TPM2B_SENSITIVE_CREATE(
+            sensitive=TPMS_SENSITIVE_CREATE(data=sensitive_data)
+        )
+
         public_template = TPM2B_PUBLIC(
             public_area=TPMT_PUBLIC(
-                name_alg=hashAlg, rsa_parameters=TPMS_RSA_PARMS(key_bits=keyBits)
+                type=key_type,
+                name_alg=hashAlg,
+                object_attributes=object_attributes or [
+                    TPMA_OBJECT.FIXEDTPM,
+                    TPMA_OBJECT.FIXEDPARENT,
+                    TPMA_OBJECT.SENSITIVEDATAORIGIN,
+                    TPMA_OBJECT.USERWITHAUTH,
+                    TPMA_OBJECT.NODA,
+                    TPMA_OBJECT.RESTRICTED,
+                    TPMA_OBJECT.DECRYPT,
+                ],
+                rsa_parameters=rsa_parameters or TPMS_RSA_PARMS(key_bits=keyBits),
+                keyedhash_scheme=keyedhash_scheme,
             )
         )
 
         params = (
             parent_handle.to_bytes(4, BYTE_ORDER)
-            + auth.to_bytes()
-            + TPM2B_SENSITIVE_CREATE().to_bytes()
+            + auth_area.to_bytes()
+            + sensitive.to_bytes()
             + public_template.to_bytes()
             + TPM2B_DATA().to_bytes()
             + TPML_PCR_SELECTION().to_bytes()
@@ -112,7 +134,9 @@ class TPMCreatePrimary(TPMCommand):
         if public_template is None:
             public_template = TPM2B_PUBLIC(
                 public_area=TPMT_PUBLIC(
-                    name_alg=hashAlg, rsa_parameters=TPMS_RSA_PARMS(key_bits=keyBits)
+                    type=TPM_ALG.RSA,
+                    name_alg=hashAlg,
+                    rsa_parameters=TPMS_RSA_PARMS(key_bits=keyBits),
                 )
             )
 
@@ -541,3 +565,66 @@ class TPMNVRead(TPMCommand):
         )
 
         super().__init__(TPM_ST.SESSIONS, TPM_CC.NV_READ, params)
+
+
+class TPMLoad(TPMCommand):
+    """
+    TPM2_Load — load a private/public blob (output of TPM2_Create) into the TPM.
+
+    Command structure (TPM_ST_SESSIONS):
+      parentHandle(4) | authArea | inPrivate: TPM2B_PRIVATE | inPublic: TPM2B_PUBLIC
+
+    `in_private` is the raw bytes of TPM2B_PRIVATE from the Create response.
+    `in_public`  is the raw bytes of TPM2B_PUBLIC  from the Create response.
+    Both include the leading 2-byte size field.
+    """
+
+    def __init__(
+        self,
+        parent_handle: int,
+        in_private: bytes,
+        in_public: bytes,
+        session_handle: Union[int, TPM_RS] = TPM_RS.PW,
+    ):
+        session_handle_val = (
+            session_handle.value
+            if isinstance(session_handle, TPM_RS)
+            else session_handle
+        )
+        auth = TPMS_AUTH_COMMAND(session_handle=session_handle_val)
+        auth_area = TPM_AUTH_AREA(commands=[auth])
+
+        params = (
+            parent_handle.to_bytes(4, BYTE_ORDER)
+            + auth_area.to_bytes()
+            + in_private
+            + in_public
+        )
+
+        super().__init__(TPM_ST.SESSIONS, TPM_CC.LOAD, params=params)
+
+
+class TPMUnseal(TPMCommand):
+    """
+    TPM2_Unseal — return the data held in a sealed data blob.
+
+    Command structure (TPM_ST_SESSIONS):
+      itemHandle(4) | authArea
+    """
+
+    def __init__(
+        self,
+        item_handle: int,
+        session_handle: Union[int, TPM_RS] = TPM_RS.PW,
+    ):
+        session_handle_val = (
+            session_handle.value
+            if isinstance(session_handle, TPM_RS)
+            else session_handle
+        )
+        auth = TPMS_AUTH_COMMAND(session_handle=session_handle_val)
+        auth_area = TPM_AUTH_AREA(commands=[auth])
+
+        params = item_handle.to_bytes(4, BYTE_ORDER) + auth_area.to_bytes()
+
+        super().__init__(TPM_ST.SESSIONS, TPM_CC.UNSEAL, params=params)

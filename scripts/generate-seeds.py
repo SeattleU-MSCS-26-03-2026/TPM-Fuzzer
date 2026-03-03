@@ -42,6 +42,129 @@ TPM_PUB_KEY_TPM_SPDM_00 = 0x00000000
 # Handle Range
 TPM_FIRST_HMAC_SESSION_HANDLE = 0x02000000
 
+# ── TPMUnseal deterministic blobs ─────────────────────────────────────────────
+# Obtained by running CreatePrimary(RSA-2048/SHA256) + Create(KEYEDHASH/sealing)
+# on a TPM manufactured with USE_DEBUG_RNG=YES (determinism.patch).
+# The simulator always produces the same keys from the same inputs.
+
+# Sealing object (NULL scheme, no sign/decrypt/restricted) created under the
+# default RSA-2048 primary key.
+_UNSEAL_SEAL_IN_PRIVATE = bytes.fromhex(
+    "008a002033594e6f3ea199dd22b14de0b92b3f9e067739d4e62c04aaf98786946286fc"
+    "bf001062fa60d9f9a3659af10227ba4a96a3e7f7e8eed20d6626f1e7c1bf725ff2b8e6"
+    "be76005faaeb84bfc5b16a3347dfb438fd7103a247e0e8817e6813977988a779d810b7c"
+    "ec88f787a2de64cb6508ab17fb27400861621c7608f18c05ffa429632114db15da39d"
+)
+_UNSEAL_SEAL_IN_PUBLIC = bytes.fromhex(
+    "002e0008000b00000452000000100020100e11fac0e57e528401b817aa65bf846eb7ad6f"
+    "ee0c7c756a89cdccb52f6c09"
+)
+
+# HMAC key (HMAC scheme, sign+restricted set) — triggers ATTRIBUTES error on Unseal.
+_UNSEAL_HMAC_IN_PRIVATE = bytes.fromhex(
+    "009e002071cfbc5a2fc1c71f4e5b2d115daeb9c0d4ccbf123239c86d5a8077fb8a6a617"
+    "9001090647df915b1ac8e6a09d72c6d243b959921d23b92b7d34d560d460e6680156545"
+    "8b440c78df63194196c6cf67effdf6771d897c62c22f23fbea9593f2676a3e5ba128a58"
+    "a7da9ba8e112eebc62943e4c1e1789f478cc5d442940ea2039d169661179afb65d06910"
+    "b48613248100993df6cebff5dbdc24c86110"
+)
+_UNSEAL_HMAC_IN_PUBLIC = bytes.fromhex(
+    "00300008000b0005047200000005000b0020794e393f0483ff026189ffa1084466b4eb24"
+    "eb0e9ab8d436538073a76359cbd5"
+)
+
+
+def tpm_unseal_seeds() -> List[bytes]:
+    """
+    Generates seeds for TPM2_Unseal targeting 100% line coverage of Unseal.c.
+
+    Unseal.c branches:
+      1. type != TPM_ALG_KEYEDHASH  → TPM_RCS_TYPE   (variant 1)
+      2. decrypt || sign || restricted  → TPM_RCS_ATTRIBUTES  (variant 2)
+      3. success path (copy outData)   → TPM_RC_SUCCESS       (variant 0)
+
+    Because the TPM simulator is built with USE_DEBUG_RNG=YES (determinism.patch),
+    the Create command always produces the same private/public blobs for the same
+    inputs.  The hardcoded blobs below were captured from a single deterministic run
+    and are reused in the Load command inside the same seed, so the fuzzer sees a
+    fully self-consistent byte stream without needing external state.
+
+    Command sequences
+    -----------------
+    Variant 0 – success:
+        CreatePrimary → Create(sealed KEYEDHASH, NULL scheme)
+        → Load → Unseal  (→ RC_SUCCESS, outData returned)
+
+    Variant 1 – type error:
+        CreatePrimary → Unseal(RSA primary handle)
+        (→ RC_TYPE: object is not KEYEDHASH)
+
+    Variant 2 – attributes error:
+        CreatePrimary → Create(HMAC KEYEDHASH, sign+restricted)
+        → Load → Unseal
+        (→ RC_ATTRIBUTES: KEYEDHASH but sign or restricted is set)
+    """
+    primary = TPMCreatePrimary(TPM_RS.PW, TPM_ALG.SHA256, 2048)
+
+    # Variant 0: success path — sealing KEYEDHASH (NULL scheme, no sign/decrypt/restricted)
+    variant0 = [
+        primary,
+        TPMCreate(
+            0x80000000,
+            TPM_RS.PW,
+            TPM_ALG.SHA256,
+            key_type=TPM_ALG.KEYEDHASH,
+            keyBits=2048,
+            object_attributes=[
+                TPMA_OBJECT.FIXEDTPM,
+                TPMA_OBJECT.FIXEDPARENT,
+                TPMA_OBJECT.USERWITHAUTH,
+                TPMA_OBJECT.NODA,
+            ],
+            keyedhash_scheme=TPMS_KEYEDHASH_PARMS(scheme=TPM_ALG.NULL),
+            sensitive_data=b"hello secret",
+        ),
+        TPMLoad(0x80000000, _UNSEAL_SEAL_IN_PRIVATE, _UNSEAL_SEAL_IN_PUBLIC),
+        TPMUnseal(0x80000001),
+    ]
+
+    # Variant 1: type error (itemHandle is RSA, not KEYEDHASH)
+    variant1 = [
+        primary,
+        TPMUnseal(0x80000000),
+    ]
+
+    # Variant 2: attributes error — HMAC KEYEDHASH with sign+restricted set
+    variant2 = [
+        primary,
+        TPMCreate(
+            0x80000000,
+            TPM_RS.PW,
+            TPM_ALG.SHA256,
+            key_type=TPM_ALG.KEYEDHASH,
+            keyBits=2048,
+            object_attributes=[
+                TPMA_OBJECT.FIXEDTPM,
+                TPMA_OBJECT.FIXEDPARENT,
+                TPMA_OBJECT.SENSITIVEDATAORIGIN,
+                TPMA_OBJECT.USERWITHAUTH,
+                TPMA_OBJECT.NODA,
+                TPMA_OBJECT.SIGN_ENCRYPT,
+                TPMA_OBJECT.RESTRICTED,
+            ],
+            keyedhash_scheme=TPMS_KEYEDHASH_PARMS(
+                scheme=TPM_ALG.HMAC, hash_alg=TPM_ALG.SHA256
+            ),
+        ),
+        TPMLoad(0x80000000, _UNSEAL_HMAC_IN_PRIVATE, _UNSEAL_HMAC_IN_PUBLIC),
+        TPMUnseal(0x80000001),
+    ]
+
+    seeds = []
+    for variant in [variant0, variant1, variant2]:
+        seeds.append(b"".join(bytes(cmd) for cmd in variant))
+    return seeds
+
 
 def tpm_incremental_self_test_seeds() -> List[bytes]:
     """
@@ -351,30 +474,31 @@ if __name__ == "__main__":
         "TPMSelfTest": [[TPMSelfTest(TPMI_YES_NO.YES)], [TPMSelfTest(TPMI_YES_NO.NO)]],
         "TPMReadClock": TPMReadClock(),
         "TPMVendorTCGTest": TPMVendorTCGTest(b""),
+        "TPMUnseal": tpm_unseal_seeds,
         "TPMCreate": [
             [
                 TPMCreatePrimary(TPM_RS.PW, TPM_ALG.SHA256, 2048),
-                TPMCreate(0x80000000, TPM_RS.PW, TPM_ALG.SHA256, 2048),
+                TPMCreate(0x80000000, TPM_RS.PW, TPM_ALG.SHA256, TPM_ALG.RSA, 2048),
             ],
             [
                 TPMCreatePrimary(TPM_RS.PW, TPM_ALG.SHA256, 2048),
-                TPMCreate(0x80000000, TPM_RS.PW, TPM_ALG.SHA256, 1024),
+                TPMCreate(0x80000000, TPM_RS.PW, TPM_ALG.SHA256, TPM_ALG.RSA, 1024),
             ],
             [
                 TPMCreatePrimary(TPM_RS.PW, TPM_ALG.SHA256, 2048),
-                TPMCreate(0x80000000, TPM_RS.PW, TPM_ALG.SHA1, 2048),
+                TPMCreate(0x80000000, TPM_RS.PW, TPM_ALG.SHA1, TPM_ALG.RSA, 2048),
             ],
             [
                 TPMCreatePrimary(TPM_RS.PW, TPM_ALG.SHA256, 2048),
-                TPMCreate(0x80000000, TPM_RS.PW, TPM_ALG.SHA1, 1024),
+                TPMCreate(0x80000000, TPM_RS.PW, TPM_ALG.SHA1, TPM_ALG.RSA, 1024),
             ],
             [
                 TPMCreatePrimary(TPM_RS.PW, TPM_ALG.SHA256, 2048),
-                TPMCreate(0x80000000, TPM_RS.PW, TPM_ALG.SHA384, 2048),
+                TPMCreate(0x80000000, TPM_RS.PW, TPM_ALG.SHA384, TPM_ALG.RSA, 2048),
             ],
             [
                 TPMCreatePrimary(TPM_RS.PW, TPM_ALG.SHA256, 2048),
-                TPMCreate(0x80000000, TPM_RS.PW, TPM_ALG.SHA384, 1024),
+                TPMCreate(0x80000000, TPM_RS.PW, TPM_ALG.SHA384, TPM_ALG.RSA, 1024),
             ],
         ],
         "TPMCreatePrimary": [

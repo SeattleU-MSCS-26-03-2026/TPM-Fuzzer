@@ -35,6 +35,8 @@ class TPM_CC(Enum):
     STARTAUTHSESSION = 0x00000176
     CREATEPRIMARY = 0x00000131
     CREATE = 0x00000153
+    LOAD = 0x00000157
+    UNSEAL = 0x0000015E
     HASH = 0x0000017D
     GETTESTRESULT = 0x0000017C
     SELFTEST = 0x00000143
@@ -97,6 +99,7 @@ class TPM_ALG(Enum):
     """
 
     RSA = 0x0001
+    HMAC = 0x0005
     SHA1 = 0x0004
     SHA256 = 0x000B
     SHA384 = 0x000C
@@ -104,6 +107,7 @@ class TPM_ALG(Enum):
     CFB = 0x0043
     NULL = 0x0010
     RSASSA = 0x0014
+    KEYEDHASH = 0x0008
 
 
 class TPMA_OBJECT(Enum):
@@ -234,13 +238,35 @@ class TPMS_RSA_PARMS:
 
 
 @dataclass
+class TPMS_KEYEDHASH_PARMS:
+    """
+    TPMS_KEYEDHASH_PARMS
+
+    scheme: TPMT_KEYEDHASH_SCHEME
+      scheme(2) | [hashAlg(2) if scheme == HMAC]
+    For sealing objects: scheme = NULL (no details follow)
+    For HMAC keys:       scheme = HMAC, hashAlg = SHA256
+    """
+
+    scheme: Union[int, TPM_ALG] = TPM_ALG.NULL
+    hash_alg: Optional[Union[int, TPM_ALG]] = None  # only used when scheme==HMAC
+
+    def to_bytes(self) -> bytes:
+        s = _alg_to_int(self.scheme).to_bytes(2, BYTE_ORDER)
+        if _alg_to_int(self.scheme) == TPM_ALG.HMAC.value and self.hash_alg is not None:
+            s += _alg_to_int(self.hash_alg).to_bytes(2, BYTE_ORDER)
+        return s
+
+
+@dataclass
 class TPMT_PUBLIC:
     """
     TPMT_PUBLIC structure (without the size prefix).
     For RSA keys, `parameters` is typically TPMS_RSA_PARMS.
+    For KEYEDHASH keys, `parameters` is TPMS_KEYEDHASH_PARMS.
     """
 
-    type: Union[int, TPM_ALG] = TPM_ALG.RSA
+    type: Union[int, TPM_ALG]
     name_alg: Union[int, TPM_ALG] = TPM_ALG.SHA256
     object_attributes: Union[int, TPMA_OBJECT, list[TPMA_OBJECT]] = field(
         default_factory=lambda: [
@@ -263,6 +289,9 @@ class TPMT_PUBLIC:
     )
     unique: bytes = b""  # let TPM generate public key if empty
 
+    # KEYEDHASH-specific parameters (TPMS_KEYEDHASH_PARMS)
+    keyedhash_scheme: Optional["TPMS_KEYEDHASH_PARMS"] = field(default=None)
+
     def to_bytes(self) -> bytes:
         t_type = _alg_to_int(self.type).to_bytes(2, BYTE_ORDER)
         name_alg = _alg_to_int(self.name_alg).to_bytes(2, BYTE_ORDER)
@@ -281,9 +310,16 @@ class TPMT_PUBLIC:
             # TPM2B_PUBLIC_KEY_RSA: size(2) + key bytes
             unique_size = len(self.unique).to_bytes(2, BYTE_ORDER)
             unique = unique_size + self.unique
+        elif _alg_to_int(self.type) == TPM_ALG.KEYEDHASH.value:
+            # TPMS_KEYEDHASH_PARMS
+            scheme = self.keyedhash_scheme or TPMS_KEYEDHASH_PARMS()
+            parameters = scheme.to_bytes()
+            # unique = TPM2B_DIGEST: size(2) + bytes
+            unique_size = len(self.unique).to_bytes(2, BYTE_ORDER)
+            unique = unique_size + self.unique
         else:
-            # Extend here for other key types (ECC, keyed hash, etc.)
-            raise NotImplementedError("Only RSA TPMT_PUBLIC is implemented")
+            # Extend here for other key types (ECC, etc.)
+            raise NotImplementedError("Only RSA and KEYEDHASH TPMT_PUBLIC is implemented")
 
         return t_type + name_alg + attrs + auth + parameters + unique
 
