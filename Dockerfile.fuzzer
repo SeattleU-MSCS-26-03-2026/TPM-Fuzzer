@@ -37,4 +37,4 @@ RUN if [ -f patches/determinism.patch ]; then \
 RUN cmake -B build -G Ninja -S /srv/fuzzer/
 RUN cmake --build build
 
-CMD ["/srv/scripts/start-fuzzer.sh"]
+CMD ["/srv/scripts/docker/start-fuzzer.sh"]

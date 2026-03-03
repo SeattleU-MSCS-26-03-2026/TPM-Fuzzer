@@ -655,6 +655,51 @@ if __name__ == "__main__":
                 ),
             ]
         ],
+        "TPMNVRead": [
+            [
+                TPMNVDefineSpace(
+                    attributes=[
+                        TPMA_NV.OWNERREAD,
+                        TPMA_NV.OWNERWRITE,
+                    ],
+                    nv_index=(TPM_HT.NV_INDEX.value << 24) + 1,
+                ),
+                TPMNVWrite(
+                    (TPM_HT.NV_INDEX.value << 24) + 1,
+                    b"\xaa" * 32,
+                    auth_handle=TPM_RH.OWNER,
+                ),
+                TPMNVRead((TPM_HT.NV_INDEX.value << 24) + 1, 2, 0, TPM_RH.OWNER),
+            ],
+            # Read locked
+            [
+                TPMNVDefineSpace(
+                    attributes=[
+                        TPMA_NV.OWNERREAD,
+                        TPMA_NV.OWNERWRITE,
+                        TPMA_NV.READLOCKED,
+                    ],
+                    nv_index=(TPM_HT.NV_INDEX.value << 24) + 1,
+                ),
+                TPMNVWrite(
+                    (TPM_HT.NV_INDEX.value << 24) + 1,
+                    b"\xaa" * 32,
+                    auth_handle=TPM_RH.OWNER,
+                ),
+                TPMNVRead((TPM_HT.NV_INDEX.value << 24) + 1, 2, 0, TPM_RH.OWNER),
+            ],
+            # Read unwritten. Fail
+            [
+                TPMNVDefineSpace(
+                    attributes=[
+                        TPMA_NV.OWNERREAD,
+                        TPMA_NV.OWNERWRITE,
+                    ],
+                    nv_index=(TPM_HT.NV_INDEX.value << 24) + 1,
+                ),
+                TPMNVRead((TPM_HT.NV_INDEX.value << 24) + 1, 0, 0, TPM_RH.OWNER),
+            ],
+        ],
     }
 
     parser = argparse.ArgumentParser(
