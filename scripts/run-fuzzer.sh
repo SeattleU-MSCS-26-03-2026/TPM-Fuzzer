@@ -4,8 +4,6 @@
 # It:
 #   - Ensures required directories (corpus, coverage) exist.
 #   - Verifies those directories are not owned by root.
-#   - Accepts an optional first argument as FUZZER_MAX_RUNS, which is passed
-#     into the fuzzer container as an environment variable.
 #
 # Options:
 #   --track: Track coverage information.
@@ -102,12 +100,7 @@ main() {
     docker compose build fuzzer &>/dev/null
 
     echo -e "${BLUE}[3/4] Running Fuzzer...${RESET}\n\n"
-    if [ -n "$max_runs" ]; then
-        echo -e "${BLUE}[INFO] Max Runs: $max_runs${RESET}\n"
-        docker compose run -e FUZZER_MAX_RUNS="$max_runs" --rm fuzzer
-    else
-        docker compose run --rm fuzzer
-    fi
+    docker compose run --rm fuzzer
 
     echo -e "${BLUE}[INFO] Destroying containers.${RESET}\n"
     docker compose down --rmi=all --remove-orphans

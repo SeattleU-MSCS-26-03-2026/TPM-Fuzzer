@@ -17,7 +17,7 @@ RUN apt-get update -q && \
     apt-get clean && \
     rm -rf /var/lib/apt/lists/*
 
-RUN mkdir -p /srv/
+RUN mkdir -p /srv/ /srv/artifacts/ /srv/seeds/ /srv/corpus /srv/corpus-running
 WORKDIR /srv/
 
 COPY . /srv/

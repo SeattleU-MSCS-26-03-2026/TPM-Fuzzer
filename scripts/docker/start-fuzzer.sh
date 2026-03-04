@@ -17,38 +17,58 @@ SRC_COVERAGE_OUTPUT_DIR=${FUZZER_SRC_COVERAGE_OUT_DIR:-'/srv/build/src-coverage'
 # ----------------------------------
 # Fuzzer Configurations
 # ----------------------------------
+
+# NOTE: First directory is where the final corpus is stored
 GENERATED_CORPUS_DIRECTORY=${GEN_CORPUS_DIR:-'/srv/corpus'}
 SEED_CORPUS_LIST=${SEED_CORPUS_DIR:-'/srv/seeds'}
-MAX_RUNS=${FUZZER_MAX_RUNS:-100000}
 FUZZER_EXTRA_ARGS=${FUZZER_EXTRA_ARGS:-''}
+GEN_COVERAGE=${FUZZER_GEN_COVERAGE:-0}
+MERGE_DIRECTORY=${FUZZER_MERGE_DIRECTORY:-/srv/corpus-running}
+FUZZER_ARTIFACT_PATH=${FUZZER_ARTIFACT_PATH:-/srv/artifacts/}
 
 main() {
-    echo "Starting fuzzer... [1/5]"
-    LLVM_PROFILE_FILE=$PROFILE_FILE ./build/Fuzzer -runs="$MAX_RUNS" "$FUZZER_EXTRA_ARGS" "$GENERATED_CORPUS_DIRECTORY" "$SEED_CORPUS_LIST"
+    local steps=6
 
-    echo "Creating coverage report... [2/5]"
-    llvm-profdata merge -sparse "$PROFILE_FILE" -o "$PROFILE_DATA"
+    if [[ $GEN_COVERAGE -eq 0 ]]; then
+        steps=2
+    fi
 
-    echo "Generating coverage output... [3/5]"
-    llvm-cov show /srv/build/Fuzzer \
-        -instr-profile="$PROFILE_DATA" \
-        -format=html \
-        -coverage-watermark=70,5 \
-        -output-dir="$COVERAGE_OUTPUT_DIR" \
-        $(find /srv/fuzzer/vendor/TPM -type f \( -name '*.c' -o -name '*.cc' \))
+    echo "[INFO] Ensuring required directories exist..."
+    mkdir -p $GENERATED_CORPUS_DIRECTORY $MERGE_DIRECTORY $FUZZER_ARTIFACT_PATH
 
-    echo "Coverage Report... [4/5]"
-    llvm-cov report /srv/build/Fuzzer \
-        -instr-profile="$PROFILE_DATA" \
-        $(find /srv/fuzzer/vendor/TPM -type f \( -name '*.c' -o -name '*.cc' \)) >"$COVERAGE_OUTPUT_DIR/report.txt"
+    echo "Starting fuzzer... [1/$steps]"
+    LLVM_PROFILE_FILE=$PROFILE_FILE ./build/Fuzzer -artifact_prefix="$FUZZER_ARTIFACT_PATH" $FUZZER_EXTRA_ARGS "$MERGE_DIRECTORY" "$GENERATED_CORPUS_DIRECTORY" "$SEED_CORPUS_LIST"
+    echo ""
 
-    echo "Generating coverage report for Fuzzer source code... [5/5]"
-    llvm-cov show /srv/build/Fuzzer \
-        -instr-profile="$PROFILE_DATA" \
-        -format=html \
-        -coverage-watermark=70,5 \
-        -output-dir="$SRC_COVERAGE_OUTPUT_DIR" \
-        $(find /srv/fuzzer/ -type f \( -name '*.cc' \))
+    echo "Merging corpus... [2/$steps]"
+    LLVM_PROFILE_FILE=$PROFILE_FILE ./build/Fuzzer -merge=1 $FUZZER_EXTRA_ARGS "$GENERATED_CORPUS_DIRECTORY" "$MERGE_DIRECTORY"
+    echo ""
+
+    if [[ $GEN_COVERAGE -ne 0 ]]; then
+        echo "Creating coverage report... [3/$steps]"
+        llvm-profdata merge -sparse "$PROFILE_FILE" -o "$PROFILE_DATA"
+
+        echo "Generating coverage output... [4/$steps]"
+        llvm-cov show /srv/build/Fuzzer \
+            -instr-profile="$PROFILE_DATA" \
+            -format=html \
+            -coverage-watermark=70,5 \
+            -output-dir="$COVERAGE_OUTPUT_DIR" \
+            $(find /srv/fuzzer/vendor/TPM -type f \( -name '*.c' -o -name '*.cc' \))
+
+        echo "Coverage Report... [5/$steps]"
+        llvm-cov report /srv/build/Fuzzer \
+            -instr-profile="$PROFILE_DATA" \
+            $(find /srv/fuzzer/vendor/TPM -type f \( -name '*.c' -o -name '*.cc' \)) >"$COVERAGE_OUTPUT_DIR/report.txt"
+
+        echo "Generating coverage report for Fuzzer source code... [6/$steps]"
+        llvm-cov show /srv/build/Fuzzer \
+            -instr-profile="$PROFILE_DATA" \
+            -format=html \
+            -coverage-watermark=70,5 \
+            -output-dir="$SRC_COVERAGE_OUTPUT_DIR" \
+            $(find /srv/fuzzer/ -type f \( -name '*.cc' \))
+    fi
 
     echo "Fuzzer execution completed successfully!"
 }

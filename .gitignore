@@ -2,6 +2,8 @@
 *
 
 # Allow only
+!infrastructure/
+!infrastructure/**
 !.dockerignore
 !.github/
 !.github/**/*
@@ -34,3 +36,6 @@
 
 # Always disallow
 __pycache__/
+*.lock.hcl
+*.terraform/
+*.backup
