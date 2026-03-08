@@ -8,6 +8,10 @@ on:
     branches:
       - main
 
+# CI Jobs only need read-only access to the Repo conents
+permissions:
+  contents: read
+
 jobs:
   build-fuzzer:
     name: Build Fuzzer binary
@@ -55,20 +59,14 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v5
-
-      - name: Set up QEMU
-        uses: docker/setup-qemu-action@v3
-
-      - name: Setup Docker Buildx
-        uses: docker/setup-buildx-action@v3
-
+        with:
+          submodules: true
       - name: Build
         uses: docker/build-push-action@v6
         with:
           push: false
           pull: false
           file: Dockerfile.fuzzer
-          context: .
           tags: SUSE-26-03-Google/fuzzer:latest
 
   format:

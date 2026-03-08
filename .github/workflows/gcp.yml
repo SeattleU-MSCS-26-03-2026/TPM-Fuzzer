@@ -1,0 +1,42 @@
+name: GCP
+
+on:
+  push:
+    branches:
+      - main
+      - joerichey-ci-dev
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  push_fuzzer:
+    name: Push Fuzzer Image
+    runs-on: ubuntu-latest
+    env:
+      registry: "us-docker.pkg.dev"
+      project: "goog-tcg"
+      repository: "seattleu"
+      image: "seattleu-fuzzing"
+      tag: "latest"
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          submodules: true
+      # TODO(joerichey@google.com): Change this to use direct resource access:
+      # https://docs.cloud.google.com/iam/docs/workload-identity-federation-with-deployment-pipelines
+      # Requires exemption to Org Policy constraints/iam.workloadIdentityPoolProviders
+      - name: Authticate as SeattleU Service Account
+        uses: google-github-actions/auth@v3
+        with:
+          credentials_json: '${{ secrets.GOOGLE_CREDENTIALS }}'
+      - uses: google-github-actions/setup-gcloud@v3
+      - name: Configure Docker to use gCloud
+        run: gcloud auth configure-docker ${{env.registry}}
+      - uses: docker/build-push-action@v6
+        with:
+          push: true
+          pull: false
+          file: Dockerfile.fuzzer
+          tags: "${{env.registry}}/${{env.project}}/${{env.repository}}/${{env.image}}:${{env.tag}}"

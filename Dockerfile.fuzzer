@@ -7,7 +7,7 @@ ENV CC=clang
 RUN apt-get update -q && \
     apt-get install -y --no-install-recommends ca-certificates \
     openssl \
-    git-core \
+    patch \
     libssl-dev \
     libclang-rt-dev \
     clang \
@@ -22,12 +22,10 @@ WORKDIR /srv/
 
 COPY . /srv/
 
-RUN git submodule update --init
-
 # Apply determinism patch to TPM submodule
 RUN if [ -f patches/determinism.patch ]; then \
     cd fuzzer/vendor/TPM && \
-    git apply ../../../patches/determinism.patch && \
+    patch -p1 -i ../../../patches/determinism.patch && \
     echo "Determinism patch applied successfully" || \
     (echo "Failed to apply patch" && exit 1); \
     else \
