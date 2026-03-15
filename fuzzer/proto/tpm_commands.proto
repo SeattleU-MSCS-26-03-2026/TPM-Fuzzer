@@ -1,0 +1,19 @@
+syntax = "proto3";
+
+package tpm;
+
+import "commands/tpm_getrandom.proto";
+import "commands/tpm_create.proto";
+import "commands/tpm_createprimary.proto";
+
+message TPMCommand {
+  oneof command {
+    commands.TPMGetRandom     getrandom     = 1;
+    commands.TPMCreate        create        = 2;
+    commands.TPMCreatePrimary createprimary = 3;
+  }
+}
+
+message TPMCommandSequence {
+  repeated TPMCommand commands = 1;
+}

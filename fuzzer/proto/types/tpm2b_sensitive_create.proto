@@ -1,0 +1,23 @@
+syntax = "proto3";
+
+package types;
+
+message TPM2BAuth {
+  uint32 size   = 1; // uint16
+  bytes  buffer = 2;
+}
+
+message TPM2BSensitiveData {
+  uint32 size   = 1;
+  bytes  buffer = 2;
+}
+
+message TPMSSensitiveCreate {
+  TPM2BAuth          user_auth = 1;
+  TPM2BSensitiveData data      = 2;
+}
+
+message TPM2BSensitiveCreate {
+  uint32              size      = 1; // uint16
+  TPMSSensitiveCreate sensitive = 2;
+}

@@ -38,5 +38,6 @@ jobs:
         with:
           push: true
           pull: false
-          file: Dockerfile.fuzzer
+          file: Dockerfile
+          target: fuzzer
           tags: "${{env.registry}}/${{env.project}}/${{env.repository}}/${{env.image}}:${{env.tag}}"

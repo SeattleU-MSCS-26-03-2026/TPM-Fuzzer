@@ -1,0 +1,7 @@
+syntax = "proto3";
+
+package types;
+
+message TPMIDHObject {
+  uint32 handle = 1;
+}

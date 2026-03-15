@@ -19,7 +19,8 @@ services:
   fuzzer:
     build:
       context: .
-      dockerfile: Dockerfile.fuzzer
+      dockerfile: Dockerfile
+      target: fuzzer
     volumes:
       - ./corpus:/srv/corpus
       - ./coverage:/srv/build/coverage
@@ -32,4 +33,5 @@ services:
   test:
     build:
       context: .
-      dockerfile: Dockerfile.test
+      dockerfile: Dockerfile
+      target: test

@@ -15,10 +15,10 @@ permissions:
 jobs:
   build-fuzzer:
     name: Build Fuzzer binary
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-latest
     env:
-      CC: clang-18
-      CXX: clang++-18
+      CC: clang
+      CXX: clang++
     steps:
       - name: Checkout
         uses: actions/checkout@v5
@@ -28,11 +28,24 @@ jobs:
       - name: Dependencies
         run: |
           sudo apt-get update
-          sudo apt-get install -y \
-            cmake ninja-build pkg-config \
-            clang-18 \
+          sudo apt-get install -y --no-install-recommends \
+            ca-certificates \
+            protobuf-compiler \
+            libabsl-dev \
+            libprotobuf-dev \
+            binutils \
+            liblzma-dev \
+            libz-dev \
+            pkg-config \
+            autoconf \
+            libtool \
+            openssl \
+            libssl-dev \
+            libclang-rt-dev \
+            clang \
             llvm \
-            libssl-dev
+            cmake \
+            ninja-build
 
           echo "Compiler:"
           ${CXX} --version
@@ -66,7 +79,8 @@ jobs:
         with:
           push: false
           pull: false
-          file: Dockerfile.fuzzer
+          file: Dockerfile
+          target: fuzzer
           tags: SUSE-26-03-Google/fuzzer:latest
 
   format:
@@ -108,7 +122,7 @@ jobs:
 
       - name: Build test image
         run: |
-          docker build -f Dockerfile.test -t tpm-unit-tests .
+          docker build --target test -t tpm-unit-tests .
 
       - name: Run unit tests
         run: |

@@ -25,6 +25,10 @@
 !fuzzer/tests/**/*
 !fuzzer/vendor
 !fuzzer/vendor/**/*
+!fuzzer/proto
+!fuzzer/proto/**/*
+!fuzzer/pb
+!fuzzer/pb/**/*
 !patches/
 !patches/**/*
 !scripts/
@@ -33,6 +37,7 @@
 !seeds/**/*
 !coverage-history/
 !coverage-history/**/*
+!*.nix
 
 # Always disallow
 __pycache__/

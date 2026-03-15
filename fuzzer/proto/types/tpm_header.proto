@@ -1,0 +1,12 @@
+syntax = "proto3";
+
+package types;
+
+import "constants/tpm_cc.proto";
+import "constants/tpm_st.proto";
+
+message TPMHeader {
+  constants.TPMST tag          = 1;
+  uint32          command_size = 2;
+  constants.TPMCC command_code = 3;
+}

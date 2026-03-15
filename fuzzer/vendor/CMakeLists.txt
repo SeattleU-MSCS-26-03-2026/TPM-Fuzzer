@@ -18,6 +18,11 @@ add_link_options(
     -fcoverage-mapping
 )
 
+set(LIB_PROTO_MUTATOR_TESTING OFF)
+set(LIB_PROTO_MUTATOR_EXAMPLES OFF)
+set(LIB_PROTO_MUTATOR_WITH_ASAN ON)
+add_subdirectory(libprotobuf-mutator)
+
 # Provides:
 # - TpmVendorCommands_Handlers
 # - Tpm_CryptoLib_Math_Ossl
@@ -46,5 +51,6 @@ target_link_libraries(vendor
 
 target_include_directories(vendor
   INTERFACE
-    TPM/TPMCmd/tpm/include   
+    ${CMAKE_CURRENT_LIST_DIR}/TPM/TPMCmd/tpm/include
+    ${CMAKE_CURRENT_LIST_DIR}/libprotobuf-mutator
 )

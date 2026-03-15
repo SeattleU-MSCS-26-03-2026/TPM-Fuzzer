@@ -76,6 +76,65 @@ target_link_options(Fuzzer
 )
 
 #-----------------------------
+# ProtoFuzzer Binary
+#-----------------------------
+add_executable(proto-fuzzer)
+
+find_package(Protobuf REQUIRED)
+file(GLOB_RECURSE PROTO_FILES
+  CONFIGURE_DEPENDS
+  ${CMAKE_CURRENT_SOURCE_DIR}/proto/*.proto
+)
+
+protobuf_generate(
+  TARGET proto-fuzzer
+  LANGUAGE cpp
+  PROTOS ${PROTO_FILES}
+  IMPORT_DIRS ${CMAKE_CURRENT_SOURCE_DIR}/proto
+  PROTOC_OUT_DIR ${CMAKE_CURRENT_BINARY_DIR}
+)
+
+target_sources(proto-fuzzer
+  PRIVATE
+    src/proto-fuzzer.cc
+    src/harness/tpm_wrapper.c
+    src/parser/byte_parser.cc
+)
+
+target_include_directories(proto-fuzzer
+  PRIVATE
+    ${CMAKE_CURRENT_BINARY_DIR}
+)
+target_link_libraries(proto-fuzzer
+  PRIVATE
+    include
+    Tpm_PlatformLib::Tpm_PlatformLib
+    Tpm_CoreLib::Tpm_CoreLib
+    protobuf-mutator-libfuzzer
+    protobuf::libprotobuf
+    ${LIB_PROTO_MUTATOR_FUZZER_LIBRARIES}
+)
+target_compile_options(proto-fuzzer
+    PRIVATE
+        -g
+        -fsanitize=fuzzer,address,signed-integer-overflow
+        -fprofile-instr-generate
+        -fcoverage-mapping
+)
+
+find_package(absl CONFIG QUIET)
+if(TARGET absl::log_internal_check_op)
+  target_link_libraries(proto-fuzzer PRIVATE absl::log_internal_check_op)
+endif()
+
+target_link_options(proto-fuzzer
+    PRIVATE
+        -fsanitize=fuzzer,address,signed-integer-overflow
+        -fprofile-instr-generate
+        -fcoverage-mapping
+)
+
+#-----------------------------
 # Tester Binary
 #-----------------------------
 add_executable(Tester)

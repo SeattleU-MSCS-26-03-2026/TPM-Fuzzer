@@ -1,0 +1,17 @@
+syntax = "proto3";
+
+package constants;
+
+enum TPMALG {
+  TPM_ALG_UNSPECIFIED = 0;
+  TPM_ALG_RSA         = 0x0001;
+  TPM_ALG_SHA1        = 0x0004;
+  TPM_ALG_HMAC        = 0x0005;
+  TPM_ALG_AES         = 0x0006;
+  TPM_ALG_KEYEDHASH   = 0x0008;
+  TPM_ALG_NULL        = 0x0010;
+  TPM_ALG_RSASSA      = 0x0014;
+  TPM_ALG_CFB         = 0x0043;
+  TPM_ALG_SHA256      = 0x000B;
+  TPM_ALG_SHA384      = 0x000C;
+}

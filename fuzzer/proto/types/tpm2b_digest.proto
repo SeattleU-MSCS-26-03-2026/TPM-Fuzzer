@@ -1,0 +1,8 @@
+syntax = "proto3";
+
+package types;
+
+message TPM2BDigest {
+  uint32 size   = 1;
+  bytes  buffer = 2;
+}

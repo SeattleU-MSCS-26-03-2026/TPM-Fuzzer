@@ -1,0 +1,10 @@
+syntax = "proto3";
+
+package constants;
+
+enum TPMCC {
+  TPM_CC_UNSPECIFIED    = 0;
+  TPM_CC_CREATE_PRIMARY = 0x00000131;
+  TPM_CC_CREATE         = 0x00000153;
+  TPM_CC_GET_RANDOM     = 0x0000017B;
+}

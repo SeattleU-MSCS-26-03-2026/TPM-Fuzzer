@@ -1,0 +1,45 @@
+syntax = "proto3";
+
+package types;
+
+import "constants/tpm_alg.proto";
+import "types/tpm2b_digest.proto";
+
+message TPMSRSAParms {
+  constants.TPMALG symmetric = 1;
+  constants.TPMALG scheme    = 2;
+  uint32           key_bits  = 3;
+  uint32           exponent  = 4;
+}
+
+message TPMSKeyedHashParms {
+  constants.TPMALG scheme = 1;
+}
+
+message TPMUPublicParms {
+  oneof parms {
+    TPMSRSAParms       rsa       = 1;
+    TPMSKeyedHashParms keyedhash = 2;
+  }
+}
+
+message TPMUPublicId {
+  oneof id {
+    bytes             rsa       = 1;
+    types.TPM2BDigest keyedhash = 2;
+  }
+}
+
+message TPMTPublic {
+  constants.TPMALG  type              = 1;
+  constants.TPMALG  name_alg          = 2;
+  uint32            object_attributes = 3;
+  types.TPM2BDigest auth_policy       = 4;
+  TPMUPublicParms   parameters        = 5;
+  TPMUPublicId      unique            = 6;
+}
+
+message TPM2BPublic {
+  uint32     size        = 1; // uint16
+  TPMTPublic public_area = 2;
+}
