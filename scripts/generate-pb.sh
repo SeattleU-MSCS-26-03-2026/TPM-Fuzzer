@@ -4,7 +4,7 @@
 # and place the generated cc and h files in the pb directories.
 set -euo pipefail
 
-PROTO_DIR=${PROTO_DIR:-fuzzer/proto}
-PB_DIR=${PB_DIR:-fuzzer/pb}
+PROTO_DIR=${PROTO_DIR:-include/proto}
+PB_DIR=${PB_DIR:-pb}
 
 protoc -I $PROTO_DIR --cpp_out=$PB_DIR/. $(find $PROTO_DIR -name "*.proto")

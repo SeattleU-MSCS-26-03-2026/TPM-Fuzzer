@@ -54,12 +54,12 @@ main() {
             -format=html \
             -coverage-watermark=70,5 \
             -output-dir="$COVERAGE_OUTPUT_DIR" \
-            $(find /srv/fuzzer/vendor/TPM -type f \( -name '*.c' -o -name '*.cc' \))
+            $(find /srv/vendor/TPM -type f \( -name '*.c' -o -name '*.cc' \))
 
         echo "Coverage Report... [5/$steps]"
         llvm-cov report /srv/build/Fuzzer \
             -instr-profile="$PROFILE_DATA" \
-            $(find /srv/fuzzer/vendor/TPM -type f \( -name '*.c' -o -name '*.cc' \)) >"$COVERAGE_OUTPUT_DIR/report.txt"
+            $(find /srv/vendor/TPM -type f \( -name '*.c' -o -name '*.cc' \)) >"$COVERAGE_OUTPUT_DIR/report.txt"
 
         echo "Generating coverage report for Fuzzer source code... [6/$steps]"
         llvm-cov show /srv/build/Fuzzer \
@@ -67,7 +67,7 @@ main() {
             -format=html \
             -coverage-watermark=70,5 \
             -output-dir="$SRC_COVERAGE_OUTPUT_DIR" \
-            $(find /srv/fuzzer/ -type f \( -name '*.cc' \))
+            $(find /srv/src/ -type f \( -name '*.cc' \))
     fi
 
     echo "Fuzzer execution completed successfully!"

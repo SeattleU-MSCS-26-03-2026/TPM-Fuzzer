@@ -54,7 +54,7 @@ jobs:
 
       - name: Configure
         run: |
-          cmake -S fuzzer -B fuzzer/build -G Ninja \
+          cmake -S . -B build -G Ninja \
             -DCMAKE_C_COMPILER="${CC}" \
             -DCMAKE_CXX_COMPILER="${CXX}" \
             -DCMAKE_CXX_STANDARD=23 \
@@ -62,10 +62,10 @@ jobs:
             -DOPENSSL_ROOT_DIR=/usr
 
       - name: Build
-        run: cmake --build fuzzer/build
+        run: cmake --build build
 
       - name: Verify
-        run: ./fuzzer/build/Fuzzer -help=1
+        run: ./build/Fuzzer -help=1
   docker-build-fuzzer:
     name: Test Docker Build
     runs-on: ubuntu-latest
@@ -73,7 +73,7 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v5
         with:
-          submodules: true
+          submodules: recursive
       - name: Build
         uses: docker/build-push-action@v6
         with:
@@ -89,8 +89,8 @@ jobs:
     strategy:
       matrix:
         path:
-          - 'fuzzer/src'
-          - 'fuzzer/include'
+          - 'src'
+          - 'include'
     steps:
       - name: Checkout
         uses: actions/checkout@v5

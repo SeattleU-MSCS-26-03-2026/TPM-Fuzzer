@@ -83,14 +83,14 @@ add_executable(proto-fuzzer)
 find_package(Protobuf REQUIRED)
 file(GLOB_RECURSE PROTO_FILES
   CONFIGURE_DEPENDS
-  ${CMAKE_CURRENT_SOURCE_DIR}/proto/*.proto
+  ${CMAKE_CURRENT_SOURCE_DIR}/include/proto/*.proto
 )
 
 protobuf_generate(
   TARGET proto-fuzzer
   LANGUAGE cpp
   PROTOS ${PROTO_FILES}
-  IMPORT_DIRS ${CMAKE_CURRENT_SOURCE_DIR}/proto
+  IMPORT_DIRS ${CMAKE_CURRENT_SOURCE_DIR}/include/proto
   PROTOC_OUT_DIR ${CMAKE_CURRENT_BINARY_DIR}
 )
 

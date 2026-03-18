@@ -34,9 +34,9 @@ COPY . /srv/
 RUN mkdir -p /srv/artifacts /srv/seeds /srv/corpus /srv/corpus-running
 
 # Apply determinism patch to TPM submodule
-RUN if [ -f patches/determinism.patch ]; then \
-      cd /srv/fuzzer/vendor/TPM && \
-      patch -p1 -i /srv/patches/determinism.patch && \
+RUN if [ -f config/determinism.patch ]; then \
+      cd /srv/vendor/TPM && \
+      patch -p1 -i /srv/config/determinism.patch && \
       echo "Determinism patch applied successfully" || \
       (echo "Failed to apply patch" && exit 1); \
     else \
@@ -45,7 +45,7 @@ RUN if [ -f patches/determinism.patch ]; then \
 
 FROM base AS fuzzer
 
-RUN cmake -B /srv/build -G Ninja -S /srv/fuzzer
+RUN cmake -B /srv/build -G Ninja -S /srv
 RUN cmake --build /srv/build
 
 CMD ["/srv/scripts/docker/start-fuzzer.sh"]
@@ -58,7 +58,7 @@ RUN apt-get update -q && \
     apt-get clean && \
     rm -rf /var/lib/apt/lists/*
 
-RUN cmake -B /srv/build -G Ninja -S /srv/fuzzer -DRUN_UNIT_TESTS=ON
+RUN cmake -B /srv/build -G Ninja -S /srv -DRUN_UNIT_TESTS=ON
 RUN cmake --build /srv/build
 
 CMD ["ctest", "--test-dir", "/srv/build", "--verbose"]

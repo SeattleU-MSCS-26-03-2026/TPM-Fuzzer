@@ -1,6 +1,6 @@
-[submodule "fuzzer/vendor/TPM"]
-	path = fuzzer/vendor/TPM
+[submodule "vendor/TPM"]
+	path = vendor/TPM
 	url = https://github.com/TrustedComputingGroup/TPM.git
-[submodule "fuzzer/vendor/libprotobuf-mutator"]
-	path = fuzzer/vendor/libprotobuf-mutator
+[submodule "vendor/libprotobuf-mutator"]
+	path = vendor/libprotobuf-mutator
 	url = https://github.com/google/libprotobuf-mutator.git

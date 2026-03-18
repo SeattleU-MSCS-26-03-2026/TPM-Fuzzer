@@ -18,7 +18,7 @@ if [ ! -d "$TPM_SRC" ]; then
   git clone https://github.com/TrustedComputingGroup/TPM.git "$TPM_SRC"
   
   # Apply determinism patch if it exists
-  PATCH_FILE="patches/determinism.patch"
+  PATCH_FILE="config/determinism.patch"
   if [ -f "$PATCH_FILE" ]; then
     pushd "$TPM_SRC" >/dev/null
     git apply "../../$PATCH_FILE" && \

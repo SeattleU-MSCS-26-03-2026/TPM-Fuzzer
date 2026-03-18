@@ -2,10 +2,19 @@
 **
 
 # Allow only
+!CMakeLists.txt
 !scripts
-!fuzzer
-!patches
+!scripts/**
+!src
+!src/**
+!include
+!include/**
+!tests
+!tests/**
+!vendor
+!vendor/**
+!config
+!config/**
 !.gitmodules
-!.git
 !corpus/
 !seeds/
