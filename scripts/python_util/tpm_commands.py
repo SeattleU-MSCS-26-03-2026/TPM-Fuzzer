@@ -83,7 +83,8 @@ class TPMCreate(TPMCommand):
             public_area=TPMT_PUBLIC(
                 type=key_type,
                 name_alg=hashAlg,
-                object_attributes=object_attributes or [
+                object_attributes=object_attributes
+                or [
                     TPMA_OBJECT.FIXEDTPM,
                     TPMA_OBJECT.FIXEDPARENT,
                     TPMA_OBJECT.SENSITIVEDATAORIGIN,
@@ -436,6 +437,7 @@ class TPMNVDefineSpace(TPMCommand):
         nv_index: int = TPM_HT.NV_INDEX.value << 24,
         attributes: List[TPMA_NV] = [TPMA_NV.AUTHREAD, TPMA_NV.AUTHWRITE],
         session_handle: int = TPM_RS.PW.value,
+        hierarchy: TPM_RH = TPM_RH.OWNER,
     ):
         auth_cmd = TPMS_AUTH_COMMAND(session_handle=session_handle)
         auth_area = TPM_AUTH_AREA(commands=[auth_cmd])
@@ -452,13 +454,32 @@ class TPMNVDefineSpace(TPMCommand):
         )
 
         params = (
-            TPM_RH.OWNER.value.to_bytes(4, BYTE_ORDER)
+            hierarchy.value.to_bytes(4, BYTE_ORDER)
             + auth_area.to_bytes()
             + auth_value.to_bytes()
             + nv_public.to_bytes()
         )
 
         super().__init__(TPM_ST.SESSIONS, TPM_CC.NV_DEFINESPACE, params)
+
+
+class TPMNVUndefineSpace(TPMCommand):
+    def __init__(
+        self,
+        nv_index: int,
+        hierarchy: TPM_RH = TPM_RH.OWNER,
+        session_handle: int = TPM_RS.PW.value,
+    ):
+        auth_cmd = TPMS_AUTH_COMMAND(session_handle)
+        auth_area = TPM_AUTH_AREA(commands=[auth_cmd])
+
+        params = (
+            hierarchy.value.to_bytes(4, BYTE_ORDER)
+            + nv_index.to_bytes(4, BYTE_ORDER)
+            + auth_area.to_bytes()
+        )
+
+        super().__init__(TPM_ST.SESSIONS, TPM_CC.NV_UNDEFINESPACE, params)
 
 
 class TPMNVWriteLock(TPMCommand):

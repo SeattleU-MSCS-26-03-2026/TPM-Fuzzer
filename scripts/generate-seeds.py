@@ -824,6 +824,42 @@ if __name__ == "__main__":
                 TPMNVRead((TPM_HT.NV_INDEX.value << 24) + 1, 0, 0, TPM_RH.OWNER),
             ],
         ],
+        "TPMNVUndefineSpace": [
+            [
+                TPMNVDefineSpace(
+                    attributes=[
+                        TPMA_NV.OWNERREAD,
+                        TPMA_NV.OWNERWRITE,
+                    ]
+                ),
+                TPMNVUndefineSpace(TPM_HT.NV_INDEX.value << 24),
+            ],
+            [
+                TPMNVDefineSpace(
+                    nv_index=(TPM_HT.NV_INDEX.value << 24) + 1,
+                    attributes=[
+                        TPMA_NV.PPREAD,
+                        TPMA_NV.PPWRITE,
+                        TPMA_NV.POLICY_DELETE,
+                        TPMA_NV.PLATFORMCREATE,
+                    ],
+                    hierarchy=TPM_RH.PLATFORM,
+                ),
+                TPMNVUndefineSpace((TPM_HT.NV_INDEX.value << 24) + 1),
+            ],
+            [
+                TPMNVDefineSpace(
+                    nv_index=(TPM_HT.NV_INDEX.value << 24) + 2,
+                    attributes=[
+                        TPMA_NV.PPREAD,
+                        TPMA_NV.PPWRITE,
+                        TPMA_NV.PLATFORMCREATE,
+                    ],
+                    hierarchy=TPM_RH.PLATFORM,
+                ),
+                TPMNVUndefineSpace((TPM_HT.NV_INDEX.value << 24) + 2),
+            ],
+        ],
     }
 
     parser = argparse.ArgumentParser(

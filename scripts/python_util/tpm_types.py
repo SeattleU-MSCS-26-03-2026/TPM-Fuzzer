@@ -52,6 +52,7 @@ class TPM_CC(Enum):
     PCR_RESET = 0x0000013D
     TESTPARMS = 0x0000018A
     NV_DEFINESPACE = 0x0000012A
+    NV_UNDEFINESPACE = 0x00000122
     NV_WRITE = 0x00000137
     NV_WRITELOCK = 0x00000138
     NV_READ = 0x0000014E
@@ -156,11 +157,13 @@ class TPMA_NV(Enum):
     PPWRITE = 1 << 0
     OWNERWRITE = 1 << 1
     AUTHWRITE = 1 << 2
+    POLICY_DELETE = 1 << 10
     WRITEDEFINE = 1 << 13
     PPREAD = 1 << 16
     OWNERREAD = 1 << 17
     AUTHREAD = 1 << 18
     READLOCKED = 1 << 28
+    PLATFORMCREATE = 1 << 30
 
 
 def _alg_to_int(a: Union[int, TPM_ALG]) -> int:
@@ -319,7 +322,9 @@ class TPMT_PUBLIC:
             unique = unique_size + self.unique
         else:
             # Extend here for other key types (ECC, etc.)
-            raise NotImplementedError("Only RSA and KEYEDHASH TPMT_PUBLIC is implemented")
+            raise NotImplementedError(
+                "Only RSA and KEYEDHASH TPMT_PUBLIC is implemented"
+            )
 
         return t_type + name_alg + attrs + auth + parameters + unique
 
