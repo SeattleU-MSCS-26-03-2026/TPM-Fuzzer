@@ -1,9 +1,36 @@
 # NOTE: This CMake should be included after vendor
+find_package(Protobuf REQUIRED)
+file(GLOB_RECURSE PROTO_FILES
+  CONFIGURE_DEPENDS
+  ${CMAKE_CURRENT_SOURCE_DIR}/proto/*.proto
+)
+
+add_library(proto_generated STATIC)
+
+protobuf_generate(
+  TARGET proto_generated
+  LANGUAGE cpp
+  PROTOS ${PROTO_FILES}
+  IMPORT_DIRS ${CMAKE_CURRENT_SOURCE_DIR}/proto
+  PROTOC_OUT_DIR ${CMAKE_CURRENT_BINARY_DIR}/proto
+)
+
+target_include_directories(proto_generated
+  PUBLIC
+    ${CMAKE_CURRENT_BINARY_DIR}/proto
+)
+
+target_link_libraries(proto_generated
+  PUBLIC
+    protobuf::libprotobuf
+)
+
 add_library(include INTERFACE)
 
 target_link_libraries(include
   INTERFACE
     vendor
+    proto_generated
 )
 
 target_sources(include
@@ -11,8 +38,8 @@ target_sources(include
   FILE_SET publicHeaders
   TYPE HEADERS
   FILES
-    harness/common_headers.h
     harness/tpm_wrapper.h
+    harness/proto_conversion.h
     parser/byte_parser.h
 )
 
@@ -32,5 +59,3 @@ add_link_options(
     -fprofile-instr-generate
     -fcoverage-mapping
 )
-
-set_target_properties(include PROPERTIES LINKER_LANGUAGE C)

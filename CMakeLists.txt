@@ -78,32 +78,22 @@ target_link_options(Fuzzer
 #-----------------------------
 # ProtoFuzzer Binary
 #-----------------------------
+find_package(PkgConfig REQUIRED)
+pkg_check_modules(TSS2 REQUIRED tss2-mu)
 add_executable(proto-fuzzer)
-
-find_package(Protobuf REQUIRED)
-file(GLOB_RECURSE PROTO_FILES
-  CONFIGURE_DEPENDS
-  ${CMAKE_CURRENT_SOURCE_DIR}/include/proto/*.proto
-)
-
-protobuf_generate(
-  TARGET proto-fuzzer
-  LANGUAGE cpp
-  PROTOS ${PROTO_FILES}
-  IMPORT_DIRS ${CMAKE_CURRENT_SOURCE_DIR}/include/proto
-  PROTOC_OUT_DIR ${CMAKE_CURRENT_BINARY_DIR}
-)
 
 target_sources(proto-fuzzer
   PRIVATE
     src/proto-fuzzer.cc
     src/harness/tpm_wrapper.c
+    src/harness/proto_conversion.cc
     src/parser/byte_parser.cc
 )
 
 target_include_directories(proto-fuzzer
   PRIVATE
     ${CMAKE_CURRENT_BINARY_DIR}
+    ${TSS2_INCLUDE_DIRS}
 )
 target_link_libraries(proto-fuzzer
   PRIVATE
@@ -111,8 +101,8 @@ target_link_libraries(proto-fuzzer
     Tpm_PlatformLib::Tpm_PlatformLib
     Tpm_CoreLib::Tpm_CoreLib
     protobuf-mutator-libfuzzer
-    protobuf::libprotobuf
     ${LIB_PROTO_MUTATOR_FUZZER_LIBRARIES}
+    ${TSS2_LIBRARIES}
 )
 target_compile_options(proto-fuzzer
     PRIVATE
@@ -120,6 +110,7 @@ target_compile_options(proto-fuzzer
         -fsanitize=fuzzer,address,signed-integer-overflow
         -fprofile-instr-generate
         -fcoverage-mapping
+        ${TSS2_CFLAGS_OTHERS}
 )
 
 find_package(absl CONFIG QUIET)

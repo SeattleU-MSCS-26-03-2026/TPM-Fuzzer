@@ -23,6 +23,7 @@ RUN apt-get update -q && \
     libclang-rt-dev \
     clang \
     llvm \
+    libtss2-dev \
     cmake \
     ninja-build && \
     apt-get clean && \

@@ -1,76 +1,108 @@
 #!/usr/bin/env bash
-set -e
-
 # This script starts the fuzzer in a Docker environment.
 # It can also be run locally but requires llvm-cov and llvm-profdata.
 # Configurations can be overridden through environment variables.
 # Logs will provide details on progress and output [N/<MAX_RUNS>] information.
+set -Eeuo pipefail
 
-# ----------------------------------
-# LLVM Coverage Configuration
-# ----------------------------------
-PROFILE_FILE=${LLVM_PROF_FILE:-'/srv/build/Fuzzer.profraw'}
-PROFILE_DATA=${LLVM_PROF_DATA:-'/srv/build/Fuzzer.profdata'}
-COVERAGE_OUTPUT_DIR=${FUZZER_COVERAGE_OUT_DIR:-'/srv/build/coverage'}
-SRC_COVERAGE_OUTPUT_DIR=${FUZZER_SRC_COVERAGE_OUT_DIR:-'/srv/build/src-coverage'}
+# Defaults are chosen to work well in a container where /srv is the project root.
+PROJECT_DIR="${PROJECT_DIR:-/srv}"
+BUILD_DIR="${BUILD_DIR:-$PROJECT_DIR/build}"
+FUZZER_BIN_NAME="${FUZZER_BIN_NAME:-proto-fuzzer}"
+FUZZER_BIN="${FUZZER_BIN:-$BUILD_DIR/$FUZZER_BIN_NAME}"
 
-# ----------------------------------
-# Fuzzer Configurations
-# ----------------------------------
+CORPUS_DIR="${CORPUS_DIR:-$PROJECT_DIR/corpus}"
+RUN_CORPUS_DIR="${RUN_CORPUS_DIR:-$PROJECT_DIR/corpus-running}"
+SEEDS_DIR="${SEEDS_DIR:-$PROJECT_DIR/seeds}"
+ARTIFACTS_DIR="${ARTIFACTS_DIR:-$PROJECT_DIR/artifacts}"
 
-# NOTE: First directory is where the final corpus is stored
-GENERATED_CORPUS_DIRECTORY=${GEN_CORPUS_DIR:-'/srv/corpus'}
-SEED_CORPUS_LIST=${SEED_CORPUS_DIR:-'/srv/seeds'}
-FUZZER_EXTRA_ARGS=${FUZZER_EXTRA_ARGS:-''}
-GEN_COVERAGE=${FUZZER_GEN_COVERAGE:-0}
-MERGE_DIRECTORY=${FUZZER_MERGE_DIRECTORY:-/srv/corpus-running}
-FUZZER_ARTIFACT_PATH=${FUZZER_ARTIFACT_PATH:-/srv/artifacts/}
+GEN_COVERAGE="${GEN_COVERAGE:-0}"
+FUZZER_EXTRA_ARGS="${FUZZER_EXTRA_ARGS:-}"
 
-main() {
-    local steps=6
+LLVM_PROFRAW="${LLVM_PROFRAW:-$BUILD_DIR/$FUZZER_BIN_NAME.profraw}"
+LLVM_PROFDATA="${LLVM_PROFDATA:-$BUILD_DIR/$FUZZER_BIN_NAME.profdata}"
+COVERAGE_DIR="${COVERAGE_DIR:-$BUILD_DIR/coverage}"
+SRC_COVERAGE_DIR="${SRC_COVERAGE_DIR:-$BUILD_DIR/src-coverage}"
 
-    if [[ $GEN_COVERAGE -eq 0 ]]; then
-        steps=2
-    fi
+TPM_SOURCE_DIR="${TPM_SOURCE_DIR:-$PROJECT_DIR/vendor/TPM}"
+FUZZER_SOURCE_DIR="${FUZZER_SOURCE_DIR:-$PROJECT_DIR/src}"
 
-    echo "[INFO] Ensuring required directories exist..."
-    mkdir -p $GENERATED_CORPUS_DIRECTORY $MERGE_DIRECTORY $FUZZER_ARTIFACT_PATH
-
-    echo "Starting fuzzer... [1/$steps]"
-    LLVM_PROFILE_FILE=$PROFILE_FILE ./build/Fuzzer -artifact_prefix="$FUZZER_ARTIFACT_PATH" $FUZZER_EXTRA_ARGS "$MERGE_DIRECTORY" "$GENERATED_CORPUS_DIRECTORY" "$SEED_CORPUS_LIST"
-    echo ""
-
-    echo "Merging corpus... [2/$steps]"
-    LLVM_PROFILE_FILE=$PROFILE_FILE ./build/Fuzzer -merge=1 $FUZZER_EXTRA_ARGS "$GENERATED_CORPUS_DIRECTORY" "$MERGE_DIRECTORY"
-    echo ""
-
-    if [[ $GEN_COVERAGE -ne 0 ]]; then
-        echo "Creating coverage report... [3/$steps]"
-        llvm-profdata merge -sparse "$PROFILE_FILE" -o "$PROFILE_DATA"
-
-        echo "Generating coverage output... [4/$steps]"
-        llvm-cov show /srv/build/Fuzzer \
-            -instr-profile="$PROFILE_DATA" \
-            -format=html \
-            -coverage-watermark=70,5 \
-            -output-dir="$COVERAGE_OUTPUT_DIR" \
-            $(find /srv/vendor/TPM -type f \( -name '*.c' -o -name '*.cc' \))
-
-        echo "Coverage Report... [5/$steps]"
-        llvm-cov report /srv/build/Fuzzer \
-            -instr-profile="$PROFILE_DATA" \
-            $(find /srv/vendor/TPM -type f \( -name '*.c' -o -name '*.cc' \)) >"$COVERAGE_OUTPUT_DIR/report.txt"
-
-        echo "Generating coverage report for Fuzzer source code... [6/$steps]"
-        llvm-cov show /srv/build/Fuzzer \
-            -instr-profile="$PROFILE_DATA" \
-            -format=html \
-            -coverage-watermark=70,5 \
-            -output-dir="$SRC_COVERAGE_OUTPUT_DIR" \
-            $(find /srv/src/ -type f \( -name '*.cc' \))
-    fi
-
-    echo "Fuzzer execution completed successfully!"
+log() {
+    printf '[INFO] %s\n' "$*"
 }
 
-main "@"
+require_bin() {
+    if [[ ! -x "$1" ]]; then
+        printf '[ERROR] Required executable not found: %s\n' "$1" >&2
+        exit 1
+    fi
+}
+
+generate_coverage() {
+    require_bin "$(command -v llvm-profdata)"
+    require_bin "$(command -v llvm-cov)"
+
+    log "Creating profdata"
+    llvm-profdata merge -sparse "$LLVM_PROFRAW" -o "$LLVM_PROFDATA"
+
+    mapfile -t tpm_sources < <(
+        find "$TPM_SOURCE_DIR" -type f \( -name '*.c' -o -name '*.cc' \)
+    )
+
+    mapfile -t fuzzer_sources < <(
+        find "$FUZZER_SOURCE_DIR" -type f \( -name '*.cc' \)
+    )
+
+    log "Generating TPM coverage HTML"
+    llvm-cov show "$FUZZER_BIN" \
+        -instr-profile="$LLVM_PROFDATA" \
+        -format=html \
+        -coverage-watermark=70,5 \
+        -output-dir="$COVERAGE_DIR" \
+        "${tpm_sources[@]}"
+
+    log "Generating TPM coverage summary"
+    llvm-cov report "$FUZZER_BIN" \
+        -instr-profile="$LLVM_PROFDATA" \
+        "${tpm_sources[@]}" >"$COVERAGE_DIR/report.txt"
+
+    log "Generating fuzzer-source coverage HTML"
+    llvm-cov show "$FUZZER_BIN" \
+        -instr-profile="$LLVM_PROFDATA" \
+        -format=html \
+        -coverage-watermark=70,5 \
+        -output-dir="$SRC_COVERAGE_DIR" \
+        "${fuzzer_sources[@]}"
+}
+
+main() {
+    require_bin "$FUZZER_BIN"
+    mkdir -p "$CORPUS_DIR" "$RUN_CORPUS_DIR" "$SEEDS_DIR" "$ARTIFACTS_DIR"
+
+    log "Starting fuzzer"
+    LLVM_PROFILE_FILE="$LLVM_PROFRAW" \
+        "$FUZZER_BIN" \
+        -artifact_prefix="$ARTIFACTS_DIR/" \
+        $FUZZER_EXTRA_ARGS \
+        "$RUN_CORPUS_DIR" \
+        "$CORPUS_DIR" \
+        "$SEEDS_DIR"
+
+    log "Merging corpus"
+    LLVM_PROFILE_FILE="$LLVM_PROFRAW" \
+        "$FUZZER_BIN" \
+        -merge=1 \
+        $FUZZER_EXTRA_ARGS \
+        "$CORPUS_DIR" \
+        "$RUN_CORPUS_DIR"
+
+    if [[ "$GEN_COVERAGE" == "1" ]]; then
+        mkdir -p "$COVERAGE_DIR" "$SRC_COVERAGE_DIR"
+        log "Generating coverage"
+        generate_coverage
+    fi
+
+    log "Done"
+}
+
+main "$@"

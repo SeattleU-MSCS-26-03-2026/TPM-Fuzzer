@@ -77,6 +77,7 @@ main() {
     fi
 
     local track=0
+    local bin="${FUZZER_BIN,,}"
 
     while [[ $# -gt 0 ]]; do
         case "$1" in
@@ -84,23 +85,24 @@ main() {
             track=1
             shift
             ;;
+        --bin)
+            shift
+            bin="${1,,}"
+            ;;
         *)
-            max_runs="$1"
             shift
             ;;
         esac
     done
 
-    local max_runs="$1"
-
     echo -e "${BLUE}[1/4] Destroying pre-existing image.${RESET}\n"
     docker compose down --rmi=all &>/dev/null
 
     echo -e "${BLUE}[2/4] Building the fuzzer image.${RESET}\n"
-    docker compose build fuzzer &>/dev/null
+    docker compose build $bin &>/dev/null
 
     echo -e "${BLUE}[3/4] Running Fuzzer...${RESET}\n\n"
-    docker compose run --rm fuzzer
+    docker compose run --rm $bin
 
     echo -e "${BLUE}[INFO] Destroying containers.${RESET}\n"
     docker compose down --rmi=all --remove-orphans
