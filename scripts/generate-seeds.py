@@ -779,6 +779,56 @@ if __name__ == "__main__":
                 ),
             ]
         ],
+        "TPMNVReadLock": [
+            [
+                TPMNVDefineSpace(
+                    nv_index=(TPM_HT.NV_INDEX.value << 24) + 3,
+                    attributes=[
+                        TPMA_NV.OWNERREAD,
+                        TPMA_NV.OWNERWRITE,
+                        TPMA_NV.READ_STCLEAR,
+                    ],
+                ),
+                TPMNVWrite(
+                    (TPM_HT.NV_INDEX.value << 24) + 4,
+                    b"\xaa" * 32,
+                    auth_handle=TPM_RH.OWNER,
+                ),
+                TPMNVReadLock((TPM_HT.NV_INDEX.value << 24) + 3),
+            ],
+            [
+                TPMNVDefineSpace(
+                    nv_index=(TPM_HT.NV_INDEX.value << 24) + 4,
+                    attributes=[
+                        TPMA_NV.OWNERREAD,
+                        TPMA_NV.OWNERWRITE,
+                        TPMA_NV.READ_STCLEAR,
+                    ],
+                ),
+                TPMNVWrite(
+                    (TPM_HT.NV_INDEX.value << 24) + 5,
+                    b"\xaa" * 32,
+                    auth_handle=TPM_RH.OWNER,
+                ),
+                TPMNVReadLock((TPM_HT.NV_INDEX.value << 24) + 4),
+                TPMNVReadLock((TPM_HT.NV_INDEX.value << 24) + 4),
+            ],
+            [
+                TPMNVDefineSpace(
+                    nv_index=(TPM_HT.NV_INDEX.value << 24) + 5,
+                    attributes=[
+                        TPMA_NV.OWNERREAD,
+                        TPMA_NV.OWNERWRITE,
+                    ],
+                ),
+                TPMNVWrite(
+                    (TPM_HT.NV_INDEX.value << 24) + 5,
+                    b"\xaa" * 32,
+                    auth_handle=TPM_RH.OWNER,
+                ),
+                TPMNVReadLock((TPM_HT.NV_INDEX.value << 24) + 5),
+            ],
+        ],
         "TPMNVRead": [
             [
                 TPMNVDefineSpace(

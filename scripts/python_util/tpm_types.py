@@ -56,6 +56,7 @@ class TPM_CC(Enum):
     NV_WRITE = 0x00000137
     NV_WRITELOCK = 0x00000138
     NV_READ = 0x0000014E
+    NV_READLOCK = 0x0000014F
 
 
 class TPM_RH(Enum):
@@ -164,6 +165,7 @@ class TPMA_NV(Enum):
     AUTHREAD = 1 << 18
     READLOCKED = 1 << 28
     PLATFORMCREATE = 1 << 30
+    READ_STCLEAR = 1 << 31
 
 
 def _alg_to_int(a: Union[int, TPM_ALG]) -> int:

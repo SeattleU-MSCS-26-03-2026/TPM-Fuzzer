@@ -504,6 +504,28 @@ class TPMNVWriteLock(TPMCommand):
         super().__init__(TPM_ST.SESSIONS, TPM_CC.NV_WRITELOCK, params)
 
 
+class TPMNVReadLock(TPMCommand):
+    def __init__(
+        self,
+        nv_index: int,
+        auth_handle: Union[int, TPM_RH] = TPM_RH.OWNER,
+        session_handle: int = TPM_RS.PW.value,
+    ):
+        auth_cmd = TPMS_AUTH_COMMAND(session_handle=session_handle)
+        auth_area = TPM_AUTH_AREA(commands=[auth_cmd])
+        auth_handle = (
+            auth_handle.value if isinstance(auth_handle, TPM_RH) else auth_handle
+        )
+
+        params = (
+            auth_handle.to_bytes(4, BYTE_ORDER)
+            + nv_index.to_bytes(4, BYTE_ORDER)
+            + auth_area.to_bytes()
+        )
+
+        super().__init__(TPM_ST.SESSIONS, TPM_CC.NV_READLOCK, params)
+
+
 class TPMNVWrite(TPMCommand):
     """
     TPM2_NV_Write command.
