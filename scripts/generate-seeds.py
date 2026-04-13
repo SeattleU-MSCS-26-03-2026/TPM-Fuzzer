@@ -364,7 +364,12 @@ def tpm_nv_extend_seeds() -> List[bytes]:
 
     define_extend = TPMNVDefineSpace(
         nv_index=nv_index,
-        attributes=[TPMA_NV.AUTHWRITE, TPMA_NV.AUTHREAD, TPMA_NV.NT_EXTEND, TPMA_NV.NO_DA],
+        attributes=[
+            TPMA_NV.AUTHWRITE,
+            TPMA_NV.AUTHREAD,
+            TPMA_NV.NT_EXTEND,
+            TPMA_NV.NO_DA,
+        ],
     )
 
     define_ordinary = TPMNVDefineSpace(
@@ -420,6 +425,73 @@ def tpm_nv_extend_seeds() -> List[bytes]:
     seeds = []
     for variant in [variant0, variant1, variant2, variant3, variant4]:
         seeds.append(b"".join(bytes(cmd) for cmd in variant))
+    return seeds
+
+
+def tpm_nv_setbits_seeds() -> List[bytes]:
+    """
+    Generates seeds for TPM2_NV_SetBits.
+
+    Coverage targets from NV_SetBits.c:
+      - success path with !WRITTEN
+      - success path with WRITTEN
+    """
+    seeds: List[bytes] = []
+
+    base_index = TPM_HT.NV_INDEX.value << 24
+
+    # OWNERWRITE | OWNERREAD | (NT_BITS << 4)
+    # NT_BITS = 0x2
+    nv_bits_attrs = (
+        TPMA_NV.OWNERWRITE.value | TPMA_NV.OWNERREAD.value | TPMA_NV.NT_BITS.value
+    )
+
+    variants = [
+        # Variant 0:
+        #   Define a bits index, then SetBits once.
+        #   Covers:
+        #     - NvReadOnlyModeChecks success
+        #     - NvWriteAccessChecks success
+        #     - IsNvBitsIndex true
+        #     - !WRITTEN branch (oldValue = 0)
+        #     - NvWriteUINT64Data
+        [
+            TPMNVDefineSpace(
+                nv_index=base_index + 3,
+                attributes=nv_bits_attrs,
+                data_size=8,
+            ),
+            TPMNVSetBits(
+                nv_index=base_index + 3,
+                bits=0x0000000000000001,
+                auth_handle=TPM_RH.OWNER,
+            ),
+        ],
+        # Variant 1:
+        #   Define a bits index, SetBits twice.
+        #   Second SetBits covers WRITTEN path and NvGetUINT64Data.
+        [
+            TPMNVDefineSpace(
+                nv_index=base_index + 4,
+                attributes=nv_bits_attrs,
+                data_size=8,
+            ),
+            TPMNVSetBits(
+                nv_index=base_index + 4,
+                bits=0x0000000000000001,
+                auth_handle=TPM_RH.OWNER,
+            ),
+            TPMNVSetBits(
+                nv_index=base_index + 4,
+                bits=0x00000000000000A5,
+                auth_handle=TPM_RH.OWNER,
+            ),
+        ],
+    ]
+
+    for sequence in variants:
+        seeds.append(b"".join(bytes(cmd) for cmd in sequence))
+
     return seeds
 
 
@@ -799,6 +871,7 @@ if __name__ == "__main__":
         "TPMPCRReset": tpm_pcr_reset_seeds,
         "TPMTestParms": TPMTestParms(),
         "TPMNVDefineSpace": TPMNVDefineSpace(),
+        "TPMNVSetBits": tpm_nv_setbits_seeds,
         "TPMNVWriteLock": [
             # Lock once success
             [

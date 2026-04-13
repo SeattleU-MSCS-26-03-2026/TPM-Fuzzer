@@ -438,6 +438,7 @@ class TPMNVDefineSpace(TPMCommand):
         attributes: List[TPMA_NV] = [TPMA_NV.AUTHREAD, TPMA_NV.AUTHWRITE],
         session_handle: int = TPM_RS.PW.value,
         hierarchy: TPM_RH = TPM_RH.OWNER,
+        data_size: int = 32,
     ):
         auth_cmd = TPMS_AUTH_COMMAND(session_handle=session_handle)
         auth_area = TPM_AUTH_AREA(commands=[auth_cmd])
@@ -449,7 +450,7 @@ class TPMNVDefineSpace(TPMCommand):
                 nv_index=nv_index,
                 name_alg=TPM_ALG.SHA256,
                 attributes=attributes,
-                data_size=32,
+                data_size=data_size,
             )
         )
 
@@ -635,7 +636,9 @@ class TPMNVExtend(TPMCommand):
             auth_handle_val = nv_index_val
         else:
             auth_handle_val = (
-                auth_handle.value if isinstance(auth_handle, TPM_RH) else int(auth_handle)
+                auth_handle.value
+                if isinstance(auth_handle, TPM_RH)
+                else int(auth_handle)
             )
 
         auth_cmd = TPMS_AUTH_COMMAND(session_handle=session_handle_val)
@@ -651,6 +654,36 @@ class TPMNVExtend(TPMCommand):
         )
 
         super().__init__(TPM_ST.SESSIONS, TPM_CC.NV_EXTEND, params=params)
+
+
+class TPMNVSetBits(TPMCommand):
+    """
+    TPM2_NV_SetBits
+
+    authHandle(4) | nvIndex(4) | authArea | bits(UINT64)
+    """
+
+    def __init__(
+        self,
+        nv_index: int,
+        bits: int,
+        auth_handle: int | TPM_RH = TPM_RH.OWNER,
+        session_handle: int = TPM_RS.PW.value,
+    ):
+        auth_cmd = TPMS_AUTH_COMMAND(session_handle=session_handle)
+        auth_area = TPM_AUTH_AREA(commands=[auth_cmd])
+        auth_handle = (
+            auth_handle.value if isinstance(auth_handle, TPM_RH) else auth_handle
+        )
+
+        params = (
+            auth_handle.to_bytes(4, BYTE_ORDER)
+            + nv_index.to_bytes(4, BYTE_ORDER)
+            + auth_area.to_bytes()
+            + bits.to_bytes(8, BYTE_ORDER)
+        )
+
+        super().__init__(TPM_ST.SESSIONS, TPM_CC.NV_SET_BITS, params)
 
 
 class TPMLoad(TPMCommand):
