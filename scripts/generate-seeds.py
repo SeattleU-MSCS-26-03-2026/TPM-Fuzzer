@@ -355,6 +355,74 @@ def tpm_pcr_reset_seeds() -> List[bytes]:
     return seeds
 
 
+def tpm_nv_extend_seeds() -> List[bytes]:
+    """
+    Generates seeds for TPM2_NV_Extend targeting line coverage of NV_Extend.c.
+
+    """
+    nv_index = TPM_HT.NV_INDEX.value << 24  # 0x01000000
+
+    define_extend = TPMNVDefineSpace(
+        nv_index=nv_index,
+        attributes=[TPMA_NV.AUTHWRITE, TPMA_NV.AUTHREAD, TPMA_NV.NT_EXTEND, TPMA_NV.NO_DA],
+    )
+
+    define_ordinary = TPMNVDefineSpace(
+        nv_index=nv_index,
+        attributes=[TPMA_NV.AUTHWRITE, TPMA_NV.AUTHREAD, TPMA_NV.NO_DA],
+    )
+
+    define_lockable = TPMNVDefineSpace(
+        nv_index=nv_index,
+        attributes=[
+            TPMA_NV.AUTHWRITE,
+            TPMA_NV.AUTHREAD,
+            TPMA_NV.NT_EXTEND,
+            TPMA_NV.WRITEDEFINE,
+            TPMA_NV.NO_DA,
+        ],
+    )
+
+    extend_data = b"extend data here"
+
+    # Variant 0: success, WRITTEN=0 — first extend zeroes old digest then hashes
+    variant0 = [
+        define_extend,
+        TPMNVExtend(nv_index, extend_data),
+    ]
+
+    # Variant 1: success, WRITTEN=1 — second extend reads existing digest from NV
+    variant1 = [
+        define_extend,
+        TPMNVExtend(nv_index, extend_data),
+        TPMNVExtend(nv_index, extend_data),
+    ]
+
+    # Variant 2: !IsNvExtendIndex — ordinary AUTHWRITE index, not an extend type
+    variant2 = [
+        define_ordinary,
+        TPMNVExtend(nv_index, extend_data),
+    ]
+
+    # Variant 3: write-locked — NvWriteAccessChecks returns TPM_RC_NV_LOCKED
+    variant3 = [
+        define_lockable,
+        TPMNVWriteLock(nv_index, auth_handle=nv_index),
+        TPMNVExtend(nv_index, extend_data),
+    ]
+
+    # Variant 4: authorization mismatch — AUTHWRITE-only index, auth as OWNER
+    variant4 = [
+        define_extend,
+        TPMNVExtend(nv_index, extend_data, auth_handle=TPM_RH.OWNER),
+    ]
+
+    seeds = []
+    for variant in [variant0, variant1, variant2, variant3, variant4]:
+        seeds.append(b"".join(bytes(cmd) for cmd in variant))
+    return seeds
+
+
 def _create_variant(
     name: str,
     timestamp: str,
@@ -874,6 +942,7 @@ if __name__ == "__main__":
                 TPMNVRead((TPM_HT.NV_INDEX.value << 24) + 1, 0, 0, TPM_RH.OWNER),
             ],
         ],
+        "TPMNVExtend": tpm_nv_extend_seeds,
         "TPMNVUndefineSpace": [
             [
                 TPMNVDefineSpace(

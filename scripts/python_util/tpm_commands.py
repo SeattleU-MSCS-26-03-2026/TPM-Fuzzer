@@ -610,6 +610,49 @@ class TPMNVRead(TPMCommand):
         super().__init__(TPM_ST.SESSIONS, TPM_CC.NV_READ, params)
 
 
+class TPMNVExtend(TPMCommand):
+    """
+    TPM2_NV_Extend command.
+
+    Command structure (TPM_ST_SESSIONS):
+      authHandle(4) | nvIndex(4) | authArea | data: TPM2B_MAX_NV_BUFFER
+    """
+
+    def __init__(
+        self,
+        nv_index: int,
+        data: bytes,
+        auth_handle: Optional[Union[int, TPM_RH]] = None,
+        session_handle: Union[int, TPM_RS] = TPM_RS.PW,
+    ):
+        session_handle_val = (
+            session_handle.value
+            if isinstance(session_handle, TPM_RS)
+            else session_handle
+        )
+        nv_index_val = int(nv_index)
+        if auth_handle is None:
+            auth_handle_val = nv_index_val
+        else:
+            auth_handle_val = (
+                auth_handle.value if isinstance(auth_handle, TPM_RH) else int(auth_handle)
+            )
+
+        auth_cmd = TPMS_AUTH_COMMAND(session_handle=session_handle_val)
+        auth_area = TPM_AUTH_AREA(commands=[auth_cmd])
+
+        data_2b = len(data).to_bytes(2, BYTE_ORDER) + data
+
+        params = (
+            auth_handle_val.to_bytes(4, BYTE_ORDER)
+            + nv_index_val.to_bytes(4, BYTE_ORDER)
+            + auth_area.to_bytes()
+            + data_2b
+        )
+
+        super().__init__(TPM_ST.SESSIONS, TPM_CC.NV_EXTEND, params=params)
+
+
 class TPMLoad(TPMCommand):
     """
     TPM2_Load — load a private/public blob (output of TPM2_Create) into the TPM.

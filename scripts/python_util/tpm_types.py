@@ -57,6 +57,7 @@ class TPM_CC(Enum):
     NV_WRITELOCK = 0x00000138
     NV_READ = 0x0000014E
     NV_READLOCK = 0x0000014F
+    NV_EXTEND = 0x00000136
 
 
 class TPM_RH(Enum):
@@ -158,11 +159,13 @@ class TPMA_NV(Enum):
     PPWRITE = 1 << 0
     OWNERWRITE = 1 << 1
     AUTHWRITE = 1 << 2
+    NT_EXTEND = 1 << 6
     POLICY_DELETE = 1 << 10
     WRITEDEFINE = 1 << 13
     PPREAD = 1 << 16
     OWNERREAD = 1 << 17
     AUTHREAD = 1 << 18
+    NO_DA = 1 << 25
     READLOCKED = 1 << 28
     PLATFORMCREATE = 1 << 30
     READ_STCLEAR = 1 << 31
