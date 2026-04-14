@@ -36,6 +36,8 @@
 !scripts/**/*
 !seeds/
 !seeds/**/*
+!proto-seeds/
+!proto-seeds/**/*
 !coverage-history/
 !coverage-history/**/*
 !*.nix

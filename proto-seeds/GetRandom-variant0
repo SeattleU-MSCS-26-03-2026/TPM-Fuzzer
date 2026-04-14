@@ -1,0 +1,5 @@
+commands {
+  getrandom {
+    bytes_requested: 8
+  }
+}
