@@ -1,0 +1,9 @@
+syntax = "proto3";
+
+package constants;
+
+enum TPMSE {
+  TPM_SE_HMAC   = 0x00;
+  TPM_SE_POLICY = 0x01;
+  TPM_SE_TRIAL  = 0x03;
+}

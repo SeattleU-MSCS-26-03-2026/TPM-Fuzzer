@@ -1,0 +1,12 @@
+syntax = "proto3";
+
+package types;
+
+message TPMSession {
+  uint32 session_handle     = 1;
+  uint32 nonce_size         = 2;
+  bytes  nonce              = 3;
+  uint32 session_attributes = 4;
+  uint32 hmac_size          = 5;
+  bytes  hmac               = 6;
+}

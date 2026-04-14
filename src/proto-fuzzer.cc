@@ -1,13 +1,19 @@
 #include <cstdint>
 #include <vector>
 
+#include "commands/tpm_createprimary.pb.h"
 #include "commands/tpm_getrandom.pb.h"
+#include "commands/tpm_startauthsession.pb.h"
+#include "constants/tpm_alg.pb.h"
 #include "constants/tpm_cc.pb.h"
+#include "constants/tpm_rh.pb.h"
+#include "constants/tpm_se.pb.h"
 #include "constants/tpm_st.pb.h"
 #include "harness/proto_conversion.h"
 #include "src/libfuzzer/libfuzzer_macro.h"
 #include "tpm_commands.pb.h"
 #include "types/tpm_header.pb.h"
+#include "types/tpm_session.pb.h"
 
 extern "C" {
 #include <harness/tpm_wrapper.h>
@@ -18,7 +24,9 @@ namespace {
 constexpr unsigned char kLocality = 0;
 constexpr size_t kMaxResponseBuffer = 1024 * 1024;
 constexpr uint32_t kMaxU16 = 0xFFFF;
+constexpr uint32_t kFirstHmacSessionHandle = 0x02000000;
 
+// ── GetRandom PostProcessor ──────────────────────────────────────────────────
 static protobuf_mutator::libfuzzer::PostProcessorRegistration<
     commands::TPMGetRandom>
     reg = {[](commands::TPMGetRandom* msg, unsigned int /* seed */) {
@@ -27,6 +35,125 @@ static protobuf_mutator::libfuzzer::PostProcessorRegistration<
       msg->mutable_header()->set_command_size(12);
 
       if (msg->bytes_requested() == 0) msg->set_bytes_requested(1);
+    }};
+
+// ── StartAuthSession PostProcessor ───────────────────────────────────────────
+static protobuf_mutator::libfuzzer::PostProcessorRegistration<
+    commands::TPMStartAuthSession>
+    reg_startauth = {
+        [](commands::TPMStartAuthSession* msg, unsigned int /* seed */) {
+          msg->mutable_header()->set_tag(constants::TPM_ST_NO_SESSIONS);
+          msg->mutable_header()->set_command_code(
+              constants::TPM_CC_START_AUTH_SESSION);
+
+          if (msg->tpm_key() == constants::TPM_RH_UNSPECIFIED)
+            msg->set_tpm_key(constants::TPM_RH_NULL);
+          if (msg->bind() == constants::TPM_RH_UNSPECIFIED)
+            msg->set_bind(constants::TPM_RH_NULL);
+          if (msg->session_type() == constants::TPM_SE_HMAC &&
+              msg->auth_hash() == constants::TPM_ALG_UNSPECIFIED)
+            msg->set_auth_hash(constants::TPM_ALG_SHA256);
+          if (msg->auth_hash() == constants::TPM_ALG_UNSPECIFIED)
+            msg->set_auth_hash(constants::TPM_ALG_SHA256);
+
+          // Default symmetric to NULL if unset.
+          if (msg->symmetric().algorithm() == constants::TPM_ALG_UNSPECIFIED)
+            msg->mutable_symmetric()->set_algorithm(constants::TPM_ALG_NULL);
+
+          // Provide a 16-byte zero nonce if none exists.
+          if (msg->nonce().buffer().empty()) {
+            msg->mutable_nonce()->set_buffer(std::string(16, '\0'));
+          }
+        }};
+
+// ── CreatePrimary PostProcessor ──────────────────────────────────────────────
+static protobuf_mutator::libfuzzer::PostProcessorRegistration<
+    commands::TPMCreatePrimary>
+    reg_createprimary = {[](commands::TPMCreatePrimary* msg,
+                            unsigned int /* seed */) {
+      msg->mutable_header()->set_tag(constants::TPM_ST_SESSIONS);
+      msg->mutable_header()->set_command_code(constants::TPM_CC_CREATE_PRIMARY);
+
+      if (msg->hierarchy() == constants::TPM_RH_UNSPECIFIED)
+        msg->set_hierarchy(constants::TPM_RH_OWNER);
+
+      // Tss2_MU_TPM2B_PUBLIC_Marshal requires the public area type and
+      // parms oneof to be mutually consistent.  The valid public area
+      // types supported by our proto are RSA and KEYEDHASH.  Enforce
+      // whichever was chosen by the fuzzer, defaulting to RSA.
+      auto* pa = msg->mutable_in_public()->mutable_public_area();
+      auto* parms = pa->mutable_parameters();
+
+      if (parms->has_keyedhash()) {
+        pa->set_type(constants::TPM_ALG_KEYEDHASH);
+        auto* kh = parms->mutable_keyedhash();
+        if (kh->scheme() == constants::TPM_ALG_UNSPECIFIED)
+          kh->set_scheme(constants::TPM_ALG_NULL);
+      } else {
+        // RSA case (or neither parms set — default to RSA).
+        pa->set_type(constants::TPM_ALG_RSA);
+        auto* rsa = parms->mutable_rsa();
+        // symmetric.algorithm must not be 0 — default to NULL (no cipher).
+        if (rsa->symmetric() == constants::TPM_ALG_UNSPECIFIED)
+          rsa->set_symmetric(constants::TPM_ALG_NULL);
+        // scheme must not be 0 — default to NULL (no signing/encrypt scheme).
+        if (rsa->scheme() == constants::TPM_ALG_UNSPECIFIED)
+          rsa->set_scheme(constants::TPM_ALG_NULL);
+      }
+
+      if (pa->name_alg() == constants::TPM_ALG_UNSPECIFIED)
+        pa->set_name_alg(constants::TPM_ALG_SHA256);
+    }};
+
+// ── Sequence PostProcessor: coordinate StartAuthSession + CreatePrimary ──────
+static protobuf_mutator::libfuzzer::PostProcessorRegistration<
+    tpm::TPMCommandSequence>
+    reg_sequence = {[](tpm::TPMCommandSequence* seq, unsigned int /* seed */) {
+      // Find the first CreatePrimary command.
+      int create_primary_index = -1;
+      for (int i = 0; i < seq->commands_size(); ++i) {
+        if (seq->commands(i).has_createprimary()) {
+          create_primary_index = i;
+          break;
+        }
+      }
+      if (create_primary_index == -1) return;
+
+      // Check if a StartAuthSession already exists before it.
+      bool has_start_auth = false;
+      for (int i = 0; i < create_primary_index; ++i) {
+        if (seq->commands(i).has_startauthsession()) {
+          has_start_auth = true;
+          break;
+        }
+      }
+
+      if (!has_start_auth) {
+        // Append a StartAuthSession command, then swap it into position
+        // just before CreatePrimary.
+        tpm::TPMCommand* new_cmd = seq->add_commands();
+        new_cmd->mutable_startauthsession();
+
+        // Swap from the end to just before create_primary_index.
+        int last = seq->commands_size() - 1;
+        for (int i = last; i > create_primary_index; --i) {
+          seq->mutable_commands()->SwapElements(i, i - 1);
+        }
+        // CreatePrimary is now at create_primary_index + 1.
+        create_primary_index += 1;
+      }
+
+      // Ensure CreatePrimary has at least one session referencing the
+      // first HMAC session handle.
+      commands::TPMCreatePrimary* cp =
+          seq->mutable_commands(create_primary_index)->mutable_createprimary();
+      if (cp->sessions_size() == 0) {
+        types::TPMSession* session = cp->add_sessions();
+        session->set_session_handle(kFirstHmacSessionHandle);
+        session->set_nonce_size(0);
+        session->set_session_attributes(0);
+        session->set_hmac_size(0);
+      }
     }};
 
 void ExecuteCommandBuffer(const std::vector<uint8_t>& command_buffer,

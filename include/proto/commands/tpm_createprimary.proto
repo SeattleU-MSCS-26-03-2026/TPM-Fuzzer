@@ -8,12 +8,14 @@ import "types/tpm2b_sensitive_create.proto";
 import "types/tpm2b_public.proto";
 import "types/tpm2b_data.proto";
 import "types/tpml_pcr_selection.proto";
+import "types/tpm_session.proto";
 
 message TPMCreatePrimary {
   types.TPMHeader            header       = 1;
   constants.TPMRH            hierarchy    = 2;
-  types.TPM2BSensitiveCreate in_sensitive = 3;
-  types.TPM2BPublic          in_public    = 4;
-  types.TPM2BData            outside_info = 5;
-  types.TPMLPCRSelection     creation_pcr = 6;
+  repeated types.TPMSession  sessions     = 3;
+  types.TPM2BSensitiveCreate in_sensitive = 4;
+  types.TPM2BPublic          in_public    = 5;
+  types.TPM2BData            outside_info = 6;
+  types.TPMLPCRSelection     creation_pcr = 7;
 }
