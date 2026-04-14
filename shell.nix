@@ -15,10 +15,12 @@ pkgs.clangStdenv.mkDerivation {
 
     abseil-cpp
     autoconf
+    automake
     binutils
     black
     cmake
     libtool
+    libtpms
     ninja
     openssl_3
     pkg-config

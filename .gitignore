@@ -41,6 +41,9 @@
 !coverage-history/
 !coverage-history/**/*
 !*.nix
+!example/
+!example/**/*
+!DEVELOPER.md
 
 # Always disallow
 __pycache__/

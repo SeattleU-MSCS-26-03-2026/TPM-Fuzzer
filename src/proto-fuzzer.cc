@@ -1,32 +1,16 @@
 #include <cstdint>
 #include <vector>
 
-#include "commands/tpm_createprimary.pb.h"
-#include "commands/tpm_getrandom.pb.h"
-#include "commands/tpm_startauthsession.pb.h"
-#include "constants/tpm_alg.pb.h"
-#include "constants/tpm_cc.pb.h"
-#include "constants/tpm_rh.pb.h"
-#include "constants/tpm_se.pb.h"
-#include "constants/tpm_st.pb.h"
-#include "harness/proto_conversion.h"
 #include "src/libfuzzer/libfuzzer_macro.h"
 #include "tpm_commands.pb.h"
-#include "types/tpm_header.pb.h"
-#include "types/tpm_session.pb.h"
 
 extern "C" {
 #include <harness/tpm_wrapper.h>
 }
+#include "harness/proto_conversion.h"
 
-namespace {
-
-constexpr unsigned char kLocality = 0;
-constexpr size_t kMaxResponseBuffer = 1024 * 1024;
-constexpr uint32_t kMaxU16 = 0xFFFF;
 constexpr uint32_t kFirstHmacSessionHandle = 0x02000000;
-
-// ── GetRandom PostProcessor ──────────────────────────────────────────────────
+namespace {
 static protobuf_mutator::libfuzzer::PostProcessorRegistration<
     commands::TPMGetRandom>
     reg = {[](commands::TPMGetRandom* msg, unsigned int /* seed */) {
@@ -170,9 +154,8 @@ void ExecuteCommandBuffer(const std::vector<uint8_t>& command_buffer,
   response.buffer = response_storage->data();
   response.buffer_size = response_storage->size();
 
-  TPMSendCommand(kLocality, request, &response);
+  TPMSendCommand(kDefaultLocality, request, &response);
 }
-
 }  // namespace
 
 DEFINE_PROTO_FUZZER(const tpm::TPMCommandSequence& sequence) {
@@ -181,7 +164,7 @@ DEFINE_PROTO_FUZZER(const tpm::TPMCommandSequence& sequence) {
   SendTPM2StartupCommand();
 
   std::vector<uint8_t> command_buffer;
-  std::vector<uint8_t> response_storage(kMaxResponseBuffer);
+  std::vector<uint8_t> response_storage(kMaxBuffers);
 
   for (const auto& cmd : sequence.commands()) {
     if (!MarshalCommand(cmd, &command_buffer)) {

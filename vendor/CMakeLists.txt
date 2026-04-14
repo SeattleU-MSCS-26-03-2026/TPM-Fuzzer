@@ -7,13 +7,13 @@ set(Tpm_BuildOption_LibOnly TRUE)
 
 add_compile_options(
     -g
-    -fsanitize=fuzzer,address
+    -fsanitize=address,signed-integer-overflow,fuzzer-no-link
     -fprofile-instr-generate
     -fcoverage-mapping
 )
 
 add_link_options(
-    -fsanitize=fuzzer,address
+    -fsanitize=address,signed-integer-overflow,fuzzer-no-link
     -fprofile-instr-generate
     -fcoverage-mapping
 )
@@ -36,16 +36,16 @@ add_subdirectory(TPM/TPMCmd/Platform)
 # Header-only interface for TPM headers. Link this
 # library to have access to Simulator & TPM function
 # definitions.
+#
+# NOTE: Currently unused and may cause linking problems.
 add_library(vendor INTERFACE)
 
 target_link_libraries(vendor
   INTERFACE
-    Tpm_Public_Headers::Tpm_Public_Headers
     Tpm_CoreLib::Tpm_CoreLib
-    TpmConfiguration::TpmConfiguration
-    Tpm_PlatformLib::Tpm_PlatformLib
-    Tpm_Platform_Interface::Tpm_Platform_Interface
     Tpm_CryptoLib_TpmBigNum::Tpm_CryptoLib_TpmBigNum
+    Tpm_CryptoLib_Math_Ossl::Tpm_CryptoLib_Math_Ossl
+    Tpm_PlatformLib::Tpm_PlatformLib
     TpmVendorCommands_Handlers::TpmVendorCommands_Handlers
 )
 

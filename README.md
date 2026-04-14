@@ -1,126 +1,81 @@
-# SUSE 26.03 Google
+# TPM 2.0 Fuzzer
+[![CI](https://github.com/seattleu-projectcenter/SUSE-26-03-Google/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/seattleu-projectcenter/SUSE-26-03-Google/actions/workflows/ci.yml)
 
-## Developer Guide
-### Running the TPM fuzzer
+## Overview
 
-#### Script
+This repository contains a fuzzing harness for testing TPM 2.0 compliant implementations. It also provides a sample harness for the
+[TCG TPM 2.0 Reference Implementation](https://github.com/TrustedComputingGroup/TPM). The fuzzing harness utilizes the [libFuzzer](https://llvm.org/docs/LibFuzzer.html)
+coverage-guided fuzzing engine.
 
-``` sh
-$ ./scripts/run-fuzzer.sh
-$ ls -l
+The core harness library has the following dependencies:
 
-drwxr-xr-x 2 fuzzer users  20480 Jan 24 14:08 corpus
-drwxr-xr-x 3 fuzzer users   4096 Jan 24 14:04 coverage
-# Open Coverage in browser
-$ xdg-open coverage/index.html
-```
+- [libprotobuf-mutator](https://github.com/google/libprotobuf-mutator): Structure-aware mutator for libFuzzer
+- [Clang](https://clang.llvm.org/) >= 12.0.0
+- [tpm2-tss](https://github.com/tpm2-software/tpm2-tss)
 
-#### Docker Compose
+## Usage
 
-```sh
-# build the docker compose images
-$ docker compose build
-
-# use this command to start fuzzing TPM send command
-$ docker compose run --rm fuzzer
-
-# run with environment overrides
-$ docker compose run -e MAX_RUNS=100000000000 --rm fuzzer
-```
-
-### Running the unit tests
+The provided TPM fuzz targets can be run using:
 
 ```sh
-# use this command to run available unit tests
-$ docker compose run --rm test
-
-# then shut down all containers
-$ docker compose down
-```
-### Tracking coverage
-
-``` sh
-$ ./scripts/run-fuzzer.sh --track
-$ ls -l
-
-drwxr-xr-x 2 fuzzer users  20480 Jan 24 14:08 corpus/
-drwxr-xr-x 3 fuzzer users   4096 Jan 24 14:04 coverage/
-drwxr-xr-x 3 fuzzer users   4096 Jan 24 14:04 coverage-history/
-
-# View coverage history
-$ ls coverage-history/
--rw-r--r-- 1 fuzzer users 1008K Feb 11 17:27 coverage-2025-11-28T05:08:09Z-96db8ae.tar.gz
--rw-r--r-- 1 fuzzer users 1008K Feb 11 17:27 coverage-2026-01-14T05:08:09Z-b8f630f.tar.gz
--rw-r--r-- 1 fuzzer users  974K Feb 11 17:27 coverage-2026-01-28T05:08:09Z-4efc310.tar.gz
--rw-r--r-- 1 fuzzer users   460 Feb 11 17:27 history.csv
-
-# Open Coverage in browser
-$ xdg-open coverage/index.html
+./scripts/run-fuzzer.sh --bin <fuzzer i.e. proto-fuzzer, Fuzzer>
 ```
 
-#### Breakdown of report headers
-
-LLVM Coverage Reports typically have the following headers:
-  - **Regions**: Total number of instrumented code regions (fine-grained source ranges mapped to coverage counters)
-  - **Missed Regions**: Number of instrumented regions never executed
-  - **Regions Cover %**: Percentage of regions executed at least once
-  - **Functions**: Total number of instrumented functions
-  - **Missed Functions**: Number of functions never entered
-  - **Functions Cover %**: Percentage of functions executed at least once
-  - **Lines**: Total number of executable source lines
-  - **Missed Lines**: Number of executable lines never executed
-  - **Lines Cover %**: Percentage of executable lines executed at least once
-  - **Branches**: Total number of control-flow branches (true/false edges, switch cases, etc.)
-  - **Missed Branches**: Number of branch paths never taken
-  - **Branches Cover %**: Percentage of branch paths executed at least once
-
-### Running the TPM simulator
-
-The TPM Simulator can be run using [Docker](https://docs.docker.com/). We provide a Dockerfile (`Dockerfile.simulator`) which you can use to build and start the simulator from [this repository](https://github.com/TrustedComputingGroup/TPM/tree/main). This simulator is helpful for testing and developing applications that interact with the TPM 2.0 API without needing a physical TPM device.
-
-#### Steps:
+You can also directly build and run the specific Docker containers:
 
 ```sh
-# 1. Build the Docker image
-$ docker build -t suse-26-03 .
+docker compose build proto-fuzzer
+docker compose build Fuzzer
 
-# 2. Run the simulator container in detached mode
-$ docker container run -d suse-26-03
+docker compose run proto-fuzzer
+ls -l
+drwxr-xr-x 2 user users    4096 Apr  2 22:52 proto-artifacts
+drwxr-xr-x 2 user users   4096 Apr 13 18:10 proto-corpus
+drwxr-xr-x 3 user users   4096 Apr 13 18:10 proto-coverage
+drwxr-xr-x 2 user users   4096 Mar 29 21:00 proto-seeds
 
-# 3. List all running containers
-$ docker container ls
-CONTAINER ID   IMAGE        COMMAND   CREATED        STATUS        PORTS   NAMES
-d3f941e9909d   suse-26-03   "…"       ... minutes ago   Up ... minutes         intelligent_gates
-
-# 4. View simulator logs
-$ docker container logs -f intelligent_gates
+docker compose run Fuzzer
+ls -l
+drwxr-xr-x 2 user users   4096 Apr 13 17:55 artifacts
+drwxr-xr-x 2 user users   4096 Apr 13 18:10 corpus
+drwxr-xr-x 3 user users   4096 Apr  2 22:54 coverage
+drwxr-xr-x 2 user users   4096 Apr 13 21:27 seeds
 ```
 
-#### Interact with TPM simulator from another container
+### Custom TPM Implementation
 
-```sh
-$ docker compose run --rm tools
-# now we are in the other container and you can put in commands to interact with TPM simulator
-# check the available commands here https://tpm2-tools.readthedocs.io/en/latest/
-# example
-/app# tpm2_startup -c
-/app# tpm2_readclock
-...
+The provided fuzz targets can be used to test your own custom TPM implementation. All you need to do is provide an implementation of the [wrapper functions](./include/harness/tpm_wrapper.h).
 
-# at the end you can exit the container with exit
-/app# exit
+A minimal working example can be found in [./example](./example). Once the implementation has been configured and a library for it has been created, you can link any of the fuzz targets to your implementation to utilize them.
 
-# then shut down all containers
-$ docker compose down
+```cmake
+add_executable(Fuzzer)
+
+target_sources(Fuzzer
+  PRIVATE
+    src/fuzzer.cc
+)
+target_link_libraries(Fuzzer
+  PRIVATE
+    <Your Implementation>
+)
+
+target_compile_options(Fuzzer
+  PRIVATE
+    -g
+    -fsanitize=fuzzer,address,signed-integer-overflow
+    -fprofile-instr-generate
+    -fcoverage-mapping
+)
+
+target_link_options(Fuzzer
+  PRIVATE
+    -fsanitize=fuzzer,address,signed-integer-overflow
+    -fprofile-instr-generate
+    -fcoverage-mapping
+)
 ```
 
-### Testing TPM commands against the fuzzer
+## Developer Documentation
 
-This project provides a testing binary that can be used to test TPM2.0 Commands against
-the configured fuzzer.
-
-Usage:
-
-``` sh
-$ ./build/Tester seeds/TPM_SEED
-```
+Developer documentation and tips can be found [here](./DEVELOPER.md).

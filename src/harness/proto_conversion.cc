@@ -67,7 +67,7 @@ bool MarshalCommandField(const google::protobuf::Message& parent,
       const size_t value =
           static_cast<size_t>(reflection.GetEnumValue(parent, &field));
       const std::string& enum_type =
-          field.enum_type() ? field.enum_type()->full_name() : "";
+          field.enum_type() ? std::string(field.enum_type()->full_name()) : "";
 
       // TPMSE is a single byte on the wire.
       if (enum_type == "constants.TPMSE") {
@@ -126,7 +126,7 @@ bool MarshalMessageField(const google::protobuf::Message& child,
   const auto* desc = child.GetDescriptor();
   if (!desc) return false;
 
-  const std::string name = desc->full_name();
+  const std::string name = std::string(desc->full_name());
 
   if (name == "types.TPMHeader") {
     const auto* header = dynamic_cast<const types::TPMHeader*>(&child);
@@ -181,7 +181,7 @@ bool MarshalRepeatedField(const google::protobuf::Message& parent,
     return false;
 
   // Check if this is a TPMSession repeated field.
-  const std::string& msg_type = field.message_type()->full_name();
+  const std::string& msg_type = std::string(field.message_type()->full_name());
   if (msg_type != "types.TPMSession") return false;
 
   // Write authorizationSize placeholder.

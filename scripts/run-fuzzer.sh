@@ -11,6 +11,7 @@ BLUE="\033[34m"
 RESET="\033[0m"
 COVERAGE_HISTORY="${FUZZER_COV_HISTORY:-coverage-history/history.csv}"
 COVERAGE_REPORT="${FUZZER_COV_REPORT:-coverage/report.txt}"
+FUZZER_BIN="${FUZZER_BIN:-Fuzzer}"
 
 # Append summarized coverage data into a CSV history file.
 #
@@ -95,13 +96,13 @@ main() {
         esac
     done
 
-    echo -e "${BLUE}[1/4] Destroying pre-existing image.${RESET}\n"
+    echo -e "${BLUE}[1/4] Destroying pre-existing images.${RESET}\n"
     docker compose down --rmi=all &>/dev/null
 
-    echo -e "${BLUE}[2/4] Building the fuzzer image.${RESET}\n"
+    echo -e "${BLUE}[2/4] Building the ${bin} image.${RESET}\n"
     docker compose build $bin &>/dev/null
 
-    echo -e "${BLUE}[3/4] Running Fuzzer...${RESET}\n\n"
+    echo -e "${BLUE}[3/4] Running ${bin}...${RESET}\n\n"
     docker compose run --rm $bin
 
     echo -e "${BLUE}[INFO] Destroying containers.${RESET}\n"
