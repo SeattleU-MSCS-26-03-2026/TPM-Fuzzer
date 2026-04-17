@@ -6,7 +6,6 @@ set(Tpm_BuildOption_LibOnly TRUE)
 # -----------------------------------------------------------
 
 add_compile_options(
-    -g
     -fsanitize=address,signed-integer-overflow,fuzzer-no-link
     -fprofile-instr-generate
     -fcoverage-mapping
@@ -36,21 +35,20 @@ add_subdirectory(TPM/TPMCmd/Platform)
 # Header-only interface for TPM headers. Link this
 # library to have access to Simulator & TPM function
 # definitions.
-#
-# NOTE: Currently unused and may cause linking problems.
-add_library(vendor INTERFACE)
+add_library(TPM INTERFACE)
 
-target_link_libraries(vendor
+target_link_libraries(TPM
   INTERFACE
+    -Wl,--start-group
+    Tpm_PlatformLib::Tpm_PlatformLib
+    TpmVendorCommands_Handlers::TpmVendorCommands_Handlers
     Tpm_CoreLib::Tpm_CoreLib
     Tpm_CryptoLib_TpmBigNum::Tpm_CryptoLib_TpmBigNum
     Tpm_CryptoLib_Math_Ossl::Tpm_CryptoLib_Math_Ossl
-    Tpm_PlatformLib::Tpm_PlatformLib
-    TpmVendorCommands_Handlers::TpmVendorCommands_Handlers
+    -Wl,--end-group
 )
 
-target_include_directories(vendor
+target_include_directories(TPM
   INTERFACE
     ${CMAKE_CURRENT_LIST_DIR}/TPM/TPMCmd/tpm/include
-    ${CMAKE_CURRENT_LIST_DIR}/libprotobuf-mutator
 )

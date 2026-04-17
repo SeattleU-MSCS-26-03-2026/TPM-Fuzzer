@@ -77,6 +77,14 @@ main() {
         exit 1
     fi
 
+    if [[ $# -eq 0 ]]; then
+        echo "Usage: ${0} [--track] [--bin <name>]"
+        echo "Options:"
+        echo "    --track: Track coverage metrics to coverage-history/"
+        echo "    --bin: Select fuzzer binary to run i.e proto-fuzzer, Fuzzer"
+        exit 1
+    fi
+
     local track=0
     local bin="${FUZZER_BIN,,}"
 

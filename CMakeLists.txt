@@ -25,6 +25,7 @@ option(BUILD_LIBTPMS_WRAPPER "build the libtpms reference wrapper" OFF)
 # -----------------------------
 # Include TPM Harness libraries
 # -----------------------------
+add_subdirectory(vendor)
 add_subdirectory(include)
 
 if (BUILD_LIBTPMS_WRAPPER)
@@ -44,7 +45,6 @@ if (BUILD_LIBTPMS_WRAPPER)
 
     target_compile_options(LibTPMSReference
       PUBLIC
-        -g
         -fsanitize=address,signed-integer-overflow,fuzzer-no-link
         -fprofile-instr-generate
         -fcoverage-mapping
@@ -66,8 +66,6 @@ if (BUILD_REFERENCE_WRAPPER)
     find_package(OpenSSL 1.1...3.5.99 REQUIRED)
     include_directories(BEFORE ${OPENSSL_INCLUDE_DIR})
 
-    add_subdirectory(vendor)
-
     add_library(TPMReference STATIC)
 
     target_sources(TPMReference
@@ -79,12 +77,11 @@ if (BUILD_REFERENCE_WRAPPER)
 
     target_link_libraries(TPMReference
         PUBLIC
-            vendor
+            TPM
             TPMHarness
     )
     target_compile_options(TPMReference
       PUBLIC
-        -g
         -fsanitize=address,signed-integer-overflow,fuzzer-no-link
         -fprofile-instr-generate
         -fcoverage-mapping
@@ -110,8 +107,6 @@ if (NOT LIB_ONLY)
     target_link_libraries(Tester
         PRIVATE
           TPMReference
-          Tpm_PlatformLib::Tpm_PlatformLib
-          Tpm_CoreLib::Tpm_CoreLib
     )
 
     target_compile_options(Tester
@@ -138,8 +133,6 @@ if (NOT LIB_ONLY)
     target_link_libraries(Fuzzer
       PRIVATE
         TPMReference
-        Tpm_PlatformLib::Tpm_PlatformLib
-        Tpm_CoreLib::Tpm_CoreLib
     )
 
     target_compile_options(Fuzzer
@@ -168,18 +161,9 @@ if (NOT LIB_ONLY)
 
     target_link_libraries(proto-fuzzer
         PRIVATE
-            TPMReference
-            Tpm_PlatformLib::Tpm_PlatformLib
-            Tpm_CoreLib::Tpm_CoreLib
             protobuf-mutator-libfuzzer
-            ${LIB_PROTO_MUTATOR_FUZZER_LIBRARIES}
+            TPMReference
     )
-
-    find_package(absl CONFIG QUIET)
-    if(TARGET absl::log_internal_check_op)
-        target_link_libraries(Fuzzer PRIVATE absl::log_internal_check_op)
-        target_link_libraries(proto-fuzzer PRIVATE absl::log_internal_check_op)
-    endif()
 
     target_include_directories(proto-fuzzer
       PRIVATE
@@ -200,6 +184,13 @@ if (NOT LIB_ONLY)
         -fprofile-instr-generate
         -fcoverage-mapping
     )
+
+    find_package(absl CONFIG QUIET)
+    if(TARGET absl::log_internal_check_op)
+        foreach(target Fuzzer proto-fuzzer Tester)
+            target_link_libraries(${target} PRIVATE absl::log_internal_check_op)
+        endforeach()
+    endif()
 endif()
 
 # -----------------------------------------------------------

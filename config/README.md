@@ -27,7 +27,7 @@ cp determinism.patch /path/to/fuzzer-project/patches/
 
 5. Build with patch:
 ```bash
-docker-compose build tpm-simulator
+docker-compose build fuzzer
 ```
 
 ## Verifying Your Patch
@@ -35,7 +35,7 @@ docker-compose build tpm-simulator
 After building, verify your changes were applied:
 ```bash
 # Example: Check a specific file
-docker run --rm tpm-simulator cat /tpm-src/path/to/your/file.h | grep YOUR_SETTING
+docker compose run --rm fuzzer cat /tpm-src/path/to/your/file.h | grep YOUR_SETTING
 ```
 
 ## If Patch Fails to Apply
