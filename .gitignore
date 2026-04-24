@@ -43,7 +43,8 @@
 !*.nix
 !example/
 !example/**/*
-!DEVELOPER.md
+!docs/
+!docs/**/*
 
 # Always disallow
 __pycache__/
