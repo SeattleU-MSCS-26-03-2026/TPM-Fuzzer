@@ -19,10 +19,10 @@ ARTIFACTS_DIR="${ARTIFACTS_DIR:-$PROJECT_DIR/artifacts}"
 GEN_COVERAGE="${GEN_COVERAGE:-0}"
 FUZZER_EXTRA_ARGS="${FUZZER_EXTRA_ARGS:-}"
 
-LLVM_PROFRAW="${LLVM_PROFRAW:-$BUILD_DIR/$FUZZER_BIN_NAME.profraw}"
-LLVM_PROFDATA="${LLVM_PROFDATA:-$BUILD_DIR/$FUZZER_BIN_NAME.profdata}"
 COVERAGE_DIR="${COVERAGE_DIR:-$BUILD_DIR/coverage}"
 SRC_COVERAGE_DIR="${SRC_COVERAGE_DIR:-$BUILD_DIR/src-coverage}"
+LLVM_PROFRAW="${LLVM_PROFRAW:-$COVERAGE_DIR/fuzzer.profraw}"
+LLVM_PROFDATA="${LLVM_PROFDATA:-$COVERAGE_DIR/fuzzer.profdata}"
 
 TPM_SOURCE_DIR="${TPM_SOURCE_DIR:-$PROJECT_DIR/vendor/TPM}"
 FUZZER_SOURCE_DIR="${FUZZER_SOURCE_DIR:-$PROJECT_DIR/src}"
@@ -43,7 +43,7 @@ generate_coverage() {
     require_bin "$(command -v llvm-cov)"
 
     log "Creating profdata"
-    llvm-profdata merge -sparse "$LLVM_PROFRAW" -o "$LLVM_PROFDATA"
+    llvm-profdata merge --sparse "$LLVM_PROFRAW" -o "$LLVM_PROFDATA"
 
     mapfile -t tpm_sources < <(
         find "$TPM_SOURCE_DIR" -type f \( -name '*.c' -o -name '*.cc' \)
@@ -77,7 +77,7 @@ generate_coverage() {
 
 main() {
     require_bin "$FUZZER_BIN"
-    mkdir -p "$CORPUS_DIR" "$RUN_CORPUS_DIR" "$SEEDS_DIR" "$ARTIFACTS_DIR"
+    mkdir -p "$CORPUS_DIR" "$RUN_CORPUS_DIR" "$SEEDS_DIR" "$ARTIFACTS_DIR" "$COVERAGE_DIR"
 
     log "Starting fuzzer"
     LLVM_PROFILE_FILE="$LLVM_PROFRAW" \
@@ -89,8 +89,7 @@ main() {
         "$SEEDS_DIR"
 
     log "Merging corpus"
-    LLVM_PROFILE_FILE="$LLVM_PROFRAW" \
-        "$FUZZER_BIN" \
+    "$FUZZER_BIN" \
         -merge=1 \
         $FUZZER_EXTRA_ARGS \
         "$CORPUS_DIR" \

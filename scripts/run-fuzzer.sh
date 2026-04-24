@@ -6,7 +6,11 @@
 #   - Verifies those directories are not owned by root.
 #
 # Options:
-#   --track: Track coverage information.
+#   --track:   Track coverage information.
+#   --bin BIN: Choose which fuzzer to run (fuzzer or proto-fuzzer).
+#   --combine: Merge profdata from both fuzzers and generate a combined
+#              coverage report in coverage-overall/. At least one fuzzer
+#              must have been run first.
 BLUE="\033[34m"
 RESET="\033[0m"
 COVERAGE_HISTORY="${FUZZER_COV_HISTORY:-coverage-history/history.csv}"
@@ -65,6 +69,26 @@ archive_coverage() {
     tar czf "$out" "$coverage_directory"
 }
 
+combine_coverage() {
+    if [[ ! -f coverage/fuzzer.profdata && ! -f proto-coverage/fuzzer.profdata ]]; then
+        printf 'Error: No fuzzer profdata found. Run at least one fuzzer first.\n' >&2
+        printf '  Expected: coverage/fuzzer.profdata or proto-coverage/fuzzer.profdata\n' >&2
+        exit 1
+    fi
+
+    mkdir -p coverage-overall
+
+    echo -e "${BLUE}[1/1] Generating combined coverage report.${RESET}\n"
+    docker compose run --rm \
+        --volume "$(pwd)/coverage:/srv/coverage" \
+        --volume "$(pwd)/proto-coverage:/srv/proto-coverage" \
+        --volume "$(pwd)/coverage-overall:/srv/coverage-overall" \
+        --entrypoint /srv/scripts/docker/combine-coverage.sh \
+        fuzzer
+
+    echo -e "${BLUE}[INFO] Combined coverage report written to coverage-overall/${RESET}\n"
+}
+
 main() {
     [ -d corpus ] || mkdir corpus
     [ -d coverage ] || mkdir coverage
@@ -86,7 +110,9 @@ main() {
     fi
 
     local track=0
-    local bin="${FUZZER_BIN,,}"
+    local combine=0
+    local bin="$(echo "${FUZZER_BIN}" | tr '[:upper:]' '[:lower:]')"
+    local bin_explicit=0
 
     while [[ $# -gt 0 ]]; do
         case "$1" in
@@ -96,13 +122,24 @@ main() {
             ;;
         --bin)
             shift
-            bin="${1,,}"
+            bin="$(echo "$1" | tr '[:upper:]' '[:lower:]')"
+            bin_explicit=1
+            ;;
+        --combine)
+            combine=1
+            shift
             ;;
         *)
             shift
             ;;
         esac
     done
+
+    # --combine without --bin: skip the fuzzer run entirely
+    if [[ $combine -eq 1 && $bin_explicit -eq 0 ]]; then
+        combine_coverage
+        return
+    fi
 
     echo -e "${BLUE}[1/4] Destroying pre-existing images.${RESET}\n"
     docker compose down --rmi=all &>/dev/null
@@ -120,6 +157,10 @@ main() {
         echo -e "${BLUE}[4/4] Tracking Coverage.${RESET}\n"
         track_coverage "$COVERAGE_REPORT"
         archive_coverage
+    fi
+
+    if [[ $combine -eq 1 ]]; then
+        combine_coverage
     fi
 }
 
