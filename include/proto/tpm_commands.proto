@@ -2,17 +2,17 @@ syntax = "proto3";
 
 package tpm;
 
-import "commands/tpm_getrandom.proto";
-import "commands/tpm_create.proto";
-import "commands/tpm_createprimary.proto";
-import "commands/tpm_startauthsession.proto";
+import "tpm_commands/tpm_getrandom.proto";
+import "tpm_commands/tpm_create.proto";
+import "tpm_commands/tpm_createprimary.proto";
+import "tpm_commands/tpm_startauthsession.proto";
 
 message TPMCommand {
   oneof command {
-    commands.TPMGetRandom        getrandom        = 1;
-    commands.TPMCreate           create           = 2;
-    commands.TPMCreatePrimary    createprimary    = 3;
-    commands.TPMStartAuthSession startauthsession = 4;
+    tpm_commands.TPMGetRandom        getrandom        = 1;
+    tpm_commands.TPMCreate           create           = 2;
+    tpm_commands.TPMCreatePrimary    createprimary    = 3;
+    tpm_commands.TPMStartAuthSession startauthsession = 4;
   }
 }
 

@@ -45,6 +45,9 @@
 !example/**/*
 !docs/
 !docs/**/*
+!tools/
+!tools/seed-generation/
+!tools/seed-generation/**/*
 
 # Always disallow
 __pycache__/

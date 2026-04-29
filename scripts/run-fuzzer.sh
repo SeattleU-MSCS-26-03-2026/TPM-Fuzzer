@@ -70,34 +70,35 @@ archive_coverage() {
 }
 
 combine_coverage() {
-    if [[ ! -f coverage/fuzzer.profdata && ! -f proto-coverage/fuzzer.profdata ]]; then
+    if [[ ! -f coverage/bytearray/fuzzer.profdata && ! -f coverage/proto/fuzzer.profdata ]]; then
         printf 'Error: No fuzzer profdata found. Run at least one fuzzer first.\n' >&2
-        printf '  Expected: coverage/fuzzer.profdata or proto-coverage/fuzzer.profdata\n' >&2
+        printf '  Expected: coverage/bytearray/fuzzer.profdata or coverage/proto/fuzzer.profdata\n' >&2
         exit 1
     fi
 
-    mkdir -p coverage-overall
+    mkdir -p coverage/overall
 
     echo -e "${BLUE}[1/1] Generating combined coverage report.${RESET}\n"
     docker compose run --rm \
-        --volume "$(pwd)/coverage:/srv/coverage" \
-        --volume "$(pwd)/proto-coverage:/srv/proto-coverage" \
-        --volume "$(pwd)/coverage-overall:/srv/coverage-overall" \
+        --volume "$(pwd)/coverage/bytearray:/srv/coverage/bytearray" \
+        --volume "$(pwd)/coverage/proto:/srv/coverage/proto" \
+        --volume "$(pwd)/coverage/overall:/srv/coverage/overall" \
         --entrypoint /srv/scripts/docker/combine-coverage.sh \
         fuzzer
 
-    echo -e "${BLUE}[INFO] Combined coverage report written to coverage-overall/${RESET}\n"
+    echo -e "${BLUE}[INFO] Combined coverage report written to coverage/overall/${RESET}\n"
 }
 
 main() {
-    [ -d corpus ] || mkdir corpus
-    [ -d coverage ] || mkdir coverage
+    [ -d corpus ] || mkdir -p corpus/bytearray && mkdir -p corpus/proto
+    [ -d coverage ] || mkdir -p coverage/bytearray && mkdir -p coverage/proto
+    [ -d artifacts ] || mkdir -p artifacts/bytearray && mkdir -p artifacts/proto
 
-    if [ -O corpus ] || [ -O coverage ]; then
+    if [ -O corpus ] && [ -O coverage ] && [ -O artifacts ]; then
         :
     else
-        echo "Warning: 'corpus' or 'coverage' directory is owned by root. Please adjust permissions, e.g.:"
-        echo "  sudo chown -R \$(whoami):\$(whoami) corpus coverage"
+        echo "Warning: one or more required directories are owned by root or another user. Please adjust permissions, e.g.:"
+        echo "  sudo chown -R \$(whoami):\$(whoami) corpus coverage artifacts"
         exit 1
     fi
 

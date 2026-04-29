@@ -1,8 +1,14 @@
 FROM debian:stable AS base
 
+ARG UID=1000
+ARG GID=1000
+ARG USERNAME=dev
+
 ENV DEBIAN_FRONTEND=noninteractive
 ENV CXX=clang++
 ENV CC=clang
+ENV HOME=/home/${USERNAME}
+ENV XDG_CACHE_HOME=/home/${USERNAME}/.cache
 
 RUN apt-get update -q && \
     apt-get install -y --no-install-recommends \
@@ -27,12 +33,14 @@ RUN apt-get update -q && \
     cmake \
     ninja-build && \
     apt-get clean && \
-    rm -rf /var/lib/apt/lists/*
+    rm -rf /var/lib/apt/lists/* && \
+    groupadd --gid ${GID} ${USERNAME} && \
+    useradd --uid ${UID} --gid ${GID} --create-home --home-dir ${HOME} --shell /bin/bash ${USERNAME} && \
+    mkdir -p /srv/artifacts /srv/seeds /srv/corpus /srv/corpus-running ${XDG_CACHE_HOME} && \
+    chown -R ${UID}:${GID} /srv ${HOME}
 
 WORKDIR /srv
-COPY . /srv/
-
-RUN mkdir -p /srv/artifacts /srv/seeds /srv/corpus /srv/corpus-running
+COPY --chown=${UID}:${GID} . /srv/
 
 # Apply determinism patch to TPM submodule
 RUN if [ -f config/determinism.patch ]; then \
@@ -45,6 +53,9 @@ RUN if [ -f config/determinism.patch ]; then \
     fi
 
 FROM base AS fuzzer
+COPY --from=ghcr.io/astral-sh/uv:latest /uv /uvx /bin/
+
+USER ${USERNAME}
 
 RUN cmake -B /srv/build -G Ninja -S /srv
 RUN cmake --build /srv/build
@@ -58,6 +69,8 @@ RUN apt-get update -q && \
     catch2 && \
     apt-get clean && \
     rm -rf /var/lib/apt/lists/*
+
+USER ${USERNAME}
 
 RUN cmake -B /srv/build -G Ninja -S /srv -DRUN_UNIT_TESTS=ON
 RUN cmake --build /srv/build

@@ -1,0 +1,7 @@
+syntax = "proto3";
+
+package tpm_types;
+
+message TPMIDHObject {
+  uint32 handle = 1;
+}

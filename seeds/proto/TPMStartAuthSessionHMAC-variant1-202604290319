@@ -1,0 +1,69 @@
+commands {
+  startauthsession {
+    header {
+      tag: TPM_ST_NO_SESSIONS
+      command_size: 43
+      command_code: TPM_CC_START_AUTH_SESSION
+    }
+    tpm_key: TPM_RH_NULL
+    bind: TPM_RH_NULL
+    nonce {
+      size: 16
+      buffer: "{\315\215Q\370ad7\207Rj\301\020\362\271\331"
+    }
+    encrypted_salt {
+    }
+    symmetric {
+      algorithm: TPM_ALG_NULL
+      mode: TPM_ALG_NULL
+    }
+    auth_hash: TPM_ALG_SHA256
+  }
+}
+commands {
+  createprimary {
+    header {
+      tag: TPM_ST_SESSIONS
+      command_size: 67
+      command_code: TPM_CC_CREATE_PRIMARY
+    }
+    hierarchy: TPM_RH_OWNER
+    sessions {
+      session_handle: 33554432
+    }
+    in_sensitive {
+      size: 4
+      sensitive {
+        user_auth {
+        }
+        data {
+        }
+      }
+    }
+    in_public {
+      size: 26
+      public_area {
+        type: TPM_ALG_RSA
+        name_alg: TPM_ALG_SHA256
+        object_attributes: 197746
+        auth_policy {
+        }
+        parameters {
+          rsa {
+            symmetric: TPM_ALG_AES
+            scheme: 128
+            key_bits: 67
+            exponent: 1050624
+          }
+        }
+        unique {
+          rsa: ""
+        }
+      }
+    }
+    outside_info {
+    }
+    creation_pcr {
+    }
+  }
+}

@@ -1,8 +1,0 @@
-syntax = "proto3";
-
-package types;
-
-message TPM2BData {
-  uint32 size   = 1;
-  bytes  buffer = 2;
-}

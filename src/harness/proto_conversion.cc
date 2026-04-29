@@ -128,38 +128,39 @@ bool MarshalMessageField(const google::protobuf::Message& child,
 
   const std::string name = std::string(desc->full_name());
 
-  if (name == "types.TPMHeader") {
-    const auto* header = dynamic_cast<const types::TPMHeader*>(&child);
+  if (name == "tpm_types.TPMHeader") {
+    const auto* header = dynamic_cast<const tpm_types::TPMHeader*>(&child);
     if (!header) return false;
     return MarshalCommandHeader(*header, buf, offset);
   }
 
-  if (name == "types.TPM2BData") {
-    const auto* data = dynamic_cast<const types::TPM2BData*>(&child);
+  if (name == "tpm_types.TPM2BData") {
+    const auto* data = dynamic_cast<const tpm_types::TPM2BData*>(&child);
     if (!data) return false;
     return MarshalTPM2BData(*data, buf, offset);
   }
 
-  if (name == "types.TPMTSymDef") {
-    const auto* sym = dynamic_cast<const types::TPMTSymDef*>(&child);
+  if (name == "tpm_types.TPMTSymDef") {
+    const auto* sym = dynamic_cast<const tpm_types::TPMTSymDef*>(&child);
     if (!sym) return false;
     return MarshalTPMTSymDef(*sym, buf, offset);
   }
 
-  if (name == "types.TPM2BSensitiveCreate") {
-    const auto* sens = dynamic_cast<const types::TPM2BSensitiveCreate*>(&child);
+  if (name == "tpm_types.TPM2BSensitiveCreate") {
+    const auto* sens =
+        dynamic_cast<const tpm_types::TPM2BSensitiveCreate*>(&child);
     if (!sens) return false;
     return MarshalTPM2BSensitiveCreate(*sens, buf, offset);
   }
 
-  if (name == "types.TPM2BPublic") {
-    const auto* pub = dynamic_cast<const types::TPM2BPublic*>(&child);
+  if (name == "tpm_types.TPM2BPublic") {
+    const auto* pub = dynamic_cast<const tpm_types::TPM2BPublic*>(&child);
     if (!pub) return false;
     return MarshalTPM2BPublic(*pub, buf, offset);
   }
 
-  if (name == "types.TPMLPCRSelection") {
-    const auto* pcr = dynamic_cast<const types::TPMLPCRSelection*>(&child);
+  if (name == "tpm_types.TPMLPCRSelection") {
+    const auto* pcr = dynamic_cast<const tpm_types::TPMLPCRSelection*>(&child);
     if (!pcr) return false;
     return MarshalTPMLPCRSelection(*pcr, buf, offset);
   }
@@ -182,7 +183,7 @@ bool MarshalRepeatedField(const google::protobuf::Message& parent,
 
   // Check if this is a TPMSession repeated field.
   const std::string& msg_type = std::string(field.message_type()->full_name());
-  if (msg_type != "types.TPMSession") return false;
+  if (msg_type != "tpm_types.TPMSession") return false;
 
   // Write authorizationSize placeholder.
   const size_t auth_size_pos = offset;
@@ -194,7 +195,8 @@ bool MarshalRepeatedField(const google::protobuf::Message& parent,
 
   for (int i = 0; i < count; ++i) {
     const auto& session_msg = reflection.GetRepeatedMessage(parent, &field, i);
-    const auto* session = dynamic_cast<const types::TPMSession*>(&session_msg);
+    const auto* session =
+        dynamic_cast<const tpm_types::TPMSession*>(&session_msg);
     if (!session) return false;
     if (!MarshalTPMSession(*session, buf, offset)) return false;
   }
@@ -211,8 +213,8 @@ bool MarshalRepeatedField(const google::protobuf::Message& parent,
 // Type-specific marshalers
 // ─────────────────────────────────────────────────────────────────────────────
 
-bool MarshalTPM2BData(const types::TPM2BData& data, std::vector<uint8_t>* buf,
-                      size_t& offset) {
+bool MarshalTPM2BData(const tpm_types::TPM2BData& data,
+                      std::vector<uint8_t>* buf, size_t& offset) {
   TPM2B_DATA tpm_data = {};
   const std::string& data_buf = data.buffer();
   const size_t copy_len = std::min(data_buf.size(), sizeof(tpm_data.buffer));
@@ -223,8 +225,8 @@ bool MarshalTPM2BData(const types::TPM2BData& data, std::vector<uint8_t>* buf,
       Tss2_MU_TPM2B_DATA_Marshal(&tpm_data, buf->data(), buf->size(), &offset));
 }
 
-bool MarshalTPMTSymDef(const types::TPMTSymDef& sym, std::vector<uint8_t>* buf,
-                       size_t& offset) {
+bool MarshalTPMTSymDef(const tpm_types::TPMTSymDef& sym,
+                       std::vector<uint8_t>* buf, size_t& offset) {
   TPMT_SYM_DEF symmetric = {};
   // Only AES and NULL are valid TPMI_ALG_SYM selectors in our enum.
   TPMI_ALG_SYM alg = static_cast<TPMI_ALG_SYM>(sym.algorithm());
@@ -240,7 +242,7 @@ bool MarshalTPMTSymDef(const types::TPMTSymDef& sym, std::vector<uint8_t>* buf,
                                                        buf->size(), &offset));
 }
 
-bool MarshalTPMSession(const types::TPMSession& session,
+bool MarshalTPMSession(const tpm_types::TPMSession& session,
                        std::vector<uint8_t>* buf, size_t& offset) {
   // sessionHandle
   if (MUCommandFailed(Tss2_MU_UINT32_Marshal(
@@ -282,8 +284,9 @@ bool MarshalTPMSession(const types::TPMSession& session,
   return true;
 }
 
-bool MarshalTPM2BSensitiveCreate(const types::TPM2BSensitiveCreate& sens_proto,
-                                 std::vector<uint8_t>* buf, size_t& offset) {
+bool MarshalTPM2BSensitiveCreate(
+    const tpm_types::TPM2BSensitiveCreate& sens_proto,
+    std::vector<uint8_t>* buf, size_t& offset) {
   TPM2B_SENSITIVE_CREATE in_sensitive = {};
 
   if (sens_proto.has_sensitive()) {
@@ -313,7 +316,7 @@ bool MarshalTPM2BSensitiveCreate(const types::TPM2BSensitiveCreate& sens_proto,
       &in_sensitive, buf->data(), buf->size(), &offset));
 }
 
-bool MarshalTPM2BPublic(const types::TPM2BPublic& pub_proto,
+bool MarshalTPM2BPublic(const tpm_types::TPM2BPublic& pub_proto,
                         std::vector<uint8_t>* buf, size_t& offset) {
   TPM2B_PUBLIC in_public = {};
   // Default to NULL so TPMU_PUBLIC_PARMS/TPMU_PUBLIC_ID marshaling skips
@@ -413,7 +416,7 @@ bool MarshalTPM2BPublic(const types::TPM2BPublic& pub_proto,
                                                        buf->size(), &offset));
 }
 
-bool MarshalTPMLPCRSelection(const types::TPMLPCRSelection& pcr_proto,
+bool MarshalTPMLPCRSelection(const tpm_types::TPMLPCRSelection& pcr_proto,
                              std::vector<uint8_t>* buf, size_t& offset) {
   TPML_PCR_SELECTION creation_pcr = {};
 

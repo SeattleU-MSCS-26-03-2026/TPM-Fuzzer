@@ -1,0 +1,21 @@
+syntax = "proto3";
+
+package tpm_commands;
+
+import "tpm_types/tpm_header.proto";
+import "constants/tpm_rh.proto";
+import "constants/tpm_se.proto";
+import "constants/tpm_alg.proto";
+import "tpm_types/tpm2b_data.proto";
+import "tpm_types/tpmt_sym_def.proto";
+
+message TPMStartAuthSession {
+  tpm_types.TPMHeader  header         = 1;
+  constants.TPMRH  tpm_key        = 2;
+  constants.TPMRH  bind           = 3;
+  tpm_types.TPM2BData  nonce          = 4;
+  tpm_types.TPM2BData  encrypted_salt = 5;
+  constants.TPMSE  session_type   = 6;
+  tpm_types.TPMTSymDef symmetric      = 7;
+  constants.TPMALG auth_hash      = 8;
+}

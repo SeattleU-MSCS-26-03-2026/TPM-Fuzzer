@@ -5,10 +5,9 @@ services:
       dockerfile: Dockerfile
       target: fuzzer
     volumes:
-      - ./corpus:/srv/corpus
-      - ./seeds:/srv/seeds
-      - ./artifacts:/srv/artifacts
-      - ./coverage:/srv/build/coverage
+      - ./corpus/bytearray:/srv/corpus
+      - ./artifacts/bytearray:/srv/artifacts
+      - ./coverage/bytearray:/srv/build/coverage
     environment:
       FUZZER_EXTRA_ARGS: -seed=38912891 -runs=100000
       GEN_COVERAGE: "1"
@@ -19,14 +18,14 @@ services:
       dockerfile: Dockerfile
       target: fuzzer
     volumes:
-      - ./proto-corpus:/srv/corpus
-      - ./proto-seeds:/srv/seeds
-      - ./proto-artifacts:/srv/artifacts
-      - ./proto-coverage:/srv/build/coverage
+      - ./corpus/proto:/srv/corpus
+      - ./artifacts/proto:/srv/artifacts
+      - ./coverage/proto:/srv/build/coverage
     environment:
       FUZZER_EXTRA_ARGS: -seed=38912891 -runs=100000
       GEN_COVERAGE: "1"
       FUZZER_BIN_NAME: "proto-fuzzer"
+      SEEDS_DIR: "/srv/seeds/proto"
   test:
     build:
       context: .

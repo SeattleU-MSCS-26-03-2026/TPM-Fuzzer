@@ -1,0 +1,18 @@
+syntax = "proto3";
+
+package tpm_commands;
+
+import "tpm_types/tpm_header.proto";
+import "tpm_types/tpm2b_sensitive_create.proto";
+import "tpm_types/tpm2b_public.proto";
+import "tpm_types/tpm2b_data.proto";
+import "tpm_types/tpml_pcr_selection.proto";
+
+message TPMCreate {
+  tpm_types.TPMHeader            header        = 1;
+  bytes                      parent_handle = 2; //??
+  tpm_types.TPM2BSensitiveCreate in_sensitive  = 3;
+  tpm_types.TPM2BPublic          in_public     = 4;
+  tpm_types.TPM2BData            outside_info  = 5;
+  tpm_types.TPMLPCRSelection     creation_pcr  = 6;
+}

@@ -14,6 +14,15 @@ protobuf_generate(
   PROTOC_OUT_DIR ${CMAKE_CURRENT_BINARY_DIR}/proto
 )
 
+protobuf_generate(
+  TARGET TPMFuzzerProtobufs
+  LANGUAGE python
+  PROTOS ${PROTO_FILES}
+  IMPORT_DIRS ${CMAKE_CURRENT_SOURCE_DIR}/proto
+  PROTOC_OUT_DIR ${CMAKE_SOURCE_DIR}/tools/seed-generation
+  GENERATE_EXTENSIONS .py _pb2.py
+)
+
 target_include_directories(TPMFuzzerProtobufs
   PUBLIC
     ${CMAKE_CURRENT_BINARY_DIR}/proto

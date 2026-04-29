@@ -4,9 +4,9 @@
 # a unified coverage report in /srv/coverage-overall/.
 set -Eeuo pipefail
 
-BYTE_PROFDATA="${BYTE_PROFDATA:-/srv/coverage/fuzzer.profdata}"
-PROTO_PROFDATA="${PROTO_PROFDATA:-/srv/proto-coverage/fuzzer.profdata}"
-OUTPUT_DIR="${OUTPUT_DIR:-/srv/coverage-overall}"
+BYTE_PROFDATA="${BYTE_PROFDATA:-/srv/coverage/bytearray/fuzzer.profdata}"
+PROTO_PROFDATA="${PROTO_PROFDATA:-/srv/coverage/proto/fuzzer.profdata}"
+OUTPUT_DIR="${OUTPUT_DIR:-/srv/coverage/overall}"
 COMBINED_PROFDATA="$OUTPUT_DIR/combined.profdata"
 
 BYTE_FUZZER_BIN="${BYTE_FUZZER_BIN:-/srv/build/Fuzzer}"

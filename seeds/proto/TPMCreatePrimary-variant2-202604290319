@@ -1,0 +1,94 @@
+commands {
+  createprimary {
+    header {
+      tag: TPM_ST_SESSIONS
+      command_size: 67
+      command_code: TPM_CC_CREATE_PRIMARY
+    }
+    hierarchy: TPM_RH_OWNER
+    sessions {
+      session_handle: 1073741833
+    }
+    in_sensitive {
+      size: 4
+      sensitive {
+        user_auth {
+        }
+        data {
+        }
+      }
+    }
+    in_public {
+      size: 26
+      public_area {
+        type: TPM_ALG_RSA
+        name_alg: TPM_ALG_SHA256
+        object_attributes: 197746
+        auth_policy {
+        }
+        parameters {
+          rsa {
+            symmetric: TPM_ALG_AES
+            scheme: 128
+            key_bits: 67
+            exponent: 1050624
+          }
+        }
+        unique {
+          rsa: ""
+        }
+      }
+    }
+    outside_info {
+    }
+    creation_pcr {
+    }
+  }
+}
+commands {
+  createprimary {
+    header {
+      tag: TPM_ST_SESSIONS
+      command_size: 67
+      command_code: TPM_CC_CREATE_PRIMARY
+    }
+    hierarchy: TPM_RH_OWNER
+    sessions {
+      session_handle: 1073741833
+    }
+    in_sensitive {
+      size: 4
+      sensitive {
+        user_auth {
+        }
+        data {
+        }
+      }
+    }
+    in_public {
+      size: 26
+      public_area {
+        type: TPM_ALG_RSA
+        name_alg: TPM_ALG_SHA256
+        object_attributes: 197746
+        auth_policy {
+        }
+        parameters {
+          rsa {
+            symmetric: TPM_ALG_AES
+            scheme: 128
+            key_bits: 67
+            exponent: 1050624
+          }
+        }
+        unique {
+          rsa: ""
+        }
+      }
+    }
+    outside_info {
+    }
+    creation_pcr {
+    }
+  }
+}

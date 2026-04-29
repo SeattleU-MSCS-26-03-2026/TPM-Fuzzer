@@ -1,0 +1,9 @@
+commands {
+  getrandom {
+    header {
+      tag: TPM_ST_NO_SESSIONS
+      command_size: 12
+      command_code: TPM_CC_GET_RANDOM
+    }
+  }
+}

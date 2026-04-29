@@ -1,21 +1,21 @@
-#include "commands/tpm_createprimary.pb.h"
-#include "commands/tpm_getrandom.pb.h"
-#include "commands/tpm_startauthsession.pb.h"
 #include "tpm_commands.pb.h"
+#include "tpm_commands/tpm_createprimary.pb.h"
+#include "tpm_commands/tpm_getrandom.pb.h"
+#include "tpm_commands/tpm_startauthsession.pb.h"
+#include "tpm_types/tpm2b_data.pb.h"
+#include "tpm_types/tpm2b_public.pb.h"
+#include "tpm_types/tpm2b_sensitive_create.pb.h"
+#include "tpm_types/tpm_session.pb.h"
+#include "tpm_types/tpml_pcr_selection.pb.h"
+#include "tpm_types/tpmt_sym_def.pb.h"
 #include "tss2_common.h"
 #include "tss2_mu.h"
-#include "types/tpm2b_data.pb.h"
-#include "types/tpm2b_public.pb.h"
-#include "types/tpm2b_sensitive_create.pb.h"
-#include "types/tpm_session.pb.h"
-#include "types/tpml_pcr_selection.pb.h"
-#include "types/tpmt_sym_def.pb.h"
 
 static bool MUCommandFailed(TSS2_RC rc) { return rc != TSS2_RC_SUCCESS; }
 
 /// Marshals the TPM Command Header (Service Tag, Command Size & Command Code)
 /// into a byte array.
-static bool MarshalCommandHeader(const types::TPMHeader& header,
+static bool MarshalCommandHeader(const tpm_types::TPMHeader& header,
                                  std::vector<uint8_t>* buf, size_t& offset) {
   size_t start = offset;
   if (MUCommandFailed(Tss2_MU_UINT16_Marshal(static_cast<UINT16>(header.tag()),
@@ -74,20 +74,20 @@ bool MarshalRepeatedField(const google::protobuf::Message& parent,
                           std::vector<uint8_t>* buf, size_t& offset);
 
 // Type-specific marshalers.
-bool MarshalTPM2BData(const types::TPM2BData& data, std::vector<uint8_t>* buf,
-                      size_t& offset);
+bool MarshalTPM2BData(const tpm_types::TPM2BData& data,
+                      std::vector<uint8_t>* buf, size_t& offset);
 
-bool MarshalTPMTSymDef(const types::TPMTSymDef& sym, std::vector<uint8_t>* buf,
-                       size_t& offset);
-
-bool MarshalTPMSession(const types::TPMSession& session,
+bool MarshalTPMTSymDef(const tpm_types::TPMTSymDef& sym,
                        std::vector<uint8_t>* buf, size_t& offset);
 
-bool MarshalTPM2BSensitiveCreate(const types::TPM2BSensitiveCreate& sens,
+bool MarshalTPMSession(const tpm_types::TPMSession& session,
+                       std::vector<uint8_t>* buf, size_t& offset);
+
+bool MarshalTPM2BSensitiveCreate(const tpm_types::TPM2BSensitiveCreate& sens,
                                  std::vector<uint8_t>* buf, size_t& offset);
 
-bool MarshalTPM2BPublic(const types::TPM2BPublic& pub,
+bool MarshalTPM2BPublic(const tpm_types::TPM2BPublic& pub,
                         std::vector<uint8_t>* buf, size_t& offset);
 
-bool MarshalTPMLPCRSelection(const types::TPMLPCRSelection& pcr,
+bool MarshalTPMLPCRSelection(const tpm_types::TPMLPCRSelection& pcr,
                              std::vector<uint8_t>* buf, size_t& offset);

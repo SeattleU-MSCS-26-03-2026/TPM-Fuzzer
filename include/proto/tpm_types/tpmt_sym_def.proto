@@ -1,0 +1,11 @@
+syntax = "proto3";
+
+package tpm_types;
+
+import "constants/tpm_alg.proto";
+
+message TPMTSymDef {
+  constants.TPMALG algorithm = 1;
+  uint32           key_bits  = 2;
+  constants.TPMALG mode      = 3;
+}

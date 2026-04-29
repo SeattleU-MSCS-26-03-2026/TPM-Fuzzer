@@ -12,8 +12,8 @@ extern "C" {
 constexpr uint32_t kFirstHmacSessionHandle = 0x02000000;
 namespace {
 static protobuf_mutator::libfuzzer::PostProcessorRegistration<
-    commands::TPMGetRandom>
-    reg = {[](commands::TPMGetRandom* msg, unsigned int /* seed */) {
+    tpm_commands::TPMGetRandom>
+    reg = {[](tpm_commands::TPMGetRandom* msg, unsigned int /* seed */) {
       msg->mutable_header()->set_tag(constants::TPM_ST_NO_SESSIONS);
       msg->mutable_header()->set_command_code(constants::TPM_CC_GET_RANDOM);
       msg->mutable_header()->set_command_size(12);
@@ -23,9 +23,9 @@ static protobuf_mutator::libfuzzer::PostProcessorRegistration<
 
 // ── StartAuthSession PostProcessor ───────────────────────────────────────────
 static protobuf_mutator::libfuzzer::PostProcessorRegistration<
-    commands::TPMStartAuthSession>
+    tpm_commands::TPMStartAuthSession>
     reg_startauth = {
-        [](commands::TPMStartAuthSession* msg, unsigned int /* seed */) {
+        [](tpm_commands::TPMStartAuthSession* msg, unsigned int /* seed */) {
           msg->mutable_header()->set_tag(constants::TPM_ST_NO_SESSIONS);
           msg->mutable_header()->set_command_code(
               constants::TPM_CC_START_AUTH_SESSION);
@@ -52,8 +52,8 @@ static protobuf_mutator::libfuzzer::PostProcessorRegistration<
 
 // ── CreatePrimary PostProcessor ──────────────────────────────────────────────
 static protobuf_mutator::libfuzzer::PostProcessorRegistration<
-    commands::TPMCreatePrimary>
-    reg_createprimary = {[](commands::TPMCreatePrimary* msg,
+    tpm_commands::TPMCreatePrimary>
+    reg_createprimary = {[](tpm_commands::TPMCreatePrimary* msg,
                             unsigned int /* seed */) {
       msg->mutable_header()->set_tag(constants::TPM_ST_SESSIONS);
       msg->mutable_header()->set_command_code(constants::TPM_CC_CREATE_PRIMARY);
@@ -63,7 +63,7 @@ static protobuf_mutator::libfuzzer::PostProcessorRegistration<
 
       // Tss2_MU_TPM2B_PUBLIC_Marshal requires the public area type and
       // parms oneof to be mutually consistent.  The valid public area
-      // types supported by our proto are RSA and KEYEDHASH.  Enforce
+      // tpm_types supported by our proto are RSA and KEYEDHASH.  Enforce
       // whichever was chosen by the fuzzer, defaulting to RSA.
       auto* pa = msg->mutable_in_public()->mutable_public_area();
       auto* parms = pa->mutable_parameters();
@@ -129,10 +129,10 @@ static protobuf_mutator::libfuzzer::PostProcessorRegistration<
 
       // Ensure CreatePrimary has at least one session referencing the
       // first HMAC session handle.
-      commands::TPMCreatePrimary* cp =
+      tpm_commands::TPMCreatePrimary* cp =
           seq->mutable_commands(create_primary_index)->mutable_createprimary();
       if (cp->sessions_size() == 0) {
-        types::TPMSession* session = cp->add_sessions();
+        tpm_types::TPMSession* session = cp->add_sessions();
         session->set_session_handle(kFirstHmacSessionHandle);
         session->set_nonce_size(0);
         session->set_session_attributes(0);

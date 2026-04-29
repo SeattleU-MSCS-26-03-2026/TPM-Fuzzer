@@ -1,0 +1,21 @@
+syntax = "proto3";
+
+package tpm_commands;
+
+import "tpm_types/tpm_header.proto";
+import "constants/tpm_rh.proto";
+import "tpm_types/tpm2b_sensitive_create.proto";
+import "tpm_types/tpm2b_public.proto";
+import "tpm_types/tpm2b_data.proto";
+import "tpm_types/tpml_pcr_selection.proto";
+import "tpm_types/tpm_session.proto";
+
+message TPMCreatePrimary {
+  tpm_types.TPMHeader            header       = 1;
+  constants.TPMRH            hierarchy    = 2;
+  repeated tpm_types.TPMSession  sessions     = 3;
+  tpm_types.TPM2BSensitiveCreate in_sensitive = 4;
+  tpm_types.TPM2BPublic          in_public    = 5;
+  tpm_types.TPM2BData            outside_info = 6;
+  tpm_types.TPMLPCRSelection     creation_pcr = 7;
+}

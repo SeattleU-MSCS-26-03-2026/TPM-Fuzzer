@@ -1,0 +1,10 @@
+syntax = "proto3";
+
+package tpm_commands;
+
+import "tpm_types/tpm_header.proto";
+
+message TPMGetRandom {
+  tpm_types.TPMHeader header          = 1;
+  uint32          bytes_requested = 2;
+}
