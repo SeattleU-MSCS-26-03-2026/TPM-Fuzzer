@@ -6,10 +6,11 @@ import "constants/tpm_alg.proto";
 import "tpm_types/tpm2b_digest.proto";
 
 message TPMSRSAParms {
-  constants.TPMALG symmetric = 1;
-  constants.TPMALG scheme    = 2;
-  uint32           key_bits  = 3;
-  uint32           exponent  = 4;
+  constants.TPMALG symmetric          = 1;
+  constants.TPMALG scheme             = 2;
+  uint32           symmetric_key_bits = 3;
+  uint32           key_bits           = 4;
+  uint32           exponent           = 5;
 }
 
 message TPMSKeyedHashParms {

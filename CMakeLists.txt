@@ -33,6 +33,7 @@ if (BUILD_LIBTPMS_WRAPPER)
 
     add_library(LibTPMSReference STATIC
         example/wrapper.cc
+        src/harness/proto_normalization.cc
         src/harness/proto_conversion.cc
         src/parser/byte_parser.cc
     )
@@ -69,8 +70,10 @@ if (BUILD_REFERENCE_WRAPPER)
     add_library(TPMReference STATIC)
 
     target_sources(TPMReference
-        PUBLIC
+        PRIVATE
             src/harness/tpm_wrapper.c
+            src/harness/proto_postprocessors.cc
+            src/harness/proto_normalization.cc
             src/harness/proto_conversion.cc
             src/parser/byte_parser.cc
     )
@@ -85,6 +88,11 @@ if (BUILD_REFERENCE_WRAPPER)
         -fsanitize=address,signed-integer-overflow,fuzzer-no-link
         -fprofile-instr-generate
         -fcoverage-mapping
+    )
+
+    target_include_directories(TPMReference
+      PRIVATE
+        ${CMAKE_CURRENT_SOURCE_DIR}/vendor/libprotobuf-mutator
     )
 
     target_link_options(TPMReference

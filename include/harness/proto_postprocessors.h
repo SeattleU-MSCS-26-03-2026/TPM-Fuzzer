@@ -1,0 +1,6 @@
+#ifndef HARNESS_PROTO_POSTPROCESSORS_H_
+#define HARNESS_PROTO_POSTPROCESSORS_H_
+
+bool RegisterPostProcessors();
+
+#endif  // HARNESS_PROTO_POSTPROCESSORS_H_

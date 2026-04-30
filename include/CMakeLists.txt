@@ -49,6 +49,8 @@ target_sources(TPMHarness
   FILE_SET publicHeaders
   TYPE HEADERS
   FILES
+    harness/proto_postprocessors.h
+    harness/proto_normalization.h
     harness/proto_conversion.h
     harness/tpm_wrapper.h
     parser/byte_parser.h

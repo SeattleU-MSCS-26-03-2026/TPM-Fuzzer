@@ -358,7 +358,7 @@ bool MarshalTPM2BPublic(const tpm_types::TPM2BPublic& pub_proto,
 
         if (sym_alg != TPM2_ALG_NULL) {
           in_public.publicArea.parameters.rsaDetail.symmetric.keyBits.aes =
-              static_cast<TPM2_KEY_BITS>(rsa.key_bits());
+              static_cast<TPM2_KEY_BITS>(rsa.symmetric_key_bits());
           in_public.publicArea.parameters.rsaDetail.symmetric.mode.aes =
               TPM2_ALG_CFB;
         }
