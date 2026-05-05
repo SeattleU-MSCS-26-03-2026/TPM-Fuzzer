@@ -64,6 +64,7 @@ class TPM_CC(Enum):
     NV_READ = 0x0000014E
     NV_READLOCK = 0x0000014F
     NV_EXTEND = 0x00000136
+    RSA_DECRYPT = 0x00000159
 
     def proto_value(self):
         try:
@@ -71,7 +72,6 @@ class TPM_CC(Enum):
         except ValueError as e:
             # NOTE: Protobuf does not define CC
             return tpm_cc_pb2.TPMCC.Name(0)  # type: ignore
-
 
 class TPM_RH(Enum):
     """
@@ -123,6 +123,8 @@ class TPM_ALG(Enum):
     CFB = 0x0043
     NULL = 0x0010
     RSASSA = 0x0014
+    RSAES = 0x0015
+    OAEP = 0x0017
     KEYEDHASH = 0x0008
 
 
@@ -515,6 +517,28 @@ class TPMT_SIG_SCHEME:
             return s
         h = _alg_to_int(self.hash_alg).to_bytes(2, BYTE_ORDER)
         return s + h
+
+
+@dataclass
+class TPMT_RSA_DECRYPT:
+    """
+    TPMT_RSA_DECRYPT: RSA decryption scheme used in TPM2_RSA_Decrypt.
+
+      scheme  (UINT16)              — TPM_ALG_RSAES, TPM_ALG_OAEP, or TPM_ALG_NULL
+      hashAlg (UINT16, OAEP only)   — hash algorithm for OAEP label encoding
+    """
+
+    scheme: Union[int, TPM_ALG] = TPM_ALG.RSAES
+    hash_alg: Optional[Union[int, TPM_ALG]] = None  # only used with OAEP
+
+    def to_bytes(self) -> bytes:
+        s = _alg_to_int(self.scheme).to_bytes(2, BYTE_ORDER)
+        if (
+            _alg_to_int(self.scheme) == TPM_ALG.OAEP.value
+            and self.hash_alg is not None
+        ):
+            s += _alg_to_int(self.hash_alg).to_bytes(2, BYTE_ORDER)
+        return s
 
 
 @dataclass

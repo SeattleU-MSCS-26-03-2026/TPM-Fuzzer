@@ -94,10 +94,16 @@ void NormalizeCreate(tpm_commands::TPMCreate* msg) {
                                 kChildObjectAttributes);
 }
 
+void NormalizeRSADecrypt(tpm_commands::TPMRSADecrypt* msg) {
+  msg->mutable_header()->set_tag(constants::TPM_ST_SESSIONS);
+  msg->mutable_header()->set_command_code(constants::TPM_CC_RSA_DECRYPT);
+}
+
 void NormalizeCommandSequence(tpm::TPMCommandSequence* seq) {
   int startauth_index = -1;
   int create_primary_index = -1;
   int create_index = -1;
+  int rsadecrypt_index = -1;
 
   for (int i = 0; i < seq->commands_size(); ++i) {
     if (startauth_index == -1 && seq->commands(i).has_startauthsession()) {
@@ -109,7 +115,38 @@ void NormalizeCommandSequence(tpm::TPMCommandSequence* seq) {
     if (create_index == -1 && seq->commands(i).has_create()) {
       create_index = i;
     }
+    if (rsadecrypt_index == -1 && seq->commands(i).has_rsadecrypt()) {
+      rsadecrypt_index = i;
+    }
   }
+
+  // ── RSA_Decrypt path ───────────────────────────────────────────────────────
+  if (rsadecrypt_index != -1 && create_index == -1) {
+    tpm_commands::TPMRSADecrypt rsadecrypt_msg;
+    rsadecrypt_msg.CopyFrom(seq->commands(rsadecrypt_index).rsadecrypt());
+
+    tpm_commands::TPMCreatePrimary create_primary_msg;
+    if (create_primary_index != -1) {
+      create_primary_msg.CopyFrom(
+          seq->commands(create_primary_index).createprimary());
+    }
+
+    seq->clear_commands();
+
+    tpm_commands::TPMCreatePrimary* cp =
+        seq->add_commands()->mutable_createprimary();
+    cp->CopyFrom(create_primary_msg);
+    NormalizeCreatePrimary(cp);
+
+    tpm_commands::TPMRSADecrypt* rsa_decrypt =
+        seq->add_commands()->mutable_rsadecrypt();
+    rsa_decrypt->CopyFrom(rsadecrypt_msg);
+    NormalizeRSADecrypt(rsa_decrypt);
+
+    return;
+  }
+
+  // ── Create / CreatePrimary path (existing logic) ───────────────────────────
   if (create_primary_index == -1 && create_index == -1) return;
 
   tpm_commands::TPMStartAuthSession startauth_msg;

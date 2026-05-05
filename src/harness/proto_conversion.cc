@@ -165,6 +165,18 @@ bool MarshalMessageField(const google::protobuf::Message& child,
     return MarshalTPMLPCRSelection(*pcr, buf, offset);
   }
 
+  if (name == "tpm_types.TPM2BPublicKeyRSA") {
+    const auto* rsa = dynamic_cast<const tpm_types::TPM2BPublicKeyRSA*>(&child);
+    if (!rsa) return false;
+    return MarshalTPM2BPublicKeyRSA(*rsa, buf, offset);
+  }
+
+  if (name == "tpm_types.TPMTRSADecrypt") {
+    const auto* scheme = dynamic_cast<const tpm_types::TPMTRSADecrypt*>(&child);
+    if (!scheme) return false;
+    return MarshalTPMTRSADecrypt(*scheme, buf, offset);
+  }
+
   return false;
 }
 
@@ -438,4 +450,31 @@ bool MarshalTPMLPCRSelection(const tpm_types::TPMLPCRSelection& pcr_proto,
 
   return !MUCommandFailed(Tss2_MU_TPML_PCR_SELECTION_Marshal(
       &creation_pcr, buf->data(), buf->size(), &offset));
+}
+
+bool MarshalTPM2BPublicKeyRSA(const tpm_types::TPM2BPublicKeyRSA& rsa_proto,
+                              std::vector<uint8_t>* buf, size_t& offset) {
+  TPM2B_PUBLIC_KEY_RSA cipher = {};
+  const std::string& data = rsa_proto.buffer();
+  const size_t copy_len = std::min(data.size(), sizeof(cipher.buffer));
+  cipher.size = static_cast<uint16_t>(copy_len);
+  if (copy_len > 0) std::memcpy(cipher.buffer, data.data(), copy_len);
+  return !MUCommandFailed(Tss2_MU_TPM2B_PUBLIC_KEY_RSA_Marshal(
+      &cipher, buf->data(), buf->size(), &offset));
+}
+
+bool MarshalTPMTRSADecrypt(const tpm_types::TPMTRSADecrypt& scheme_proto,
+                           std::vector<uint8_t>* buf, size_t& offset) {
+  const auto scheme = static_cast<uint16_t>(scheme_proto.scheme());
+  if (MUCommandFailed(
+          Tss2_MU_UINT16_Marshal(scheme, buf->data(), buf->size(), &offset)))
+    return false;
+  // hashAlg field is only marshaled for OAEP (TPM2_ALG_OAEP = 0x0017).
+  if (scheme == TPM2_ALG_OAEP) {
+    const auto hash_alg = static_cast<uint16_t>(scheme_proto.hash_alg());
+    if (MUCommandFailed(Tss2_MU_UINT16_Marshal(hash_alg, buf->data(),
+                                               buf->size(), &offset)))
+      return false;
+  }
+  return true;
 }

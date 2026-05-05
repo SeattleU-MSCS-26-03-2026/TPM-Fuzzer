@@ -1,12 +1,15 @@
 #include "tpm_commands.pb.h"
 #include "tpm_commands/tpm_createprimary.pb.h"
 #include "tpm_commands/tpm_getrandom.pb.h"
+#include "tpm_commands/tpm_rsa_decrypt.pb.h"
 #include "tpm_commands/tpm_startauthsession.pb.h"
 #include "tpm_types/tpm2b_data.pb.h"
 #include "tpm_types/tpm2b_public.pb.h"
+#include "tpm_types/tpm2b_public_key_rsa.pb.h"
 #include "tpm_types/tpm2b_sensitive_create.pb.h"
 #include "tpm_types/tpm_session.pb.h"
 #include "tpm_types/tpml_pcr_selection.pb.h"
+#include "tpm_types/tpmt_rsa_decrypt.pb.h"
 #include "tpm_types/tpmt_sym_def.pb.h"
 #include "tss2_common.h"
 #include "tss2_mu.h"
@@ -91,3 +94,9 @@ bool MarshalTPM2BPublic(const tpm_types::TPM2BPublic& pub,
 
 bool MarshalTPMLPCRSelection(const tpm_types::TPMLPCRSelection& pcr,
                              std::vector<uint8_t>* buf, size_t& offset);
+
+bool MarshalTPM2BPublicKeyRSA(const tpm_types::TPM2BPublicKeyRSA& rsa,
+                              std::vector<uint8_t>* buf, size_t& offset);
+
+bool MarshalTPMTRSADecrypt(const tpm_types::TPMTRSADecrypt& scheme,
+                           std::vector<uint8_t>* buf, size_t& offset);

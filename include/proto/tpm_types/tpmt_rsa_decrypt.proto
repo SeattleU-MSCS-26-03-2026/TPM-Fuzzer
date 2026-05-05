@@ -1,0 +1,10 @@
+syntax = "proto3";
+
+package tpm_types;
+
+import "constants/tpm_alg.proto";
+
+message TPMTRSADecrypt {
+  constants.TPMALG scheme   = 1;
+  constants.TPMALG hash_alg = 2;
+}

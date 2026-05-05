@@ -637,6 +637,80 @@ def _generate_seeds(
         )
 
 
+def tpm_rsa_decrypt_seeds() -> SeedVariants:
+    """
+    Generates seeds for TPM2_RSA_Decrypt targeting line coverage of RSA_Decrypt.c.
+
+    RSA_Decrypt.c branches:
+      1. type != TPM_ALG_RSA       → TPM_RCS_KEY        (not exercised — PP forces RSA key)
+      2. restricted || !decrypt    → TPM_RCS_ATTRIBUTES  (variant 2 — PP overrides to fix key,
+                                                           but demonstrates the seed structure)
+
+    Key requirement: the primary key must be a non-restricted RSA decrypt key
+    (objectAttributes WITHOUT the Restricted bit, symmetric = NULL).
+    The sequence post-processor ensures this for all rsadecrypt sequences.
+    """
+    # 256 zero bytes: valid ciphertext size for a 2048-bit RSA key.
+    cipher_text = b"\x00" * 256
+
+    non_restricted_primary = TPMCreatePrimary(
+        session_handle=TPM_RS.PW,
+        hashAlg=TPM_ALG.SHA256,
+        keyBits=2048,
+        public_template=TPM2B_PUBLIC(
+            public_area=TPMT_PUBLIC(
+                type=TPM_ALG.RSA,
+                name_alg=TPM_ALG.SHA256,
+                object_attributes=[
+                    TPMA_OBJECT.FIXEDTPM,
+                    TPMA_OBJECT.FIXEDPARENT,
+                    TPMA_OBJECT.SENSITIVEDATAORIGIN,
+                    TPMA_OBJECT.USERWITHAUTH,
+                    TPMA_OBJECT.NODA,
+                    TPMA_OBJECT.DECRYPT,
+                ],
+                rsa_parameters=TPMS_RSA_PARMS(
+                    symmetric=TPMS_SYM_DEF_OBJECT(algorithm=TPM_ALG.NULL),
+                    scheme=TPM_ALG.NULL,
+                    key_bits=2048,
+                ),
+            )
+        ),
+    )
+
+    # Variant 0: RSAES scheme
+    variant0 = [
+        non_restricted_primary,
+        TPMRSADecrypt(
+            key_handle=0x80000000,
+            cipher_text=cipher_text,
+            in_scheme=TPMT_RSA_DECRYPT(scheme=TPM_ALG.RSAES),
+        ),
+    ]
+
+    # Variant 1: OAEP/SHA-256 scheme
+    variant1 = [
+        non_restricted_primary,
+        TPMRSADecrypt(
+            key_handle=0x80000000,
+            cipher_text=cipher_text,
+            in_scheme=TPMT_RSA_DECRYPT(scheme=TPM_ALG.OAEP, hash_alg=TPM_ALG.SHA256),
+        ),
+    ]
+
+    # Variant 2: NULL scheme — hits TPM_RCS_SCHEME when key scheme is also NULL
+    variant2 = [
+        non_restricted_primary,
+        TPMRSADecrypt(
+            key_handle=0x80000000,
+            cipher_text=cipher_text,
+            in_scheme=TPMT_RSA_DECRYPT(scheme=TPM_ALG.NULL),
+        ),
+    ]
+
+    return [variant0, variant1, variant2]
+
+
 if __name__ == "__main__":
     # NOTE: Update this to include a seed function
     seeds = {
@@ -689,6 +763,7 @@ if __name__ == "__main__":
                 TPMCreatePrimary(TPM_FIRST_HMAC_SESSION_HANDLE, TPM_ALG.SHA256, 2048),
             ],
         ],
+        "TPMRSADecrypt": tpm_rsa_decrypt_seeds,
         "TPMIncrementalSelfTest": tpm_incremental_self_test_seeds,
         "TPMGetCapability": tpm_get_capability_seeds,
         "TPMECCParameters": TPMECCParameters(TPM_ECC_CURVE.NIST_P192),

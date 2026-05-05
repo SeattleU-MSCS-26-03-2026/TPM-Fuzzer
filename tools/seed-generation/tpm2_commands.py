@@ -671,6 +671,100 @@ class TPMSign(TPMCommand):
         super().__init__(TPM_ST.SESSIONS, TPM_CC.SIGN, params=params)
 
 
+class TPMRSADecrypt(TPMCommand):
+    """
+    TPM2_RSA_Decrypt command (TPM spec Part 3, Section 14.2).
+
+    Command structure (TPM_ST_SESSIONS):
+      keyHandle(4) | authArea | cipherText: TPM2B_PUBLIC_KEY_RSA |
+      inScheme: TPMT_RSA_DECRYPT | label: TPM2B_DATA
+    """
+
+    def __init__(
+        self,
+        key_handle: int,
+        cipher_text: bytes,
+        in_scheme: "TPMT_RSA_DECRYPT",
+        label: bytes = b"",
+        session_handle: Union[int, TPM_RS] = TPM_RS.PW,
+    ):
+        self._key_handle = key_handle
+        self._cipher_text = cipher_text
+        self._in_scheme = in_scheme
+        self._label = label
+        self._session_handle_val = (
+            session_handle.value
+            if isinstance(session_handle, TPM_RS)
+            else session_handle
+        )
+
+        auth = TPMS_AUTH_COMMAND(session_handle=self._session_handle_val)
+        auth_area = TPM_AUTH_AREA(commands=[auth])
+
+        # TPM2B_PUBLIC_KEY_RSA: size(2) + buffer
+        cipher_bytes = len(cipher_text).to_bytes(2, BYTE_ORDER) + cipher_text
+        # TPM2B_DATA: size(2) + buffer (empty label is valid)
+        label_bytes = len(label).to_bytes(2, BYTE_ORDER) + label
+
+        params = (
+            key_handle.to_bytes(4, BYTE_ORDER)
+            + auth_area.to_bytes()
+            + cipher_bytes
+            + in_scheme.to_bytes()
+            + label_bytes
+        )
+
+        super().__init__(TPM_ST.SESSIONS, TPM_CC.RSA_DECRYPT, params=params)
+
+    def to_proto(self) -> Optional[dict]:
+        from tpm_commands import tpm_rsa_decrypt_pb2  # type: ignore
+        from tpm_types import (  # type: ignore
+            tpm2b_public_key_rsa_pb2,
+            tpmt_rsa_decrypt_pb2,
+            tpm2b_data_pb2,
+        )
+
+        scheme_val = (
+            self._in_scheme.scheme.value
+            if isinstance(self._in_scheme.scheme, TPM_ALG)
+            else int(self._in_scheme.scheme)
+        )
+        hash_alg_val = 0
+        if self._in_scheme.hash_alg is not None:
+            hash_alg_val = (
+                self._in_scheme.hash_alg.value
+                if isinstance(self._in_scheme.hash_alg, TPM_ALG)
+                else int(self._in_scheme.hash_alg)
+            )
+
+        session = tpm_session_pb2.TPMSession(  # type: ignore
+            session_handle=self._session_handle_val,
+            nonce_size=0,
+            session_attributes=0,
+            hmac_size=0,
+        )
+
+        return {
+            "rsadecrypt": tpm_commands_pb2.tpm__commands_dot_tpm__rsa__decrypt__pb2.TPMRSADecrypt(  # type: ignore
+                header=self._proto_header(),
+                key_handle=self._key_handle,
+                sessions=[session],
+                cipher_text=tpm2b_public_key_rsa_pb2.TPM2BPublicKeyRSA(  # type: ignore
+                    size=len(self._cipher_text),
+                    buffer=self._cipher_text,
+                ),
+                in_scheme=tpmt_rsa_decrypt_pb2.TPMTRSADecrypt(  # type: ignore
+                    scheme=scheme_val,
+                    hash_alg=hash_alg_val,
+                ),
+                label=tpm2b_data_pb2.TPM2BData(  # type: ignore
+                    size=len(self._label),
+                    buffer=self._label,
+                ),
+            )
+        }
+
+
 class TPMPCRRead(TPMCommand):
     """
     TPM2_PCR_Read — read PCR values.
