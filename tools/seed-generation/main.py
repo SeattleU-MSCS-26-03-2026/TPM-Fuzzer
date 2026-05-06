@@ -12,8 +12,8 @@ Usage:
     python main.py [options]
 
 Options:
-    --recreate: Recreate all existing seed files.
-    --output-dir: Specify a different output directory for the seed files (default is "seeds/").
+    -recreate: Recreate all existing seed files.
+    --output-dir=<dir>: Specify a different output directory for the seed files (default is "seeds/").
 
 Resources:
     - TPM Specification: https://trustedcomputinggroup.org/resource/tpm-library-specification/
@@ -1165,7 +1165,7 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(
         description="Generates the seed corpus for the Fuzzer."
     )
-    parser.add_argument("--recreate", action="store_true", help="Recreate all seeds.")
+    parser.add_argument("-recreate", action="store_true", help="Recreate all seeds.")
     parser.add_argument(
         "--output-dir",
         default=DEFAULT_SEED_DIRECTORY,

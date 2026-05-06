@@ -6,9 +6,9 @@
 #   - Verifies those directories are not owned by root.
 #
 # Options:
-#   --track:   Track coverage information.
-#   --bin BIN: Choose which fuzzer to run (fuzzer or proto-fuzzer).
-#   --combine: Merge profdata from both fuzzers and generate a combined
+#   -track:   Track coverage information.
+#   -bin BIN: Choose which fuzzer to run (fuzzer or proto-fuzzer).
+#   -combine: Merge profdata from both fuzzers and generate a combined
 #              coverage report in coverage-overall/. At least one fuzzer
 #              must have been run first.
 BLUE="\033[34m"
@@ -103,10 +103,11 @@ main() {
     fi
 
     if [[ $# -eq 0 ]]; then
-        echo "Usage: ${0} [--track] [--bin <name>]"
+        echo "Usage: ${0} [-track] [-bin <name>] [-combine]"
         echo "Options:"
-        echo "    --track: Track coverage metrics to coverage-history/"
-        echo "    --bin: Select fuzzer binary to run i.e proto-fuzzer, Fuzzer"
+        echo "    -track: Track coverage metrics to coverage-history/"
+        echo "    -bin: Select fuzzer binary to run i.e proto-fuzzer, Fuzzer"
+        echo "    -combine: Merge coverage reports"
         exit 1
     fi
 
@@ -117,18 +118,27 @@ main() {
 
     while [[ $# -gt 0 ]]; do
         case "$1" in
-        --track)
+        -track)
             track=1
             shift
             ;;
-        --bin)
+        -bin)
             shift
+            if [[ $# -eq 0 ]]; then
+                echo "Error: -bin requires a value."
+                exit 1
+            fi
             bin="$(echo "$1" | tr '[:upper:]' '[:lower:]')"
             bin_explicit=1
+            shift
             ;;
-        --combine)
+        -combine)
             combine=1
             shift
+            ;;
+        --*)
+            echo "Error: unsupported option '$1'. Use single-dash options like -bin or -track."
+            exit 1
             ;;
         *)
             shift
@@ -136,7 +146,7 @@ main() {
         esac
     done
 
-    # --combine without --bin: skip the fuzzer run entirely
+    # -combine without -bin: skip the fuzzer run entirely
     if [[ $combine -eq 1 && $bin_explicit -eq 0 ]]; then
         combine_coverage
         return

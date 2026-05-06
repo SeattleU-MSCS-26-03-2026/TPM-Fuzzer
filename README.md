@@ -30,7 +30,7 @@ If you're new to fuzz testing, the following resources provide a helpful introdu
 The provided TPM fuzz targets can be run using:
 
 ```sh
-./scripts/run-fuzzer.sh --bin <fuzzer-type i.e. proto-fuzzer, fuzzer>
+./scripts/run-fuzzer.sh -bin <fuzzer-type i.e. proto-fuzzer, fuzzer>
 ```
 
 You can also directly build and run the specific Docker containers:

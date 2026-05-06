@@ -63,7 +63,7 @@ Both modes work with the [TCG TPM 2.0 Reference Implementation](https://github.c
 | **Mutation Strategy** | Random bit/byte flips, inserts, deletes |
 | **Coverage** | Fast exploration of parsing paths |
 | **Best For** | Buffer overflows, format string bugs, parsing errors |
-| **Execution Mode** | `./scripts/run-fuzzer.sh --bin fuzzer` |
+| **Execution Mode** | `./scripts/run-fuzzer.sh -bin fuzzer` |
 | **Output Directories** | `corpus/`, `coverage/`, `artifacts/` |
 
 ---
@@ -85,7 +85,7 @@ Both modes work with the [TCG TPM 2.0 Reference Implementation](https://github.c
 | **Mutation Strategy** | Field-aware protobuf mutation plus post-processing |
 | **Coverage** | Deeper command-handling and stateful TPM paths |
 | **Best For** | Logic bugs, command sequencing issues, state management issues |
-| **Execution Mode** | `./scripts/run-fuzzer.sh --bin proto-fuzzer` |
+| **Execution Mode** | `./scripts/run-fuzzer.sh -bin proto-fuzzer` |
 | **Output Directories** | `proto-corpus/`, `proto-coverage/`, `proto-artifacts/` |
 
 ---
@@ -267,7 +267,7 @@ docker compose run proto-fuzzer
 
 ```bash
 # Build
-./scripts/run-fuzzer.sh --bin fuzzer
+./scripts/run-fuzzer.sh -bin fuzzer
 
 # Run with seed corpus
 ./fuzzer -seed=38912891 -max_total_time=3600 seeds/

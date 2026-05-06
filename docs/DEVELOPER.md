@@ -9,13 +9,13 @@ The current setup runs the fuzzer against the [TCG TPM 2.0 Reference Implementat
 ### Script
 
 ``` sh
-$ ./scripts/run-fuzzer.sh --bin <fuzzer i.e. proto-fuzzer, fuzzer>
+$ ./scripts/run-fuzzer.sh -bin <fuzzer i.e. proto-fuzzer, fuzzer>
 ```
 
 #### Example: Byte-level fuzzing
 
 ``` sh
-$ ./scripts/run-fuzzer.sh --bin fuzzer
+$ ./scripts/run-fuzzer.sh -bin fuzzer
 $ ls -l
 
 drwxr-xr-x 2 user users   4096 Apr 13 17:55 artifacts
@@ -29,7 +29,7 @@ $ open coverage/index.html
 #### Example: Structure-aware fuzzing
 
 ``` sh
-$ ./scripts/run-fuzzer.sh --bin proto-fuzzer
+$ ./scripts/run-fuzzer.sh -bin proto-fuzzer
 $ ls -l
 
 drwxr-xr-x 2 user users   4096 Apr  2 22:52 proto-artifacts
@@ -124,10 +124,10 @@ $ docker compose down
 Coverage is generated automatically when the fuzzer runs inside Docker. The generated HTML report is written to the mounted coverage directory.
 
 ``` sh
-./scripts/run-fuzzer.sh --bin fuzzer --track
+./scripts/run-fuzzer.sh -bin fuzzer -track
 ```
 
-The `--track` flag currently tracks coverage progression for the byte-level fuzzer only. It reads the latest coverage summary and appends a new row to `coverage-history/history.csv`.
+The `-track` flag currently tracks coverage progression for the byte-level fuzzer only. It reads the latest coverage summary and appends a new row to `coverage-history/history.csv`.
 
 ```sh
 # View coverage history
