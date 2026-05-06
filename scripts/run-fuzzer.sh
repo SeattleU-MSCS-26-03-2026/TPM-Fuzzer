@@ -11,6 +11,12 @@
 #   -combine: Merge profdata from both fuzzers and generate a combined
 #              coverage report in coverage-overall/. At least one fuzzer
 #              must have been run first.
+#   -maxRuns N: Override libFuzzer -runs for this invocation.
+#   -maxTime N: Override libFuzzer -max_total_time for this invocation.
+# Notes:
+#   Compose provides default FUZZER_SEED / FUZZER_MAX_RUNS values.
+#   -maxRuns and -maxTime override those defaults for the current invocation.
+#   FUZZER_EXTRA_ARGS remains available for advanced direct Docker Compose use.
 BLUE="\033[34m"
 RESET="\033[0m"
 COVERAGE_HISTORY="${FUZZER_COV_HISTORY:-coverage-history/history.csv}"
@@ -103,16 +109,20 @@ main() {
     fi
 
     if [[ $# -eq 0 ]]; then
-        echo "Usage: ${0} [-track] [-bin <name>] [-combine]"
+        echo "Usage: ${0} [-track] [-bin <name>] [-combine] [-maxRuns <n>] [-maxTime <seconds>]"
         echo "Options:"
         echo "    -track: Track coverage metrics to coverage-history/"
         echo "    -bin: Select fuzzer binary to run i.e proto-fuzzer, Fuzzer"
         echo "    -combine: Merge coverage reports"
+        echo "    -maxRuns: Override libFuzzer -runs"
+        echo "    -maxTime: Override libFuzzer -max_total_time"
         exit 1
     fi
 
     local track=0
     local combine=0
+    local max_runs=""
+    local max_time=""
     local bin="$(echo "${FUZZER_BIN}" | tr '[:upper:]' '[:lower:]')"
     local bin_explicit=0
 
@@ -134,6 +144,24 @@ main() {
             ;;
         -combine)
             combine=1
+            shift
+            ;;
+        -maxRuns)
+            shift
+            if [[ $# -eq 0 ]]; then
+                echo "Error: -maxRuns requires a value."
+                exit 1
+            fi
+            max_runs="$1"
+            shift
+            ;;
+        -maxTime)
+            shift
+            if [[ $# -eq 0 ]]; then
+                echo "Error: -maxTime requires a value."
+                exit 1
+            fi
+            max_time="$1"
             shift
             ;;
         --*)
@@ -159,7 +187,17 @@ main() {
     docker compose build $bin &>/dev/null
 
     echo -e "${BLUE}[3/4] Running ${bin}...${RESET}\n\n"
-    docker compose run --rm $bin
+    local -a run_env=()
+    if [[ -n "$max_time" && -z "$max_runs" ]]; then
+        run_env+=(-e "FUZZER_MAX_RUNS=")
+    fi
+    if [[ -n "$max_runs" ]]; then
+        run_env+=(-e "FUZZER_MAX_RUNS=$max_runs")
+    fi
+    if [[ -n "$max_time" ]]; then
+        run_env+=(-e "FUZZER_MAX_TIME=$max_time")
+    fi
+    docker compose run --rm "${run_env[@]}" $bin
 
     echo -e "${BLUE}[INFO] Destroying containers.${RESET}\n"
     docker compose down --rmi=all --remove-orphans

@@ -9,7 +9,8 @@ services:
       - ./artifacts/bytearray:/srv/artifacts
       - ./coverage/bytearray:/srv/build/coverage
     environment:
-      FUZZER_EXTRA_ARGS: -seed=38912891 -runs=100000
+      FUZZER_EXTRA_ARGS: -seed=38912891
+      FUZZER_MAX_RUNS: "100000"
       GEN_COVERAGE: "1"
       FUZZER_BIN_NAME: "Fuzzer"
   proto-fuzzer:
@@ -22,7 +23,8 @@ services:
       - ./artifacts/proto:/srv/artifacts
       - ./coverage/proto:/srv/build/coverage
     environment:
-      FUZZER_EXTRA_ARGS: -seed=38912891 -runs=100000
+      FUZZER_EXTRA_ARGS: -seed=38912891
+      FUZZER_MAX_RUNS: "100000"
       GEN_COVERAGE: "1"
       FUZZER_BIN_NAME: "proto-fuzzer"
       SEEDS_DIR: "/srv/seeds/proto"

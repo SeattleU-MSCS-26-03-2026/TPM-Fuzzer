@@ -3,6 +3,11 @@
 # It can also be run locally but requires llvm-cov and llvm-profdata.
 # Configurations can be overridden through environment variables.
 # Logs will provide details on progress and output [N/<MAX_RUNS>] information.
+# Structured controls:
+#   FUZZER_MAX_RUNS and FUZZER_MAX_TIME define the common limits.
+# Advanced controls:
+#   FUZZER_EXTRA_ARGS is appended after the structured flags for additional
+#   libFuzzer options when running the service directly via Docker Compose.
 set -Eeuo pipefail
 
 # Defaults are chosen to work well in a container where /srv is the project root.
@@ -18,6 +23,8 @@ ARTIFACTS_DIR="${ARTIFACTS_DIR:-$PROJECT_DIR/artifacts}"
 
 GEN_COVERAGE="${GEN_COVERAGE:-0}"
 FUZZER_EXTRA_ARGS="${FUZZER_EXTRA_ARGS:-}"
+FUZZER_MAX_RUNS="${FUZZER_MAX_RUNS:-}"
+FUZZER_MAX_TIME="${FUZZER_MAX_TIME:-}"
 
 COVERAGE_DIR="${COVERAGE_DIR:-$BUILD_DIR/coverage}"
 SRC_COVERAGE_DIR="${SRC_COVERAGE_DIR:-$BUILD_DIR/src-coverage}"
@@ -79,11 +86,26 @@ main() {
     require_bin "$FUZZER_BIN"
     mkdir -p "$CORPUS_DIR" "$RUN_CORPUS_DIR" "$SEEDS_DIR" "$ARTIFACTS_DIR" "$COVERAGE_DIR"
 
+    local -a fuzzer_args=()
+    if [[ -n "$FUZZER_MAX_RUNS" ]]; then
+        fuzzer_args+=("-runs=$FUZZER_MAX_RUNS")
+    fi
+    if [[ -n "$FUZZER_MAX_TIME" ]]; then
+        fuzzer_args+=("-max_total_time=$FUZZER_MAX_TIME")
+    fi
+    if [[ -n "$FUZZER_EXTRA_ARGS" ]]; then
+        # split extra args into individual libFuzzer args.
+        read -r -a extra_args_array <<<"$FUZZER_EXTRA_ARGS"
+        fuzzer_args+=("${extra_args_array[@]}")
+    fi
+
+    log "Using fuzzer args: ${fuzzer_args[*]}"
+
     log "Starting fuzzer"
     LLVM_PROFILE_FILE="$LLVM_PROFRAW" \
         "$FUZZER_BIN" \
         -artifact_prefix="$ARTIFACTS_DIR/" \
-        $FUZZER_EXTRA_ARGS \
+        "${fuzzer_args[@]}" \
         "$RUN_CORPUS_DIR" \
         "$CORPUS_DIR" \
         "$SEEDS_DIR"
@@ -91,7 +113,7 @@ main() {
     log "Merging corpus"
     "$FUZZER_BIN" \
         -merge=1 \
-        $FUZZER_EXTRA_ARGS \
+        "${fuzzer_args[@]}" \
         "$CORPUS_DIR" \
         "$RUN_CORPUS_DIR"
 

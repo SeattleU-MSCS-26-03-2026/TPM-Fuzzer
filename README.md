@@ -33,7 +33,20 @@ The provided TPM fuzz targets can be run using:
 ./scripts/run-fuzzer.sh -bin <fuzzer-type i.e. proto-fuzzer, fuzzer>
 ```
 
+Common runner overrides:
+
+```sh
+./scripts/run-fuzzer.sh -bin fuzzer -maxRuns 1000
+./scripts/run-fuzzer.sh -bin proto-fuzzer -maxTime 60
+```
+
 You can also directly build and run the specific Docker containers:
+
+By default, the Docker Compose services use a fixed libFuzzer seed and a
+default run limit. The byte-level fuzzer defaults to `100000` runs, while the
+structure-aware fuzzer default is set in `docker-compose.yml`. These limits can
+be overridden through the wrapper script with `-maxRuns` / `-maxTime`, or
+directly with Docker Compose environment overrides.
 
 ```sh
 docker compose build proto-fuzzer

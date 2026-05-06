@@ -12,6 +12,13 @@ The current setup runs the fuzzer against the [TCG TPM 2.0 Reference Implementat
 $ ./scripts/run-fuzzer.sh -bin <fuzzer i.e. proto-fuzzer, fuzzer>
 ```
 
+The wrapper also supports runner overrides related to iterations:
+
+```sh
+$ ./scripts/run-fuzzer.sh -bin fuzzer -maxRuns 1000
+$ ./scripts/run-fuzzer.sh -bin proto-fuzzer -maxTime 600
+```
+
 #### Example: Byte-level fuzzing
 
 ``` sh
@@ -42,25 +49,47 @@ $ open proto-coverage/index.html
 
 ### Docker Compose
 
-The helper script runs the Docker Compose services using the default libFuzzer arguments configured in `docker-compose.yml`. By default, both fuzzers run with:
+The helper script runs the Docker Compose services using defaults configured in `docker-compose.yml`.
+
+By default:
+- `FUZZER_EXTRA_ARGS` provides the fixed libFuzzer seed:
 
 ```sh
--seed=38912891 -runs=100000
+-seed=38912891
 ```
 
-this makes fuzzing runs more reproducible by using a fixed libFuzzer seed and limits each run to 100,000 executions.
+- `FUZZER_MAX_RUNS` provides the default run limit:
 
-You can change these defaults in docker-compose.yml, or override them when running a service:
+```sh
+100000
+```
+
+
+This keeps fuzzing runs reproducible with a fixed seed while still allowing the wrapper script to override run limits cleanly.
+
+You can change these defaults in `docker-compose.yml`, or override them when running a service:
 
 ```sh
 # build the docker compose images
 $ docker compose build
 
 # run with environment overrides
-docker compose run --rm -e FUZZER_EXTRA_ARGS="-seed=1234 -runs=1000" fuzzer
+$ docker compose run --rm \
+    -e FUZZER_EXTRA_ARGS="-seed=1234 -rss_limit_mb=0" \
+    -e FUZZER_MAX_RUNS=1000 \
+    fuzzer
 ```
 
-Any valid libFuzzer argument can be added here, such as:
+The wrapper script can also override the limits without editing Compose:
+
+```sh
+$ ./scripts/run-fuzzer.sh -bin fuzzer -maxRuns 5000
+$ ./scripts/run-fuzzer.sh -bin fuzzer -maxTime 600
+```
+
+`-maxTime` clears the default run limit for that invocation unless you also pass `-maxRuns`.
+
+Any valid libFuzzer argument can still be appended through `FUZZER_EXTRA_ARGS`, such as:
 
 ```sh
 -max_len=4096
@@ -162,13 +191,13 @@ This project provides a testing binary that can be used to test TPM2.0 Commands 
 ### Script
 
 ``` sh
-$ ./script/test-seed.sh seeds/TPM_SEED
+$ ./scripts/test-seed.sh seeds/TPM_SEED
 ```
 
 ### Example
 
 ```sh
-$ ./script/test-seed.sh seeds/TPMGetRandom-variant0-202601241713
+$ ./scripts/test-seed.sh seeds/TPMGetRandom-variant0-202601241713
 
 Size of OBJECT = 2104
 Size of components in TPMT_SENSITIVE = 1384
