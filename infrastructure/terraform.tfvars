@@ -13,12 +13,12 @@ job = {
 }
 
 container_env = [
-    { name = "FUZZER_GEN_COVERAGE", value = "1" },
-    { name = "FUZZER_EXTRA_ARGS", value = "-seed=38912891 -max_total_time=60" },
-    { name = "GEN_CORPUS_DIR", value = "/mnt/gcs/corpus" },
-    { name = "SEED_CORPUS_DIR", value = "/srv/seeds" },
-    { name = "FUZZER_COVERAGE_OUT_DIR", value = "/mnt/gcs/coverage" },
-    { name = "FUZZER_ARTIFACT_PATH", value = "/mnt/gcs/artifacts" },
+  { name = "GEN_COVERAGE", value = "1" },
+  { name = "FUZZER_EXTRA_ARGS", value = "-max_total_time=28800" },
+  { name = "CORPUS_DIR", value = "/mnt/gcs/corpus" },
+  { name = "COVERAGE_DIR", value = "/mnt/gcs/coverage" },
+  { name = "ARTIFACTS_DIR", value = "/mnt/gcs/artifacts" },
+  { name = "FUZZER_BIN_NAME", value = "Fuzzer" },
 ]
 
 corpus_store = {

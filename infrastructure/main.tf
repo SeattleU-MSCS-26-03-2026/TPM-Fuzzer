@@ -25,7 +25,7 @@ resource "google_cloud_run_v2_job" "default" {
       service_account = var.job.service_account
 
       containers {
-        image = data.google_artifact_registry_docker_image.fuzzer.self_link
+        image = "us-docker.pkg.dev/goog-tcg/${var.artifact_registry.repository_id}/${var.artifact_registry.image_name}"
 
         dynamic "env" {
           for_each = var.container_env

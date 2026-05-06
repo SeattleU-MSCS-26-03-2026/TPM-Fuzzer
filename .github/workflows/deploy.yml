@@ -1,0 +1,40 @@
+name: Cloud Run Job
+
+on:
+  schedule:
+    - cron: '0 6 * * 2'
+  workflow_dispatch:
+  push:
+    branches:
+      - gcloud-cloud-run-cron
+
+permissions:
+  contents: read
+
+jobs:
+  run:
+    name: Deploy and execute Cloud Run job
+    runs-on: ubuntu-latest
+    env:
+      PROJECT_ID: goog-tcg
+      REGION: us-west1
+      JOB_NAME: tpm-fuzzer
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          submodules: true
+
+      - name: Authenticate to Google Cloud
+        uses: google-github-actions/auth@v3
+        with:
+          credentials_json: '${{ secrets.GOOGLE_CREDENTIALS }}'
+
+      - name: Set up gcloud
+        uses: google-github-actions/setup-gcloud@v3
+
+      - name: Execute Cloud Run job
+        run: |
+          gcloud run jobs execute "$JOB_NAME" \
+            --project="$PROJECT_ID" \
+            --region="$REGION" \
+            --async

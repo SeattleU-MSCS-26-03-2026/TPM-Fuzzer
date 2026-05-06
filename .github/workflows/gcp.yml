@@ -32,8 +32,10 @@ jobs:
         with:
           credentials_json: '${{ secrets.GOOGLE_CREDENTIALS }}'
       - uses: google-github-actions/setup-gcloud@v3
+
       - name: Configure Docker to use gCloud
         run: gcloud auth configure-docker ${{env.registry}}
+
       - uses: docker/build-push-action@v6
         with:
           push: true
