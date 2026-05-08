@@ -32,9 +32,15 @@ class TPMCommand(object):
         self.params = params
 
     def _command_size(self) -> int:
+        """
+        Calculates command size
+        """
         return self.ST_LEN + self.CC_LEN + self.SIZE_LEN + len(self.params)
 
     def __bytes__(self) -> bytes:
+        """
+        Returns the byte representation of the TPM Command.
+        """
         return (
             self.tag.value.to_bytes(self.ST_LEN, BYTE_ORDER)
             + self._command_size().to_bytes(self.SIZE_LEN, BYTE_ORDER)
@@ -43,11 +49,22 @@ class TPMCommand(object):
         )
 
     def _proto_header(self) -> tpm_header_pb2.TPMHeader:  # type: ignore
+        """
+        Returns the TPM Header Protobuf structure.
+
+        *Note*: This AFAIK never changes for any command.
+        """
         return tpm_header_pb2.TPMHeader(  # type: ignore
             tag=self.tag.proto_value(),
             command_size=self._command_size(),
             command_code=self.cc.proto_value(),
         )
+
+    def to_proto(self) -> Optional[dict]:
+        """
+        Returns the protocol buffer representation of the TPM Command (if any).
+        """
+        return None
 
     @staticmethod
     def _parse_tpm2b(buffer: bytes, offset: int) -> tuple[bytes, int]:
@@ -229,9 +246,6 @@ class TPMCommand(object):
             )
 
         return sessions
-
-    def to_proto(self) -> Optional[dict]:
-        return None
 
 
 class TPMIncrementalSelfTest(TPMCommand):

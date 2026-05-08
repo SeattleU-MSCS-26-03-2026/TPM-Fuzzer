@@ -713,7 +713,7 @@ def tpm_rsa_decrypt_seeds() -> SeedVariants:
 
 if __name__ == "__main__":
     # NOTE: Update this to include a seed function
-    seeds = {
+    TEST_CASES = {
         "TPMGetRandom": tpm_get_rand_seeds,
         "TPMStirRandom": TPMStirRandom(b""),
         "TPMHash": tpm_hash_seeds,
@@ -1173,4 +1173,4 @@ if __name__ == "__main__":
     )
     args = parser.parse_args()
 
-    _generate_seeds(args.output_dir, args.recreate, seeds)
+    _generate_seeds(args.output_dir, args.recreate, TEST_CASES)
