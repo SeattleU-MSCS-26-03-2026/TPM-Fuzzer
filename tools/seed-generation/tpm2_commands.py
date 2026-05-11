@@ -332,7 +332,7 @@ class TPMCreate(TPMCommand):
         params = self.params
         offset = 0
 
-        parent_handle = params[offset : offset + 4]
+        parent_handle = int.from_bytes(params[offset : offset + 4], BYTE_ORDER)
         offset += 4
 
         auth_size = int.from_bytes(params[offset : offset + 4], BYTE_ORDER)

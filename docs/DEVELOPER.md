@@ -130,6 +130,13 @@ By default:
 -seed=38912891
 ```
 
+To run multiple libFuzzer workers in parallel, pass `-fork=value` through
+`FUZZER_EXTRA_ARGS`. 
+
+```sh
+FUZZER_EXTRA_ARGS="-seed=38912891 -fork=8
+```
+
 - `FUZZER_MAX_RUNS` provides the default run limit:
 
 ```sh

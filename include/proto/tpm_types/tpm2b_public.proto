@@ -26,18 +26,18 @@ message TPMUPublicParms {
 
 message TPMUPublicId {
   oneof id {
-    bytes             rsa       = 1;
-    types.TPM2BDigest keyedhash = 2;
+    bytes                 rsa       = 1;
+    tpm_types.TPM2BDigest keyedhash = 2;
   }
 }
 
 message TPMTPublic {
-  constants.TPMALG  type              = 1;
-  constants.TPMALG  name_alg          = 2;
-  uint32            object_attributes = 3;
-  types.TPM2BDigest auth_policy       = 4;
-  TPMUPublicParms   parameters        = 5;
-  TPMUPublicId      unique            = 6;
+  constants.TPMALG      type              = 1;
+  constants.TPMALG      name_alg          = 2;
+  uint32                object_attributes = 3;
+  tpm_types.TPM2BDigest auth_policy       = 4;
+  TPMUPublicParms       parameters        = 5;
+  TPMUPublicId          unique            = 6;
 }
 
 message TPM2BPublic {

@@ -48,12 +48,17 @@ void SetPasswordSession(tpm_types::TPMSession* session) {
 void NormalizeRsaOrKeyedHashPublic(tpm_types::TPMTPublic* public_area,
                                    uint32_t object_attributes) {
   auto* parameters = public_area->mutable_parameters();
-  if (parameters->has_keyedhash()) {
+  if (!parameters->has_rsa() && !parameters->has_keyedhash()) {
     public_area->set_type(constants::TPM_ALG_KEYEDHASH);
     auto* keyedhash = parameters->mutable_keyedhash();
     if (keyedhash->scheme() == constants::TPM_ALG_UNSPECIFIED)
       keyedhash->set_scheme(constants::TPM_ALG_NULL);
-  } else {
+  } else if (parameters->has_keyedhash()) {
+    public_area->set_type(constants::TPM_ALG_KEYEDHASH);
+    auto* keyedhash = parameters->mutable_keyedhash();
+    if (keyedhash->scheme() == constants::TPM_ALG_UNSPECIFIED)
+      keyedhash->set_scheme(constants::TPM_ALG_NULL);
+  } else if (parameters->has_rsa()) {
     public_area->set_type(constants::TPM_ALG_RSA);
     auto* rsa = parameters->mutable_rsa();
     if (rsa->symmetric() == constants::TPM_ALG_UNSPECIFIED)
@@ -63,6 +68,8 @@ void NormalizeRsaOrKeyedHashPublic(tpm_types::TPMTPublic* public_area,
       rsa->set_scheme(constants::TPM_ALG_NULL);
     if (rsa->key_bits() == 0) rsa->set_key_bits(2048);
     if (rsa->exponent() == 0) rsa->set_exponent(0);
+  } else {
+    public_area->set_type(constants::TPM_ALG_KEYEDHASH);
   }
 
   if (public_area->name_alg() == constants::TPM_ALG_UNSPECIFIED)

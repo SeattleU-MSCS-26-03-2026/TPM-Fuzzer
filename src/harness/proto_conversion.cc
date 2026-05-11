@@ -8,6 +8,15 @@
 
 constexpr size_t kMaxBuffer = 1024 * 1024;
 
+template <typename Tpm2b>
+static void FillTpm2b(const std::string& src, Tpm2b* dst) {
+  const size_t copy_len = std::min(src.size(), sizeof(dst->buffer));
+  dst->size = static_cast<uint16_t>(copy_len);
+  if (copy_len > 0) {
+    std::memcpy(dst->buffer, src.data(), copy_len);
+  }
+}
+
 bool MarshalCommand(const tpm::TPMCommand& command, std::vector<uint8_t>* out) {
   out->clear();
   out->resize(kMaxBuffer);
@@ -217,7 +226,9 @@ bool MarshalRepeatedField(const google::protobuf::Message& parent,
   const uint32_t auth_area_size =
       static_cast<uint32_t>(offset - auth_area_start);
   size_t tmp = auth_size_pos;
-  Tss2_MU_UINT32_Marshal(auth_area_size, buf->data(), buf->size(), &tmp);
+  if (MUCommandFailed(Tss2_MU_UINT32_Marshal(auth_area_size, buf->data(),
+                                             buf->size(), &tmp)))
+    return false;
   return true;
 }
 
@@ -228,10 +239,7 @@ bool MarshalRepeatedField(const google::protobuf::Message& parent,
 bool MarshalTPM2BData(const tpm_types::TPM2BData& data,
                       std::vector<uint8_t>* buf, size_t& offset) {
   TPM2B_DATA tpm_data = {};
-  const std::string& data_buf = data.buffer();
-  const size_t copy_len = std::min(data_buf.size(), sizeof(tpm_data.buffer));
-  tpm_data.size = static_cast<uint16_t>(copy_len);
-  std::memcpy(tpm_data.buffer, data_buf.data(), copy_len);
+  FillTpm2b(data.buffer(), &tpm_data);
 
   return !MUCommandFailed(
       Tss2_MU_TPM2B_DATA_Marshal(&tpm_data, buf->data(), buf->size(), &offset));
@@ -305,22 +313,11 @@ bool MarshalTPM2BSensitiveCreate(
     const auto& s = sens_proto.sensitive();
 
     if (s.has_user_auth()) {
-      const std::string& auth_buf = s.user_auth().buffer();
-      in_sensitive.sensitive.userAuth.size =
-          static_cast<uint16_t>(auth_buf.size());
-      if (auth_buf.size() <= sizeof(in_sensitive.sensitive.userAuth.buffer)) {
-        memcpy(in_sensitive.sensitive.userAuth.buffer, auth_buf.data(),
-               auth_buf.size());
-      }
+      FillTpm2b(s.user_auth().buffer(), &in_sensitive.sensitive.userAuth);
     }
 
     if (s.has_data()) {
-      const std::string& data_buf = s.data().buffer();
-      in_sensitive.sensitive.data.size = static_cast<uint16_t>(data_buf.size());
-      if (data_buf.size() <= sizeof(in_sensitive.sensitive.data.buffer)) {
-        memcpy(in_sensitive.sensitive.data.buffer, data_buf.data(),
-               data_buf.size());
-      }
+      FillTpm2b(s.data().buffer(), &in_sensitive.sensitive.data);
     }
   }
 
@@ -345,13 +342,7 @@ bool MarshalTPM2BPublic(const tpm_types::TPM2BPublic& pub_proto,
         static_cast<TPMA_OBJECT>(pa.object_attributes());
 
     if (pa.has_auth_policy()) {
-      const std::string& policy_buf = pa.auth_policy().buffer();
-      in_public.publicArea.authPolicy.size =
-          static_cast<uint16_t>(policy_buf.size());
-      if (policy_buf.size() <= sizeof(in_public.publicArea.authPolicy.buffer)) {
-        memcpy(in_public.publicArea.authPolicy.buffer, policy_buf.data(),
-               policy_buf.size());
-      }
+      FillTpm2b(pa.auth_policy().buffer(), &in_public.publicArea.authPolicy);
     }
 
     if (pa.has_parameters()) {
@@ -403,23 +394,12 @@ bool MarshalTPM2BPublic(const tpm_types::TPM2BPublic& pub_proto,
 
     if (pa.has_unique()) {
       const auto& uid = pa.unique();
-      if (uid.has_rsa()) {
-        const std::string& rsa_buf = uid.rsa();
-        in_public.publicArea.unique.rsa.size =
-            static_cast<uint16_t>(rsa_buf.size());
-        if (rsa_buf.size() <= sizeof(in_public.publicArea.unique.rsa.buffer)) {
-          memcpy(in_public.publicArea.unique.rsa.buffer, rsa_buf.data(),
-                 rsa_buf.size());
-        }
-      } else if (uid.has_keyedhash()) {
-        const std::string& kh_buf = uid.keyedhash().buffer();
-        in_public.publicArea.unique.keyedHash.size =
-            static_cast<uint16_t>(kh_buf.size());
-        if (kh_buf.size() <=
-            sizeof(in_public.publicArea.unique.keyedHash.buffer)) {
-          memcpy(in_public.publicArea.unique.keyedHash.buffer, kh_buf.data(),
-                 kh_buf.size());
-        }
+      if (in_public.publicArea.type == TPM2_ALG_RSA && uid.has_rsa()) {
+        FillTpm2b(uid.rsa(), &in_public.publicArea.unique.rsa);
+      } else if (in_public.publicArea.type == TPM2_ALG_KEYEDHASH &&
+                 uid.has_keyedhash()) {
+        FillTpm2b(uid.keyedhash().buffer(),
+                  &in_public.publicArea.unique.keyedHash);
       }
     }
   }
@@ -432,19 +412,22 @@ bool MarshalTPMLPCRSelection(const tpm_types::TPMLPCRSelection& pcr_proto,
                              std::vector<uint8_t>* buf, size_t& offset) {
   TPML_PCR_SELECTION creation_pcr = {};
 
-  creation_pcr.count = pcr_proto.count();
   int sel_count = pcr_proto.pcr_selections_size();
   if (sel_count > TPM2_NUM_PCR_BANKS) sel_count = TPM2_NUM_PCR_BANKS;
+  creation_pcr.count = static_cast<UINT32>(sel_count);
 
   for (int i = 0; i < sel_count; ++i) {
     const auto& sel = pcr_proto.pcr_selections(i);
     creation_pcr.pcrSelections[i].hash = static_cast<TPMI_ALG_HASH>(sel.hash());
+    size_t sizeof_select = sel.sizeof_select();
+    if (sizeof_select > sizeof(creation_pcr.pcrSelections[i].pcrSelect)) {
+      sizeof_select = sizeof(creation_pcr.pcrSelections[i].pcrSelect);
+    }
     creation_pcr.pcrSelections[i].sizeofSelect =
-        static_cast<uint8_t>(sel.sizeof_select());
+        static_cast<uint8_t>(sizeof_select);
     const std::string& pcr_data = sel.pcr_select();
     size_t copy_len = pcr_data.size();
-    if (copy_len > sizeof(creation_pcr.pcrSelections[i].pcrSelect))
-      copy_len = sizeof(creation_pcr.pcrSelections[i].pcrSelect);
+    if (copy_len > sizeof_select) copy_len = sizeof_select;
     memcpy(creation_pcr.pcrSelections[i].pcrSelect, pcr_data.data(), copy_len);
   }
 
@@ -455,10 +438,7 @@ bool MarshalTPMLPCRSelection(const tpm_types::TPMLPCRSelection& pcr_proto,
 bool MarshalTPM2BPublicKeyRSA(const tpm_types::TPM2BPublicKeyRSA& rsa_proto,
                               std::vector<uint8_t>* buf, size_t& offset) {
   TPM2B_PUBLIC_KEY_RSA cipher = {};
-  const std::string& data = rsa_proto.buffer();
-  const size_t copy_len = std::min(data.size(), sizeof(cipher.buffer));
-  cipher.size = static_cast<uint16_t>(copy_len);
-  if (copy_len > 0) std::memcpy(cipher.buffer, data.data(), copy_len);
+  FillTpm2b(rsa_proto.buffer(), &cipher);
   return !MUCommandFailed(Tss2_MU_TPM2B_PUBLIC_KEY_RSA_Marshal(
       &cipher, buf->data(), buf->size(), &offset));
 }
