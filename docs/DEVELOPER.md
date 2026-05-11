@@ -2,6 +2,78 @@
 
 This guide provides instructions for running, debugging, and extending the TPM fuzzing framework.
 
+
+## Development Setup
+
+### Clone the repository
+
+This project uses Git submodules for external dependencies.
+The submodules are stored under the `vendor/` directory and include:
+You can inspect submodule URLs and paths in the `.gitmodules` file at the repository root.
+
+- `vendor/TPM`: the TCG TPM 2.0 reference implementation used by the sample harness
+- `vendor/libprotobuf-mutator`: the structure-aware mutation library used by the protobuf-based fuzzer
+
+When cloning the repository for the first time, use:
+
+```sh
+git clone --recurse-submodules <repository-url>
+cd SUSE-26-03-Google
+```
+
+If you already cloned the repository without submodules, initialize and update them from the repository root:
+
+```sh
+git submodule update --init --recursive
+```
+
+This one-step command is equivalent to running:
+
+```sh
+git submodule init
+git submodule update
+```
+
+This downloads the required submodule contents into the `vendor/` directory.
+
+### Updating submodules
+
+To update submodules to the commits recorded by this repository, run:
+
+```sh
+git submodule update --recursive
+```
+
+To fetch the latest changes from each submodule's remote repository, run:
+
+```sh
+git submodule update --remote --recursive
+```
+
+Only use `--remote` when you intentionally want to move the submodule to a newer upstream commit. After doing so, commit the updated submodule pointer in the main repository.
+
+### Why we use submodules
+
+We use Git submodules to keep external dependencies separate from the main fuzzing framework while still pinning them to known, tested commits. This makes builds more reproducible, keeps dependency updates explicit, and avoids copying large third-party source trees directly into this repository.
+
+The framework depends on external projects such as:
+
+- `vendor/TPM`: the default TCG TPM 2.0 reference implementation used by the sample harness
+- `vendor/libprotobuf-mutator`: the structure-aware mutation library used by the protobuf-based fuzzer
+
+Using submodules also supports the plug-and-play design of the framework. The default setup fuzzes the TCG TPM reference implementation, but the framework is intended to support other TPM implementations as well. By keeping TPM source code under `vendor/` and interacting with it through wrapper interfaces, we can replace or add TPM backends without rewriting the core fuzzing pipeline.
+
+This design helps separate:
+
+- the fuzzing infrastructure
+- third-party TPM implementations
+- structure-aware mutation dependencies
+- project-specific patches and wrappers
+
+If the submodules are not initialized, directories such as `vendor/TPM` or `vendor/libprotobuf-mutator` may be empty or incomplete. This can cause build errors or patch failures, including errors where patch targets cannot be found.
+
+Before building Docker images, applying patches, or running fuzzers, make sure the submodules have been initialized and updated.
+
 ## Running the TPM fuzzer
 
 The current setup runs the fuzzer against the [TCG TPM 2.0 Reference Implementation](https://github.com/TrustedComputingGroup/TPM), which serves as the default target for fuzzing. Other TPM implementations can be tested by providing a custom wrapper (see below).

@@ -25,6 +25,21 @@ If you're new to fuzz testing, the following resources provide a helpful introdu
 - [Why Fuzz?](https://github.com/google/fuzzing/blob/master/docs/why-fuzz.md)
 - [Introduction to Fuzzing](https://github.com/google/fuzzing/blob/master/docs/intro-to-fuzzing.md)
 
+
+## Setup
+
+This repository uses Git submodules for external dependencies, including the TCG TPM reference implementation and libprotobuf-mutator.
+
+After cloning the repository, initialize and update the submodules:
+
+```sh
+git submodule update --init --recursive
+```
+
+If you already cloned the repository without submodules, run the same command from the repository root before building Docker images, applying patches, or running the fuzzers.
+
+For more details, see the [Developer Guide](./docs/DEVELOPER.md).
+
 ## Usage
 
 The provided TPM fuzz targets can be run using:
