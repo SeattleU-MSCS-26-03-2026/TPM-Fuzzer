@@ -3,6 +3,7 @@
 #include "harness/proto_normalization.h"
 #include "src/libfuzzer/libfuzzer_macro.h"
 #include "tpm_commands.pb.h"
+#include "tpm_commands/tpm_clear.pb.h"
 #include "tpm_commands/tpm_rsa_decrypt.pb.h"
 
 namespace {
@@ -27,6 +28,12 @@ void NormalizeStartAuthSession(tpm_commands::TPMStartAuthSession* msg) {
     msg->mutable_nonce()->set_buffer(std::string(16, '\0'));
   }
 }
+
+static protobuf_mutator::libfuzzer::PostProcessorRegistration<
+    tpm_commands::TPMClear>
+    reg_clear = {[](tpm_commands::TPMClear* msg, unsigned int /* seed */) {
+      NormalizeClear(msg);
+    }};
 
 static protobuf_mutator::libfuzzer::PostProcessorRegistration<
     tpm_commands::TPMGetRandom>

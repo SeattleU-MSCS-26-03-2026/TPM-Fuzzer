@@ -248,6 +248,52 @@ class TPMCommand(object):
         return sessions
 
 
+class TPMClear(TPMCommand):
+    """
+    TPM2_Clear command.
+    Command structure with sessions:
+      authHandle(4) | authArea
+    """
+
+    def __init__(
+        self,
+        auth_handle: Union[int, TPM_RH] = TPM_RH.LOCKOUT,
+        session_handle: Union[int, TPM_RS] = TPM_RS.PW,
+    ):
+        self._auth_handle = (
+            auth_handle.value if isinstance(auth_handle, TPM_RH) else auth_handle
+        )
+        self._session_handle_val = (
+            session_handle.value
+            if isinstance(session_handle, TPM_RS)
+            else session_handle
+        )
+
+        auth = TPMS_AUTH_COMMAND(session_handle=self._session_handle_val)
+        auth_area = TPM_AUTH_AREA(commands=[auth])
+
+        params = self._auth_handle.to_bytes(4, BYTE_ORDER) + auth_area.to_bytes()
+
+        super().__init__(TPM_ST.SESSIONS, TPM_CC.CLEAR, params=params)
+
+    def to_proto(self) -> Optional[dict]:
+
+        session = tpm_session_pb2.TPMSession(  # type: ignore
+            session_handle=self._session_handle_val,
+            nonce_size=0,
+            session_attributes=0,
+            hmac_size=0,
+        )
+
+        return {
+            "clear": tpm_commands_pb2.tpm__commands_dot_tpm__clear__pb2.TPMClear(  # type: ignore
+                header=self._proto_header(),
+                auth_handle=self._auth_handle,
+                sessions=[session],
+            )
+        }
+
+
 class TPMIncrementalSelfTest(TPMCommand):
     def __init__(self, algorithms: List[TPM_ALG]):
         count = len(algorithms).to_bytes(4, BYTE_ORDER)

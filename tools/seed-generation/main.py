@@ -980,6 +980,14 @@ if __name__ == "__main__":
         "TPMTestParms": TPMTestParms(),
         "TPMNVDefineSpace": TPMNVDefineSpace(),
         "TPMNVSetBits": tpm_nv_setbits_seeds,
+        "TPMClear": [
+            [
+                TPMClear(auth_handle=TPM_RH.LOCKOUT),
+            ],
+            [
+                TPMClear(auth_handle=TPM_RH.PLATFORM),
+            ],
+        ],
         "TPMNVWriteLock": [
             # Lock once success
             [

@@ -6,6 +6,7 @@
 #include "constants/tpm_cc.pb.h"
 #include "constants/tpm_rh.pb.h"
 #include "constants/tpm_st.pb.h"
+#include "tpm_commands/tpm_clear.pb.h"
 #include "tpm_commands/tpm_startauthsession.pb.h"
 
 namespace {
@@ -105,90 +106,55 @@ void NormalizeRSADecrypt(tpm_commands::TPMRSADecrypt* msg) {
   msg->mutable_header()->set_tag(constants::TPM_ST_SESSIONS);
   msg->mutable_header()->set_command_code(constants::TPM_CC_RSA_DECRYPT);
 }
+void NormalizeClear(tpm_commands::TPMClear* msg) {
+  msg->mutable_header()->set_tag(constants::TPM_ST_SESSIONS);
+  msg->mutable_header()->set_command_code(constants::TPM_CC_CLEAR);
+
+  if (msg->auth_handle() == 0) {
+    msg->set_auth_handle(constants::TPM_RH_LOCKOUT);
+  }
+
+  if (msg->sessions().empty()) {
+    SetPasswordSession(msg->add_sessions());
+  }
+}
 
 void NormalizeCommandSequence(tpm::TPMCommandSequence* seq) {
-  int startauth_index = -1;
+  bool has_startauthsession = false;
   int create_primary_index = -1;
   int create_index = -1;
-  int rsadecrypt_index = -1;
 
   for (int i = 0; i < seq->commands_size(); ++i) {
-    if (startauth_index == -1 && seq->commands(i).has_startauthsession()) {
-      startauth_index = i;
+    if (seq->commands(i).has_startauthsession()) {
+      has_startauthsession = true;
     }
+
     if (create_primary_index == -1 && seq->commands(i).has_createprimary()) {
       create_primary_index = i;
     }
+
     if (create_index == -1 && seq->commands(i).has_create()) {
       create_index = i;
     }
-    if (rsadecrypt_index == -1 && seq->commands(i).has_rsadecrypt()) {
-      rsadecrypt_index = i;
-    }
   }
 
-  // ── RSA_Decrypt path ───────────────────────────────────────────────────────
-  if (rsadecrypt_index != -1 && create_index == -1) {
-    tpm_commands::TPMRSADecrypt rsadecrypt_msg;
-    rsadecrypt_msg.CopyFrom(seq->commands(rsadecrypt_index).rsadecrypt());
-
-    tpm_commands::TPMCreatePrimary create_primary_msg;
-    if (create_primary_index != -1) {
-      create_primary_msg.CopyFrom(
-          seq->commands(create_primary_index).createprimary());
-    }
-
-    seq->clear_commands();
-
-    tpm_commands::TPMCreatePrimary* cp =
-        seq->add_commands()->mutable_createprimary();
-    cp->CopyFrom(create_primary_msg);
-    NormalizeCreatePrimary(cp);
-
-    tpm_commands::TPMRSADecrypt* rsa_decrypt =
-        seq->add_commands()->mutable_rsadecrypt();
-    rsa_decrypt->CopyFrom(rsadecrypt_msg);
-    NormalizeRSADecrypt(rsa_decrypt);
-
-    return;
-  }
-
-  // ── Create / CreatePrimary path (existing logic) ───────────────────────────
-  if (create_primary_index == -1 && create_index == -1) return;
-
-  tpm_commands::TPMStartAuthSession startauth_msg;
-  if (startauth_index != -1) {
-    startauth_msg.CopyFrom(seq->commands(startauth_index).startauthsession());
-  }
-
-  tpm_commands::TPMCreatePrimary create_primary_msg;
   if (create_primary_index != -1) {
-    create_primary_msg.CopyFrom(
-        seq->commands(create_primary_index).createprimary());
-  }
+    tpm_commands::TPMCreatePrimary* cp =
+        seq->mutable_commands(create_primary_index)->mutable_createprimary();
 
-  tpm_commands::TPMCreate create_msg;
-  if (create_index != -1) {
-    create_msg.CopyFrom(seq->commands(create_index).create());
-  }
+    cp->clear_sessions();
 
-  seq->clear_commands();
-  seq->add_commands()->mutable_startauthsession()->CopyFrom(startauth_msg);
-  seq->add_commands()->mutable_createprimary()->CopyFrom(create_primary_msg);
-  if (create_index != -1) {
-    seq->add_commands()->mutable_create()->CopyFrom(create_msg);
+    if (has_startauthsession) {
+      SetHmacSession(cp->add_sessions(), '\x01');
+    } else {
+      SetPasswordSession(cp->add_sessions());
+    }
   }
-
-  tpm_commands::TPMCreatePrimary* cp =
-      seq->mutable_commands(1)->mutable_createprimary();
-  NormalizeCreatePrimary(cp);
-  cp->clear_sessions();
-  SetHmacSession(cp->add_sessions(), '\x01');
 
   if (create_index != -1) {
     tpm_commands::TPMCreate* create =
-        seq->mutable_commands(2)->mutable_create();
-    NormalizeCreate(create);
+        seq->mutable_commands(create_index)->mutable_create();
+
     create->clear_sessions();
     SetPasswordSession(create->add_sessions());
   }

@@ -1,0 +1,13 @@
+commands {
+  clear {
+    header {
+      tag: TPM_ST_SESSIONS
+      command_size: 27
+      command_code: TPM_CC_CLEAR
+    }
+    auth_handle: 1073741836
+    sessions {
+      session_handle: 1073741833
+    }
+  }
+}

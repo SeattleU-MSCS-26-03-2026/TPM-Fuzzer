@@ -4,6 +4,7 @@
 #include <cstdint>
 
 #include "tpm_commands.pb.h"
+#include "tpm_commands/tpm_clear.pb.h"
 #include "tpm_commands/tpm_create.pb.h"
 #include "tpm_commands/tpm_createprimary.pb.h"
 #include "tpm_commands/tpm_rsa_decrypt.pb.h"
@@ -18,6 +19,8 @@ void NormalizeRsaOrKeyedHashPublic(tpm_types::TPMTPublic* public_area,
                                    uint32_t object_attributes);
 
 void NormalizeCreatePrimary(tpm_commands::TPMCreatePrimary* msg);
+
+void NormalizeClear(tpm_commands::TPMClear* msg);
 
 void NormalizeCreate(tpm_commands::TPMCreate* msg);
 

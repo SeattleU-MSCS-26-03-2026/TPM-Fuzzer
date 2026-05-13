@@ -4,33 +4,30 @@
 # source: constants/tpm_st.proto
 # Protobuf Python Version: 7.34.1
 """Generated protocol buffer code."""
+
 from google.protobuf import descriptor as _descriptor
 from google.protobuf import descriptor_pool as _descriptor_pool
 from google.protobuf import runtime_version as _runtime_version
 from google.protobuf import symbol_database as _symbol_database
 from google.protobuf.internal import builder as _builder
+
 _runtime_version.ValidateProtobufRuntimeVersion(
-    _runtime_version.Domain.PUBLIC,
-    7,
-    34,
-    1,
-    '',
-    'constants/tpm_st.proto'
+    _runtime_version.Domain.PUBLIC, 7, 34, 1, "", "constants/tpm_st.proto"
 )
 # @@protoc_insertion_point(imports)
 
 _sym_db = _symbol_database.Default()
 
 
-
-
-DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n\x16\x63onstants/tpm_st.proto\x12\tconstants*P\n\x05TPMST\x12\x16\n\x12TPM_ST_UNSPECIFIED\x10\x00\x12\x18\n\x12TPM_ST_NO_SESSIONS\x10\x81\x80\x02\x12\x15\n\x0fTPM_ST_SESSIONS\x10\x82\x80\x02\x62\x06proto3')
+DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(
+    b"\n\x16\x63onstants/tpm_st.proto\x12\tconstants*P\n\x05TPMST\x12\x16\n\x12TPM_ST_UNSPECIFIED\x10\x00\x12\x18\n\x12TPM_ST_NO_SESSIONS\x10\x81\x80\x02\x12\x15\n\x0fTPM_ST_SESSIONS\x10\x82\x80\x02\x62\x06proto3"
+)
 
 _globals = globals()
 _builder.BuildMessageAndEnumDescriptors(DESCRIPTOR, _globals)
-_builder.BuildTopDescriptorsAndMessages(DESCRIPTOR, 'constants.tpm_st_pb2', _globals)
+_builder.BuildTopDescriptorsAndMessages(DESCRIPTOR, "constants.tpm_st_pb2", _globals)
 if not _descriptor._USE_C_DESCRIPTORS:
-  DESCRIPTOR._loaded_options = None
-  _globals['_TPMST']._serialized_start=37
-  _globals['_TPMST']._serialized_end=117
+    DESCRIPTOR._loaded_options = None
+    _globals["_TPMST"]._serialized_start = 37
+    _globals["_TPMST"]._serialized_end = 117
 # @@protoc_insertion_point(module_scope)

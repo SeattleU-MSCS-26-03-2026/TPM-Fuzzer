@@ -4,18 +4,20 @@
 # source: tpm_commands/tpm_startauthsession.proto
 # Protobuf Python Version: 7.34.1
 """Generated protocol buffer code."""
+
 from google.protobuf import descriptor as _descriptor
 from google.protobuf import descriptor_pool as _descriptor_pool
 from google.protobuf import runtime_version as _runtime_version
 from google.protobuf import symbol_database as _symbol_database
 from google.protobuf.internal import builder as _builder
+
 _runtime_version.ValidateProtobufRuntimeVersion(
     _runtime_version.Domain.PUBLIC,
     7,
     34,
     1,
-    '',
-    'tpm_commands/tpm_startauthsession.proto'
+    "",
+    "tpm_commands/tpm_startauthsession.proto",
 )
 # @@protoc_insertion_point(imports)
 
@@ -29,14 +31,17 @@ from constants import tpm_alg_pb2 as constants_dot_tpm__alg__pb2
 from tpm_types import tpm2b_data_pb2 as tpm__types_dot_tpm2b__data__pb2
 from tpm_types import tpmt_sym_def_pb2 as tpm__types_dot_tpmt__sym__def__pb2
 
-
-DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n\'tpm_commands/tpm_startauthsession.proto\x12\x0ctpm_commands\x1a\x1atpm_types/tpm_header.proto\x1a\x16\x63onstants/tpm_rh.proto\x1a\x16\x63onstants/tpm_se.proto\x1a\x17\x63onstants/tpm_alg.proto\x1a\x1atpm_types/tpm2b_data.proto\x1a\x1ctpm_types/tpmt_sym_def.proto\"\xc9\x02\n\x13TPMStartAuthSession\x12$\n\x06header\x18\x01 \x01(\x0b\x32\x14.tpm_types.TPMHeader\x12!\n\x07tpm_key\x18\x02 \x01(\x0e\x32\x10.constants.TPMRH\x12\x1e\n\x04\x62ind\x18\x03 \x01(\x0e\x32\x10.constants.TPMRH\x12#\n\x05nonce\x18\x04 \x01(\x0b\x32\x14.tpm_types.TPM2BData\x12,\n\x0e\x65ncrypted_salt\x18\x05 \x01(\x0b\x32\x14.tpm_types.TPM2BData\x12&\n\x0csession_type\x18\x06 \x01(\x0e\x32\x10.constants.TPMSE\x12(\n\tsymmetric\x18\x07 \x01(\x0b\x32\x15.tpm_types.TPMTSymDef\x12$\n\tauth_hash\x18\x08 \x01(\x0e\x32\x11.constants.TPMALGb\x06proto3')
+DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(
+    b"\n'tpm_commands/tpm_startauthsession.proto\x12\x0ctpm_commands\x1a\x1atpm_types/tpm_header.proto\x1a\x16\x63onstants/tpm_rh.proto\x1a\x16\x63onstants/tpm_se.proto\x1a\x17\x63onstants/tpm_alg.proto\x1a\x1atpm_types/tpm2b_data.proto\x1a\x1ctpm_types/tpmt_sym_def.proto\"\xc9\x02\n\x13TPMStartAuthSession\x12$\n\x06header\x18\x01 \x01(\x0b\x32\x14.tpm_types.TPMHeader\x12!\n\x07tpm_key\x18\x02 \x01(\x0e\x32\x10.constants.TPMRH\x12\x1e\n\x04\x62ind\x18\x03 \x01(\x0e\x32\x10.constants.TPMRH\x12#\n\x05nonce\x18\x04 \x01(\x0b\x32\x14.tpm_types.TPM2BData\x12,\n\x0e\x65ncrypted_salt\x18\x05 \x01(\x0b\x32\x14.tpm_types.TPM2BData\x12&\n\x0csession_type\x18\x06 \x01(\x0e\x32\x10.constants.TPMSE\x12(\n\tsymmetric\x18\x07 \x01(\x0b\x32\x15.tpm_types.TPMTSymDef\x12$\n\tauth_hash\x18\x08 \x01(\x0e\x32\x11.constants.TPMALGb\x06proto3"
+)
 
 _globals = globals()
 _builder.BuildMessageAndEnumDescriptors(DESCRIPTOR, _globals)
-_builder.BuildTopDescriptorsAndMessages(DESCRIPTOR, 'tpm_commands.tpm_startauthsession_pb2', _globals)
+_builder.BuildTopDescriptorsAndMessages(
+    DESCRIPTOR, "tpm_commands.tpm_startauthsession_pb2", _globals
+)
 if not _descriptor._USE_C_DESCRIPTORS:
-  DESCRIPTOR._loaded_options = None
-  _globals['_TPMSTARTAUTHSESSION']._serialized_start=217
-  _globals['_TPMSTARTAUTHSESSION']._serialized_end=546
+    DESCRIPTOR._loaded_options = None
+    _globals["_TPMSTARTAUTHSESSION"]._serialized_start = 217
+    _globals["_TPMSTARTAUTHSESSION"]._serialized_end = 546
 # @@protoc_insertion_point(module_scope)

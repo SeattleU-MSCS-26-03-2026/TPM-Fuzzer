@@ -35,6 +35,7 @@ class TPM_CC(Enum):
     TPM Command Codes
     """
 
+    CLEAR = 0x00000126
     GETCAPABILITY = 0x0000017A
     GETRANDOM = 0x0000017B
     STARTAUTHSESSION = 0x00000176
@@ -81,6 +82,7 @@ class TPM_RH(Enum):
     OWNER = 0x40000001
     NULL = 0x40000007
     PLATFORM = 0x4000000C
+    LOCKOUT = 0x4000000A
 
 
 class TPM_RS(Enum):

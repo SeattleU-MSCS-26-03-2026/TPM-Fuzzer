@@ -1,0 +1,12 @@
+syntax = "proto3";
+
+package tpm_commands;
+
+import "tpm_types/tpm_header.proto";
+import "tpm_types/tpm_session.proto";
+
+message TPMClear {
+  tpm_types.TPMHeader header = 1;
+  uint32 auth_handle = 2;
+  repeated tpm_types.TPMSession sessions = 3;
+}

@@ -7,6 +7,7 @@ import "tpm_commands/tpm_create.proto";
 import "tpm_commands/tpm_createprimary.proto";
 import "tpm_commands/tpm_startauthsession.proto";
 import "tpm_commands/tpm_rsa_decrypt.proto";
+import "tpm_commands/tpm_clear.proto";
 
 message TPMCommand {
   oneof command {
@@ -15,6 +16,7 @@ message TPMCommand {
     tpm_commands.TPMCreatePrimary    createprimary    = 3;
     tpm_commands.TPMStartAuthSession startauthsession = 4;
     tpm_commands.TPMRSADecrypt       rsadecrypt       = 5;
+    tpm_commands.TPMClear            clear            = 6;
   }
 }
 
