@@ -9,7 +9,7 @@ commands {
     bind: TPM_RH_NULL
     nonce {
       size: 16
-      buffer: "{\315\215Q\370ad7\207Rj\301\020\362\271\331"
+      buffer: "w\333M\030\026:\344!\354(\305\207M\233\020l"
     }
     encrypted_salt {
     }
@@ -51,9 +51,8 @@ commands {
         parameters {
           rsa {
             symmetric: TPM_ALG_AES
-            scheme: 128
-            key_bits: 67
-            exponent: 1050624
+            scheme: TPM_ALG_NULL
+            key_bits: 2048
           }
         }
         unique {

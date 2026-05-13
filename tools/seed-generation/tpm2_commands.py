@@ -106,8 +106,7 @@ class TPMCommand(object):
 
     @staticmethod
     def _proto_public(payload: bytes) -> tpm2b_public_pb2.TPM2BPublic:  # type: ignore
-        size = int.from_bytes(payload[0:2], BYTE_ORDER)
-        public = payload[2 : 2 + size]
+        public = payload[2:]
         offset = 0
 
         public_type = int.from_bytes(public[offset : offset + 2], BYTE_ORDER)
@@ -118,15 +117,19 @@ class TPMCommand(object):
         offset += 4
 
         auth_policy_size = int.from_bytes(public[offset : offset + 2], BYTE_ORDER)
-        auth_policy = public[offset + 2 : offset + 2 + auth_policy_size]
-        offset += 2 + auth_policy_size
+        offset += 2
+        auth_policy = public[offset : offset + auth_policy_size]
+        offset += auth_policy_size
 
         parameters = tpm2b_public_pb2.TPMUPublicParms()  # type: ignore
         unique = tpm2b_public_pb2.TPMUPublicId()  # type: ignore
 
         if public_type == TPM_ALG.RSA.value:
             symmetric = int.from_bytes(public[offset : offset + 2], BYTE_ORDER)
-            offset += 2
+            if symmetric == TPM_ALG.NULL.value:
+               offset += 2
+            else:
+               offset += 6
             scheme = int.from_bytes(public[offset : offset + 2], BYTE_ORDER)
             offset += 2
             key_bits = int.from_bytes(public[offset : offset + 2], BYTE_ORDER)
@@ -164,7 +167,7 @@ class TPMCommand(object):
             )
 
         return tpm2b_public_pb2.TPM2BPublic(  # type: ignore
-            size=size,
+            size=len(public),
             public_area=tpm2b_public_pb2.TPMTPublic(  # type: ignore
                 type=public_type,
                 name_alg=name_alg,
@@ -1225,3 +1228,77 @@ class TPMUnseal(TPMCommand):
         params = item_handle.to_bytes(4, BYTE_ORDER) + auth_area.to_bytes()
 
         super().__init__(TPM_ST.SESSIONS, TPM_CC.UNSEAL, params=params)
+
+
+class TPMRSAEncrypt(TPMCommand):
+    """
+    TPM2_RSA_Encrypt command (TPM spec Part 3, Section 14.2).
+
+    Command structure (TPM_ST_SESSIONS | TPM_ST_NO_SESSIONS):
+      keyHandle(4) | authArea | message: TPM2B_PUBLIC_KEY_RSA |
+      inScheme: TPMT_RSA_DECRYPT | label: TPM2B_DATA
+    """
+
+    def __init__(
+        self,
+        key_handle: int,
+        message: bytes,
+        in_scheme: TPMT_RSA_DECRYPT,
+        label: bytes = b"",
+    ):
+        self._key_handle = key_handle
+        self._message = message
+        self._in_scheme = in_scheme
+        self._label = label
+
+        msg = len(self._message).to_bytes(2, BYTE_ORDER) + self._message
+        label = len(self._label).to_bytes(2, BYTE_ORDER) + self._label
+
+        params = (
+            key_handle.to_bytes(4, BYTE_ORDER)
+            + msg
+            + self._in_scheme.to_bytes()
+            + label
+        )
+
+        super().__init__(TPM_ST.NO_SESSIONS, TPM_CC.RSA_ENCRYPT, params=params)
+
+    def to_proto(self) -> Optional[dict]:
+        from tpm_commands import tpm_rsa_encrypt_pb2  # type: ignore
+        from tpm_types import (  # type: ignore
+            tpm2b_public_key_rsa_pb2,
+            tpmt_rsa_decrypt_pb2,
+            tpm2b_data_pb2,
+        )
+
+        scheme_val = (
+            self._in_scheme.scheme.value
+            if isinstance(self._in_scheme.scheme, TPM_ALG)
+            else int(self._in_scheme.scheme)
+        )
+        hash_alg_val = 0
+        if self._in_scheme.hash_alg is not None:
+            hash_alg_val = (
+                self._in_scheme.hash_alg.value
+                if isinstance(self._in_scheme.hash_alg, TPM_ALG)
+                else int(self._in_scheme.hash_alg)
+            )
+
+        return {
+            "rsaencrypt": tpm_commands_pb2.tpm__commands_dot_tpm__rsa__encrypt__pb2.TPMRSAEncrypt(  # type: ignore
+                header=self._proto_header(),
+                key_handle=self._key_handle,
+                message=tpm2b_public_key_rsa_pb2.TPM2BPublicKeyRSA(  # type: ignore
+                    size=len(self._message),
+                    buffer=self._message,
+                ),
+                in_scheme=tpmt_rsa_decrypt_pb2.TPMTRSADecrypt(  # type: ignore
+                    scheme=scheme_val,
+                    hash_alg=hash_alg_val,
+                ),
+                label=tpm2b_data_pb2.TPM2BData(  # type: ignore
+                    size=len(self._label),
+                    buffer=self._label,
+                ),
+            )
+        }

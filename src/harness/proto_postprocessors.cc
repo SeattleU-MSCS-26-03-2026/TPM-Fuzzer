@@ -1,10 +1,12 @@
 #include "harness/proto_postprocessors.h"
 
+#include "constants/tpm_st.pb.h"
 #include "harness/proto_normalization.h"
 #include "src/libfuzzer/libfuzzer_macro.h"
 #include "tpm_commands.pb.h"
 #include "tpm_commands/tpm_clear.pb.h"
 #include "tpm_commands/tpm_rsa_decrypt.pb.h"
+#include "tpm_commands/tpm_rsa_encrypt.pb.h"
 
 namespace {
 void NormalizeStartAuthSession(tpm_commands::TPMStartAuthSession* msg) {
@@ -74,9 +76,11 @@ static protobuf_mutator::libfuzzer::PostProcessorRegistration<
         }};
 
 static protobuf_mutator::libfuzzer::PostProcessorRegistration<
-    tpm::TPMCommandSequence>
-    reg_sequence = {[](tpm::TPMCommandSequence* seq, unsigned int /* seed */) {
-      NormalizeCommandSequence(seq);
+    tpm_commands::TPMRSAEncrypt>
+    reg_rsaencrypt = {[](tpm_commands::TPMRSAEncrypt* msg,
+                         unsigned int /* seed */) {
+      msg->mutable_header()->set_tag(constants::TPM_ST_NO_SESSIONS);
+      msg->mutable_header()->set_command_code(constants::TPM_CC_RSA_ENCRYPT);
     }};
 }  // namespace
 

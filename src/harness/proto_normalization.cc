@@ -106,6 +106,7 @@ void NormalizeRSADecrypt(tpm_commands::TPMRSADecrypt* msg) {
   msg->mutable_header()->set_tag(constants::TPM_ST_SESSIONS);
   msg->mutable_header()->set_command_code(constants::TPM_CC_RSA_DECRYPT);
 }
+
 void NormalizeClear(tpm_commands::TPMClear* msg) {
   msg->mutable_header()->set_tag(constants::TPM_ST_SESSIONS);
   msg->mutable_header()->set_command_code(constants::TPM_CC_CLEAR);
@@ -116,46 +117,5 @@ void NormalizeClear(tpm_commands::TPMClear* msg) {
 
   if (msg->sessions().empty()) {
     SetPasswordSession(msg->add_sessions());
-  }
-}
-
-void NormalizeCommandSequence(tpm::TPMCommandSequence* seq) {
-  bool has_startauthsession = false;
-  int create_primary_index = -1;
-  int create_index = -1;
-
-  for (int i = 0; i < seq->commands_size(); ++i) {
-    if (seq->commands(i).has_startauthsession()) {
-      has_startauthsession = true;
-    }
-
-    if (create_primary_index == -1 && seq->commands(i).has_createprimary()) {
-      create_primary_index = i;
-    }
-
-    if (create_index == -1 && seq->commands(i).has_create()) {
-      create_index = i;
-    }
-  }
-
-  if (create_primary_index != -1) {
-    tpm_commands::TPMCreatePrimary* cp =
-        seq->mutable_commands(create_primary_index)->mutable_createprimary();
-
-    cp->clear_sessions();
-
-    if (has_startauthsession) {
-      SetHmacSession(cp->add_sessions(), '\x01');
-    } else {
-      SetPasswordSession(cp->add_sessions());
-    }
-  }
-
-  if (create_index != -1) {
-    tpm_commands::TPMCreate* create =
-        seq->mutable_commands(create_index)->mutable_create();
-
-    create->clear_sessions();
-    SetPasswordSession(create->add_sessions());
   }
 }

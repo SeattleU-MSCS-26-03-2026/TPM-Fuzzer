@@ -4,30 +4,33 @@
 # source: constants/tpm_alg.proto
 # Protobuf Python Version: 7.34.1
 """Generated protocol buffer code."""
-
 from google.protobuf import descriptor as _descriptor
 from google.protobuf import descriptor_pool as _descriptor_pool
 from google.protobuf import runtime_version as _runtime_version
 from google.protobuf import symbol_database as _symbol_database
 from google.protobuf.internal import builder as _builder
-
 _runtime_version.ValidateProtobufRuntimeVersion(
-    _runtime_version.Domain.PUBLIC, 7, 34, 1, "", "constants/tpm_alg.proto"
+    _runtime_version.Domain.PUBLIC,
+    7,
+    34,
+    1,
+    '',
+    'constants/tpm_alg.proto'
 )
 # @@protoc_insertion_point(imports)
 
 _sym_db = _symbol_database.Default()
 
 
-DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(
-    b"\n\x17\x63onstants/tpm_alg.proto\x12\tconstants*\xdd\x01\n\x06TPMALG\x12\x17\n\x13TPM_ALG_UNSPECIFIED\x10\x00\x12\x0f\n\x0bTPM_ALG_RSA\x10\x01\x12\x10\n\x0cTPM_ALG_SHA1\x10\x04\x12\x10\n\x0cTPM_ALG_HMAC\x10\x05\x12\x0f\n\x0bTPM_ALG_AES\x10\x06\x12\x15\n\x11TPM_ALG_KEYEDHASH\x10\x08\x12\x10\n\x0cTPM_ALG_NULL\x10\x10\x12\x12\n\x0eTPM_ALG_RSASSA\x10\x14\x12\x0f\n\x0bTPM_ALG_CFB\x10\x43\x12\x12\n\x0eTPM_ALG_SHA256\x10\x0b\x12\x12\n\x0eTPM_ALG_SHA384\x10\x0c\x62\x06proto3"
-)
+
+
+DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n\x17\x63onstants/tpm_alg.proto\x12\tconstants*\x82\x02\n\x06TPMALG\x12\x17\n\x13TPM_ALG_UNSPECIFIED\x10\x00\x12\x0f\n\x0bTPM_ALG_RSA\x10\x01\x12\x10\n\x0cTPM_ALG_SHA1\x10\x04\x12\x10\n\x0cTPM_ALG_HMAC\x10\x05\x12\x0f\n\x0bTPM_ALG_AES\x10\x06\x12\x15\n\x11TPM_ALG_KEYEDHASH\x10\x08\x12\x10\n\x0cTPM_ALG_NULL\x10\x10\x12\x12\n\x0eTPM_ALG_RSASSA\x10\x14\x12\x11\n\rTPM_ALG_RSAES\x10\x15\x12\x10\n\x0cTPM_ALG_OAEP\x10\x17\x12\x0f\n\x0bTPM_ALG_CFB\x10\x43\x12\x12\n\x0eTPM_ALG_SHA256\x10\x0b\x12\x12\n\x0eTPM_ALG_SHA384\x10\x0c\x62\x06proto3')
 
 _globals = globals()
 _builder.BuildMessageAndEnumDescriptors(DESCRIPTOR, _globals)
-_builder.BuildTopDescriptorsAndMessages(DESCRIPTOR, "constants.tpm_alg_pb2", _globals)
+_builder.BuildTopDescriptorsAndMessages(DESCRIPTOR, 'constants.tpm_alg_pb2', _globals)
 if not _descriptor._USE_C_DESCRIPTORS:
-    DESCRIPTOR._loaded_options = None
-    _globals["_TPMALG"]._serialized_start = 39
-    _globals["_TPMALG"]._serialized_end = 260
+  DESCRIPTOR._loaded_options = None
+  _globals['_TPMALG']._serialized_start=39
+  _globals['_TPMALG']._serialized_end=297
 # @@protoc_insertion_point(module_scope)

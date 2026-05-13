@@ -637,6 +637,79 @@ def _generate_seeds(
         )
 
 
+def tpm_rsa_encrypt_seeds() -> SeedVariants:
+    """
+    Generates seeds for TPM2_RSA_Encrypt
+    """
+    # 64 bytes: a reasonable plaintext size well within 2048-bit RSA limits.
+    message = b"\x41" * 64
+
+    non_restricted_encrypt_primary = TPMCreatePrimary(
+        session_handle=TPM_RS.PW,
+        hashAlg=TPM_ALG.SHA256,
+        keyBits=2048,
+        public_template=TPM2B_PUBLIC(
+            public_area=TPMT_PUBLIC(
+                type=TPM_ALG.RSA,
+                name_alg=TPM_ALG.SHA256,
+                object_attributes=[
+                    TPMA_OBJECT.FIXEDTPM,
+                    TPMA_OBJECT.FIXEDPARENT,
+                    TPMA_OBJECT.SENSITIVEDATAORIGIN,
+                    TPMA_OBJECT.USERWITHAUTH,
+                    TPMA_OBJECT.DECRYPT,
+                ],
+                rsa_parameters=TPMS_RSA_PARMS(
+                    symmetric=TPMS_SYM_DEF_OBJECT(algorithm=TPM_ALG.NULL),
+                    scheme=TPM_ALG.NULL,
+                    key_bits=2048,
+                ),
+            )
+        ),
+    )
+
+    # Variant 0: RSAES scheme — exercises RSAES encryption path
+    variant0 = [
+        non_restricted_encrypt_primary,
+        TPMRSAEncrypt(
+            key_handle=0x80000000,
+            message=message,
+            in_scheme=TPMT_RSA_DECRYPT(scheme=TPM_ALG.RSAES),
+        ),
+    ]
+
+    # Variant 1: OAEP/SHA-256 scheme — exercises OAEP encryption path
+    variant1 = [
+        non_restricted_encrypt_primary,
+        TPMRSAEncrypt(
+            key_handle=0x80000000,
+            message=message,
+            in_scheme=TPMT_RSA_DECRYPT(scheme=TPM_ALG.OAEP, hash_alg=TPM_ALG.SHA256),
+        ),
+    ]
+
+    # Variant 2: NULL scheme — inherits key scheme (also NULL), exercises default path
+    variant2 = [
+        non_restricted_encrypt_primary,
+        TPMRSAEncrypt(
+            key_handle=0x80000000,
+            message=message,
+            in_scheme=TPMT_RSA_DECRYPT(scheme=TPM_ALG.NULL),
+        ),
+    ]
+
+    # Variant 3: empty message — exercises zero-length plaintext edge case
+    variant3 = [
+        non_restricted_encrypt_primary,
+        TPMRSAEncrypt(
+            key_handle=0x80000000,
+            message=b"",
+            in_scheme=TPMT_RSA_DECRYPT(scheme=TPM_ALG.OAEP, hash_alg=TPM_ALG.SHA256),
+        ),
+    ]
+
+    return [variant0, variant1, variant2, variant3]
+
 def tpm_rsa_decrypt_seeds() -> SeedVariants:
     """
     Generates seeds for TPM2_RSA_Decrypt targeting line coverage of RSA_Decrypt.c.
@@ -764,6 +837,7 @@ if __name__ == "__main__":
             ],
         ],
         "TPMRSADecrypt": tpm_rsa_decrypt_seeds,
+        "TPMRSAEncrypt": tpm_rsa_encrypt_seeds,
         "TPMIncrementalSelfTest": tpm_incremental_self_test_seeds,
         "TPMGetCapability": tpm_get_capability_seeds,
         "TPMECCParameters": TPMECCParameters(TPM_ECC_CURVE.NIST_P192),

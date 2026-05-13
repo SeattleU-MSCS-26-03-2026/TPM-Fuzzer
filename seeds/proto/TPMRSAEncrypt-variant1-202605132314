@@ -2,7 +2,7 @@ commands {
   createprimary {
     header {
       tag: TPM_ST_SESSIONS
-      command_size: 67
+      command_size: 63
       command_code: TPM_CC_CREATE_PRIMARY
     }
     hierarchy: TPM_RH_OWNER
@@ -19,19 +19,18 @@ commands {
       }
     }
     in_public {
-      size: 26
+      size: 22
       public_area {
         type: TPM_ALG_RSA
         name_alg: TPM_ALG_SHA256
-        object_attributes: 197746
+        object_attributes: 131186
         auth_policy {
         }
         parameters {
           rsa {
-            symmetric: TPM_ALG_AES
-            scheme: 128
-            key_bits: 67
-            exponent: 1050624
+            symmetric: TPM_ALG_NULL
+            scheme: TPM_ALG_NULL
+            key_bits: 2048
           }
         }
         unique {
@@ -46,12 +45,22 @@ commands {
   }
 }
 commands {
-  getrandom {
+  rsaencrypt {
     header {
       tag: TPM_ST_NO_SESSIONS
-      command_size: 12
-      command_code: TPM_CC_GET_RANDOM
+      command_size: 86
+      command_code: TPM_CC_RSA_ENCRYPT
     }
-    bytes_requested: 16
+    key_handle: 2147483648
+    message {
+      size: 64
+      buffer: "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"
+    }
+    in_scheme {
+      scheme: TPM_ALG_OAEP
+      hash_alg: TPM_ALG_SHA256
+    }
+    label {
+    }
   }
 }

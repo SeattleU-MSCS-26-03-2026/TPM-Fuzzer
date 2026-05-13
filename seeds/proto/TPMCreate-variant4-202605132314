@@ -29,9 +29,8 @@ commands {
         parameters {
           rsa {
             symmetric: TPM_ALG_AES
-            scheme: 128
-            key_bits: 67
-            exponent: 1050624
+            scheme: TPM_ALG_NULL
+            key_bits: 2048
           }
         }
         unique {
@@ -73,9 +72,8 @@ commands {
         parameters {
           rsa {
             symmetric: TPM_ALG_AES
-            scheme: 128
-            key_bits: 67
-            exponent: 1049600
+            scheme: TPM_ALG_NULL
+            key_bits: 2048
           }
         }
         unique {

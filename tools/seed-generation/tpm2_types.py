@@ -66,6 +66,7 @@ class TPM_CC(Enum):
     NV_READLOCK = 0x0000014F
     NV_EXTEND = 0x00000136
     RSA_DECRYPT = 0x00000159
+    RSA_ENCRYPT = 0x00000174;
 
     def proto_value(self):
         try:

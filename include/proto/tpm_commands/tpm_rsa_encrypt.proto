@@ -1,0 +1,16 @@
+syntax = "proto3";
+
+package tpm_commands;
+
+import "tpm_types/tpm_header.proto";
+import "tpm_types/tpm2b_public_key_rsa.proto";
+import "tpm_types/tpmt_rsa_decrypt.proto";
+import "tpm_types/tpm2b_data.proto";
+
+message TPMRSAEncrypt {
+  tpm_types.TPMHeader           header      = 1;
+  uint32                        key_handle  = 2;
+  tpm_types.TPM2BPublicKeyRSA   message = 4;
+  tpm_types.TPMTRSADecrypt      in_scheme   = 5;
+  tpm_types.TPM2BData           label       = 6;
+}

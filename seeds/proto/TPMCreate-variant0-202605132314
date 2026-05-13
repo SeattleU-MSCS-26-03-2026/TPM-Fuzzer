@@ -29,9 +29,8 @@ commands {
         parameters {
           rsa {
             symmetric: TPM_ALG_AES
-            scheme: 128
-            key_bits: 67
-            exponent: 1050624
+            scheme: TPM_ALG_NULL
+            key_bits: 2048
           }
         }
         unique {
@@ -46,16 +45,13 @@ commands {
   }
 }
 commands {
-  createprimary {
+  create {
     header {
       tag: TPM_ST_SESSIONS
       command_size: 67
-      command_code: TPM_CC_CREATE_PRIMARY
+      command_code: TPM_CC_CREATE
     }
-    hierarchy: TPM_RH_OWNER
-    sessions {
-      session_handle: 1073741833
-    }
+    parent_handle: 2147483648
     in_sensitive {
       size: 4
       sensitive {
@@ -76,9 +72,8 @@ commands {
         parameters {
           rsa {
             symmetric: TPM_ALG_AES
-            scheme: 128
-            key_bits: 67
-            exponent: 1050624
+            scheme: TPM_ALG_NULL
+            key_bits: 2048
           }
         }
         unique {

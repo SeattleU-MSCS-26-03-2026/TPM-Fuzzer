@@ -26,7 +26,7 @@ from constants import tpm_alg_pb2 as constants_dot_tpm__alg__pb2
 from tpm_types import tpm2b_digest_pb2 as tpm__types_dot_tpm2b__digest__pb2
 
 
-DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n\x1ctpm_types/tpm2b_public.proto\x12\ttpm_types\x1a\x17\x63onstants/tpm_alg.proto\x1a\x1ctpm_types/tpm2b_digest.proto\"\x97\x01\n\x0cTPMSRSAParms\x12$\n\tsymmetric\x18\x01 \x01(\x0e\x32\x11.constants.TPMALG\x12!\n\x06scheme\x18\x02 \x01(\x0e\x32\x11.constants.TPMALG\x12\x1a\n\x12symmetric_key_bits\x18\x03 \x01(\r\x12\x10\n\x08key_bits\x18\x04 \x01(\r\x12\x10\n\x08\x65xponent\x18\x05 \x01(\r\"7\n\x12TPMSKeyedHashParms\x12!\n\x06scheme\x18\x01 \x01(\x0e\x32\x11.constants.TPMALG\"v\n\x0fTPMUPublicParms\x12&\n\x03rsa\x18\x01 \x01(\x0b\x32\x17.tpm_types.TPMSRSAParmsH\x00\x12\x32\n\tkeyedhash\x18\x02 \x01(\x0b\x32\x1d.tpm_types.TPMSKeyedHashParmsH\x00\x42\x07\n\x05parms\"L\n\x0cTPMUPublicId\x12\r\n\x03rsa\x18\x01 \x01(\x0cH\x00\x12\'\n\tkeyedhash\x18\x02 \x01(\x0b\x32\x12.types.TPM2BDigestH\x00\x42\x04\n\x02id\"\xef\x01\n\nTPMTPublic\x12\x1f\n\x04type\x18\x01 \x01(\x0e\x32\x11.constants.TPMALG\x12#\n\x08name_alg\x18\x02 \x01(\x0e\x32\x11.constants.TPMALG\x12\x19\n\x11object_attributes\x18\x03 \x01(\r\x12\'\n\x0b\x61uth_policy\x18\x04 \x01(\x0b\x32\x12.types.TPM2BDigest\x12.\n\nparameters\x18\x05 \x01(\x0b\x32\x1a.tpm_types.TPMUPublicParms\x12\'\n\x06unique\x18\x06 \x01(\x0b\x32\x17.tpm_types.TPMUPublicId\"G\n\x0bTPM2BPublic\x12\x0c\n\x04size\x18\x01 \x01(\r\x12*\n\x0bpublic_area\x18\x02 \x01(\x0b\x32\x15.tpm_types.TPMTPublicb\x06proto3')
+DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n\x1ctpm_types/tpm2b_public.proto\x12\ttpm_types\x1a\x17\x63onstants/tpm_alg.proto\x1a\x1ctpm_types/tpm2b_digest.proto\"\x97\x01\n\x0cTPMSRSAParms\x12$\n\tsymmetric\x18\x01 \x01(\x0e\x32\x11.constants.TPMALG\x12!\n\x06scheme\x18\x02 \x01(\x0e\x32\x11.constants.TPMALG\x12\x1a\n\x12symmetric_key_bits\x18\x03 \x01(\r\x12\x10\n\x08key_bits\x18\x04 \x01(\r\x12\x10\n\x08\x65xponent\x18\x05 \x01(\r\"7\n\x12TPMSKeyedHashParms\x12!\n\x06scheme\x18\x01 \x01(\x0e\x32\x11.constants.TPMALG\"v\n\x0fTPMUPublicParms\x12&\n\x03rsa\x18\x01 \x01(\x0b\x32\x17.tpm_types.TPMSRSAParmsH\x00\x12\x32\n\tkeyedhash\x18\x02 \x01(\x0b\x32\x1d.tpm_types.TPMSKeyedHashParmsH\x00\x42\x07\n\x05parms\"P\n\x0cTPMUPublicId\x12\r\n\x03rsa\x18\x01 \x01(\x0cH\x00\x12+\n\tkeyedhash\x18\x02 \x01(\x0b\x32\x16.tpm_types.TPM2BDigestH\x00\x42\x04\n\x02id\"\xf3\x01\n\nTPMTPublic\x12\x1f\n\x04type\x18\x01 \x01(\x0e\x32\x11.constants.TPMALG\x12#\n\x08name_alg\x18\x02 \x01(\x0e\x32\x11.constants.TPMALG\x12\x19\n\x11object_attributes\x18\x03 \x01(\r\x12+\n\x0b\x61uth_policy\x18\x04 \x01(\x0b\x32\x16.tpm_types.TPM2BDigest\x12.\n\nparameters\x18\x05 \x01(\x0b\x32\x1a.tpm_types.TPMUPublicParms\x12\'\n\x06unique\x18\x06 \x01(\x0b\x32\x17.tpm_types.TPMUPublicId\"G\n\x0bTPM2BPublic\x12\x0c\n\x04size\x18\x01 \x01(\r\x12*\n\x0bpublic_area\x18\x02 \x01(\x0b\x32\x15.tpm_types.TPMTPublicb\x06proto3')
 
 _globals = globals()
 _builder.BuildMessageAndEnumDescriptors(DESCRIPTOR, _globals)
@@ -40,9 +40,9 @@ if not _descriptor._USE_C_DESCRIPTORS:
   _globals['_TPMUPUBLICPARMS']._serialized_start=309
   _globals['_TPMUPUBLICPARMS']._serialized_end=427
   _globals['_TPMUPUBLICID']._serialized_start=429
-  _globals['_TPMUPUBLICID']._serialized_end=505
-  _globals['_TPMTPUBLIC']._serialized_start=508
-  _globals['_TPMTPUBLIC']._serialized_end=747
-  _globals['_TPM2BPUBLIC']._serialized_start=749
-  _globals['_TPM2BPUBLIC']._serialized_end=820
+  _globals['_TPMUPUBLICID']._serialized_end=509
+  _globals['_TPMTPUBLIC']._serialized_start=512
+  _globals['_TPMTPUBLIC']._serialized_end=755
+  _globals['_TPM2BPUBLIC']._serialized_start=757
+  _globals['_TPM2BPUBLIC']._serialized_end=828
 # @@protoc_insertion_point(module_scope)

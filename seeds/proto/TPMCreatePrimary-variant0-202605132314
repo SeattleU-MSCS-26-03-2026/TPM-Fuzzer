@@ -1,14 +1,4 @@
 commands {
-  getrandom {
-    header {
-      tag: TPM_ST_NO_SESSIONS
-      command_size: 12
-      command_code: TPM_CC_GET_RANDOM
-    }
-    bytes_requested: 32
-  }
-}
-commands {
   createprimary {
     header {
       tag: TPM_ST_SESSIONS
@@ -39,9 +29,8 @@ commands {
         parameters {
           rsa {
             symmetric: TPM_ALG_AES
-            scheme: 128
-            key_bits: 67
-            exponent: 1050624
+            scheme: TPM_ALG_NULL
+            key_bits: 2048
           }
         }
         unique {
@@ -53,5 +42,15 @@ commands {
     }
     creation_pcr {
     }
+  }
+}
+commands {
+  getrandom {
+    header {
+      tag: TPM_ST_NO_SESSIONS
+      command_size: 12
+      command_code: TPM_CC_GET_RANDOM
+    }
+    bytes_requested: 16
   }
 }
