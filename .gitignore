@@ -50,6 +50,7 @@
 !tools/seed-generation/**/*
 
 # Always disallow
+.DS_Store
 __pycache__/
 *.lock.hcl
 *.terraform/

@@ -1,10 +1,12 @@
 #include "harness/proto_postprocessors.h"
 
+#include "constants/tpm_cc.pb.h"
 #include "constants/tpm_st.pb.h"
 #include "harness/proto_normalization.h"
 #include "src/libfuzzer/libfuzzer_macro.h"
 #include "tpm_commands.pb.h"
 #include "tpm_commands/tpm_clear.pb.h"
+#include "tpm_commands/tpm_pcr_event.pb.h"
 #include "tpm_commands/tpm_rsa_decrypt.pb.h"
 #include "tpm_commands/tpm_rsa_encrypt.pb.h"
 
@@ -82,6 +84,14 @@ static protobuf_mutator::libfuzzer::PostProcessorRegistration<
       msg->mutable_header()->set_tag(constants::TPM_ST_NO_SESSIONS);
       msg->mutable_header()->set_command_code(constants::TPM_CC_RSA_ENCRYPT);
     }};
+
+static protobuf_mutator::libfuzzer::PostProcessorRegistration<
+    tpm_commands::TPMPCREvent>
+    reg_pcr_event = {
+        [](tpm_commands::TPMPCREvent* msg, unsigned int /* seed */) {
+          msg->mutable_header()->set_tag(constants::TPM_ST_SESSIONS);
+          msg->mutable_header()->set_command_code(constants::TPM_CC_PCR_EVENT);
+        }};
 }  // namespace
 
 bool RegisterPostProcessors() { return true; }

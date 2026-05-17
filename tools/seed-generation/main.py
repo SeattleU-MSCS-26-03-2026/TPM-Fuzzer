@@ -1267,6 +1267,12 @@ if __name__ == "__main__":
                 TPMNVUndefineSpace((TPM_HT.NV_INDEX.value << 24) + 2),
             ],
         ],
+        "TPMPCREvent": [
+            [TPMPCREvent(0x00000001, bytes(0), TPM_RS.PW.value)],
+            [TPMPCREvent(0x00000001, bytes(1024), TPM_RS.PW.value)],
+            [TPMPCREvent(TPM_RH.NULL.value, bytes(1024), TPM_RS.PW.value)],
+            [TPMPCREvent(TPM_RH.NULL.value, bytes(0), TPM_RS.PW.value)],
+        ],
     }
 
     parser = argparse.ArgumentParser(

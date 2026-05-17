@@ -100,3 +100,6 @@ bool MarshalTPM2BPublicKeyRSA(const tpm_types::TPM2BPublicKeyRSA& rsa,
 
 bool MarshalTPMTRSADecrypt(const tpm_types::TPMTRSADecrypt& scheme,
                            std::vector<uint8_t>* buf, size_t& offset);
+
+bool MarshalTPM2BEvent(const tpm_types::TPM2BEvent& data,
+                       std::vector<uint8_t>* buf, size_t& offset);

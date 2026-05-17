@@ -1325,3 +1325,49 @@ class TPMRSAEncrypt(TPMCommand):
                 ),
             )
         }
+
+
+class TPMPCREvent(TPMCommand):
+    """
+    TPM2_PCR_Event Command (Specification part 22.3) - Causes an update to the indicated PCR.
+    """
+
+    def __init__(
+        self, pcr_handle: int, event_data: bytes, session_handle: int = TPM_RS.PW.value
+    ):
+        from tpm_commands import tpm_pcr_event_pb2  # type: ignore
+        from tpm_types import (  # type: ignore
+            tpm2b_event_pb2,
+        )
+
+        auth_cmd = TPMS_AUTH_COMMAND(session_handle=session_handle)
+        auth_area = TPM_AUTH_AREA(commands=[auth_cmd])
+        sessions = [
+            tpm_session_pb2.TPMSession(  # type: ignore
+                session_handle=session_handle,
+                nonce_size=0,
+                nonce=b"",
+                session_attributes=0,
+                hmac_size=0,
+                hmac=b"",
+            )
+        ]
+
+        event_size = len(event_data)
+        event = event_size.to_bytes(2, BYTE_ORDER) + event_data
+
+        params = pcr_handle.to_bytes(4, BYTE_ORDER) + auth_area.to_bytes() + event
+
+        super().__init__(TPM_ST.TPM_ST_SESSIONS, TPM_CC.TPM_CC_PCR_EVENT, params=params)
+        self.proto = tpm_pcr_event_pb2.TPMPCREvent(  # type: ignore
+            header=self._proto_header(),
+            pcr_handle=pcr_handle,
+            sessions=sessions,
+            eventData=tpm2b_event_pb2.TPM2BEvent(  # type: ignore
+                size=event_size,
+                buffer=event_data,
+            ),
+        )
+
+    def to_proto(self) -> Optional[dict]:
+        return {"pcrevent": self.proto}

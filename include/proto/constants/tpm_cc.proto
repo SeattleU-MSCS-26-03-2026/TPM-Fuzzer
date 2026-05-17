@@ -12,6 +12,7 @@ enum TPMCC {
   TPM_CC_NV_EXTEND              = 0x00000136;
   TPM_CC_NV_WRITE               = 0x00000137;
   TPM_CC_NV_WRITE_LOCK          = 0x00000138;
+  TPM_CC_PCR_EVENT              = 0x0000013C;
   TPM_CC_PCR_RESET              = 0x0000013D;
   TPM_CC_INCREMENTAL_SELF_TEST  = 0x00000142;
   TPM_CC_SELF_TEST              = 0x00000143;

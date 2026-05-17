@@ -4,6 +4,7 @@
 #include <limits>
 #include <string>
 
+#include "tpm_types/tpm2b_event.pb.h"
 #include "tss2_common.h"
 
 constexpr size_t kMaxBuffer = 1024 * 1024;
@@ -184,6 +185,12 @@ bool MarshalMessageField(const google::protobuf::Message& child,
     const auto* scheme = dynamic_cast<const tpm_types::TPMTRSADecrypt*>(&child);
     if (!scheme) return false;
     return MarshalTPMTRSADecrypt(*scheme, buf, offset);
+  }
+
+  if (name == "tpm_types.TPM2BEvent") {
+    const auto* event = dynamic_cast<const tpm_types::TPM2BEvent*>(&child);
+    if (!event) return false;
+    return MarshalTPM2BEvent(*event, buf, offset);
   }
 
   return false;
@@ -457,4 +464,13 @@ bool MarshalTPMTRSADecrypt(const tpm_types::TPMTRSADecrypt& scheme_proto,
       return false;
   }
   return true;
+}
+
+bool MarshalTPM2BEvent(const tpm_types::TPM2BEvent& data,
+                       std::vector<uint8_t>* buf, size_t& offset) {
+  TPM2B_EVENT event_data = {};
+  FillTpm2b(data.buffer(), &event_data);
+
+  return !MUCommandFailed(Tss2_MU_TPM2B_EVENT_Marshal(&event_data, buf->data(),
+                                                      buf->size(), &offset));
 }

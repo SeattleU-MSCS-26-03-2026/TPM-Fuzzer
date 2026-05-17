@@ -9,6 +9,7 @@ import "tpm_commands/tpm_startauthsession.proto";
 import "tpm_commands/tpm_rsa_decrypt.proto";
 import "tpm_commands/tpm_clear.proto";
 import "tpm_commands/tpm_rsa_encrypt.proto";
+import "tpm_commands/tpm_pcr_event.proto";
 
 message TPMCommand {
   oneof command {
@@ -19,6 +20,7 @@ message TPMCommand {
     tpm_commands.TPMRSADecrypt       rsadecrypt       = 5;
     tpm_commands.TPMClear            clear            = 6;
     tpm_commands.TPMRSAEncrypt       rsaencrypt       = 7;
+    tpm_commands.TPMPCREvent         pcrevent         = 8;
   }
 }
 
