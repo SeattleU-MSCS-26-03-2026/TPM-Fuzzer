@@ -3,7 +3,7 @@ import os
 from typing import List, Optional, Union
 from tpm2_types import *
 import tpm_commands_pb2
-from constants import tpm_rh_pb2, tpm_alg_pb2, tpm_se_pb2
+from constants import tpm_rh_pb2, tpm_alg_pb2
 from tpm_types import (
     tpm_header_pb2,
     tpm_session_pb2,
@@ -24,7 +24,6 @@ class TPMCommand(object):
     ST_LEN = 2
     CC_LEN = 4
     SIZE_LEN = 4
-    PROTO_COMMAND: Optional[tpm_commands_pb2.TPMCommand] = None  # type: ignore
 
     def __init__(self, st: TPM_ST, cc: TPM_CC, params: bytes):
         self.tag = st
@@ -42,9 +41,9 @@ class TPMCommand(object):
         Returns the byte representation of the TPM Command.
         """
         return (
-            self.tag.value.to_bytes(self.ST_LEN, BYTE_ORDER)
+            self.tag.to_bytes(self.ST_LEN, BYTE_ORDER)
             + self._command_size().to_bytes(self.SIZE_LEN, BYTE_ORDER)
-            + self.cc.value.to_bytes(self.CC_LEN, BYTE_ORDER)
+            + self.cc.to_bytes(self.CC_LEN, BYTE_ORDER)
             + self.params
         )
 
@@ -55,9 +54,9 @@ class TPMCommand(object):
         *Note*: This AFAIK never changes for any command.
         """
         return tpm_header_pb2.TPMHeader(  # type: ignore
-            tag=self.tag.proto_value(),
+            tag=self.tag,
             command_size=self._command_size(),
-            command_code=self.cc.proto_value(),
+            command_code=self.cc,
         )
 
     def to_proto(self) -> Optional[dict]:
@@ -127,9 +126,9 @@ class TPMCommand(object):
         if public_type == TPM_ALG.RSA.value:
             symmetric = int.from_bytes(public[offset : offset + 2], BYTE_ORDER)
             if symmetric == TPM_ALG.NULL.value:
-               offset += 2
+                offset += 2
             else:
-               offset += 6
+                offset += 6
             scheme = int.from_bytes(public[offset : offset + 2], BYTE_ORDER)
             offset += 2
             key_bits = int.from_bytes(public[offset : offset + 2], BYTE_ORDER)
@@ -277,7 +276,7 @@ class TPMClear(TPMCommand):
 
         params = self._auth_handle.to_bytes(4, BYTE_ORDER) + auth_area.to_bytes()
 
-        super().__init__(TPM_ST.SESSIONS, TPM_CC.CLEAR, params=params)
+        super().__init__(TPM_ST.TPM_ST_SESSIONS, TPM_CC.TPM_CC_CLEAR, params=params)
 
     def to_proto(self) -> Optional[dict]:
 
@@ -304,7 +303,11 @@ class TPMIncrementalSelfTest(TPMCommand):
         for a in algorithms:
             algIds += a.value.to_bytes(2, BYTE_ORDER)
 
-        super().__init__(TPM_ST.NO_SESSIONS, TPM_CC.INCREMENTALSELFTEST, count + algIds)
+        super().__init__(
+            TPM_ST.TPM_ST_NO_SESSIONS,
+            TPM_CC.TPM_CC_INCREMENTAL_SELF_TEST,
+            count + algIds,
+        )
 
 
 class TPMStirRandom(TPMCommand):
@@ -312,14 +315,16 @@ class TPMStirRandom(TPMCommand):
         # TPM2B_SENSITIVE_DATA = UINT16 size + buffer
         params = len(data).to_bytes(2, BYTE_ORDER) + data
 
-        super().__init__(TPM_ST.NO_SESSIONS, TPM_CC.STIRRANDOM, params)
+        super().__init__(TPM_ST.TPM_ST_NO_SESSIONS, TPM_CC.TPM_CC_STIR_RANDOM, params)
 
 
 class TPMVendorTCGTest(TPMCommand):
     def __init__(self, data: bytes):
         params = len(data).to_bytes(2, BYTE_ORDER) + data  # TPM2B size  # buffer
 
-        super().__init__(TPM_ST.NO_SESSIONS, TPM_CC.VENDORTCGTEST, params)
+        super().__init__(
+            TPM_ST.TPM_ST_NO_SESSIONS, TPM_CC.TPM_CC_VENDOR_TCG_TEST, params
+        )
 
 
 class TPMCreate(TPMCommand):
@@ -375,7 +380,7 @@ class TPMCreate(TPMCommand):
             + TPML_PCR_SELECTION().to_bytes()
         )
 
-        super().__init__(TPM_ST.SESSIONS, TPM_CC.CREATE, params=params)
+        super().__init__(TPM_ST.TPM_ST_SESSIONS, TPM_CC.TPM_CC_CREATE, params=params)
 
     def to_proto(self) -> Optional[dict]:
         params = self.params
@@ -445,7 +450,9 @@ class TPMCreatePrimary(TPMCommand):
             + TPML_PCR_SELECTION().to_bytes()
         )
 
-        super().__init__(TPM_ST.SESSIONS, TPM_CC.CREATEPRIMARY, params=params)
+        super().__init__(
+            TPM_ST.TPM_ST_SESSIONS, TPM_CC.TPM_CC_CREATE_PRIMARY, params=params
+        )
 
     def to_proto(self) -> Optional[dict]:
         params = self.params
@@ -455,7 +462,7 @@ class TPMCreatePrimary(TPMCommand):
         offset += 4
 
         sessions = []
-        if self.tag != TPM_ST.NO_SESSIONS:
+        if self.tag != TPM_ST.TPM_ST_NO_SESSIONS:
             auth_size = int.from_bytes(params[offset : offset + 4], BYTE_ORDER)
             auth_end = offset + 4 + auth_size
             auth_bytes = params[offset:auth_end]
@@ -484,18 +491,18 @@ class TPMGetRandom(TPMCommand):
     def __init__(
         self,
         req_bytes: int,
-        st: TPM_ST = TPM_ST.NO_SESSIONS,
+        st: TPM_ST = TPM_ST.TPM_ST_NO_SESSIONS,
         auth: Optional[TPM_AUTH_AREA] = None,
     ):
         if auth is None:
             super().__init__(
                 st,
-                TPM_CC.GETRANDOM,
+                TPM_CC.TPM_CC_GET_RANDOM,
                 params=req_bytes.to_bytes(2, BYTE_ORDER),
             )
         else:
             params = auth.to_bytes() + req_bytes.to_bytes(2, BYTE_ORDER)
-            super().__init__(st, TPM_CC.GETRANDOM, params=params)
+            super().__init__(st, TPM_CC.TPM_CC_GET_RANDOM, params=params)
 
     def to_proto(self) -> Optional[dict]:
         return {
@@ -513,14 +520,14 @@ class TPMStartAuthSession(TPMCommand):
         bind: Union[int | TPM_RH],
         nonce: Optional[bytes] = None,
         salt: Optional[bytes] = None,
-        session_type: TPM_SE = TPM_SE.HMAC,
+        session_type: TPM_SE = TPM_SE.TPM_SE_HMAC,
         symmetric: TPMS_SYM_DEF_OBJECT = TPMS_SYM_DEF_OBJECT(TPM_ALG.NULL, 0, 0),
         auth_hash: TPM_ALG = TPM_ALG.SHA256,
     ):
         if nonce is None:
-            nonce = os.urandom(16)  # Random nonce
+            nonce = b"\xf6\\\xd5\x7f\x19\xff\xd9\xc8\xc9Ad\xac\x84\xd1\xf9\xcd"
         if salt is None:
-            salt = (0).to_bytes(2, BYTE_ORDER)  # Empty salt
+            salt = (0).to_bytes(2, BYTE_ORDER)
 
         tpm_key = tpm_key.value if isinstance(tpm_key, TPM_RH) else tpm_key
         bind = bind.value if isinstance(bind, TPM_RH) else bind
@@ -531,12 +538,14 @@ class TPMStartAuthSession(TPMCommand):
             + len(nonce).to_bytes(2, BYTE_ORDER)
             + nonce  # TPM2B_NONCE
             + salt  # TPM2B_ENCRYPTED_SECRET
-            + session_type.value.to_bytes(1, BYTE_ORDER)  # TPM_SE
+            + session_type.to_bytes(1, BYTE_ORDER)  # TPM_SE
             + symmetric.to_bytes()  # TPMT_SYM_DEF
             + auth_hash.value.to_bytes(2, BYTE_ORDER)  # TPMI_ALG_HASH
         )
 
-        super().__init__(TPM_ST.NO_SESSIONS, TPM_CC.STARTAUTHSESSION, params)
+        super().__init__(
+            TPM_ST.TPM_ST_NO_SESSIONS, TPM_CC.TPM_CC_START_AUTH_SESSION, params
+        )
 
     def to_proto(self) -> Optional[dict]:
         tpm_key = int.from_bytes(self.params[0:4], BYTE_ORDER)
@@ -598,19 +607,23 @@ class TPMGetCapability(TPMCommand):
             + property.to_bytes(4, BYTE_ORDER)
             + property_count.to_bytes(4, BYTE_ORDER)
         )
-        super().__init__(TPM_ST.NO_SESSIONS, TPM_CC.GETCAPABILITY, params)
+        super().__init__(
+            TPM_ST.TPM_ST_NO_SESSIONS, TPM_CC.TPM_CC_GET_CAPABILITY, params
+        )
 
 
 class TPMSelfTest(TPMCommand):
     def __init__(self, full_test: TPMI_YES_NO):
         super().__init__(
-            TPM_ST.NO_SESSIONS, TPM_CC.SELFTEST, full_test.value.to_bytes(1, BYTE_ORDER)
+            TPM_ST.TPM_ST_NO_SESSIONS,
+            TPM_CC.TPM_CC_SELF_TEST,
+            full_test.value.to_bytes(1, BYTE_ORDER),
         )
 
 
 class TPMReadClock(TPMCommand):
     def __init__(self):
-        super().__init__(TPM_ST.NO_SESSIONS, TPM_CC.READCLOCK, b"")
+        super().__init__(TPM_ST.TPM_ST_NO_SESSIONS, TPM_CC.TPM_CC_READ_CLOCK, b"")
 
 
 class TPMHash(TPMCommand):
@@ -621,12 +634,12 @@ class TPMHash(TPMCommand):
             + hashAlg.value.to_bytes(2, byteorder=BYTE_ORDER)
             + hierarchy.value.to_bytes(4, byteorder=BYTE_ORDER)
         )
-        super().__init__(TPM_ST.NO_SESSIONS, TPM_CC.HASH, params)
+        super().__init__(TPM_ST.TPM_ST_NO_SESSIONS, TPM_CC.TPM_CC_HASH, params)
 
 
 class TPMGetTestResult(TPMCommand):
     def __init__(self):
-        super().__init__(TPM_ST.NO_SESSIONS, TPM_CC.GETTESTRESULT, b"")
+        super().__init__(TPM_ST.TPM_ST_NO_SESSIONS, TPM_CC.TPM_CC_GET_TEST_RESULT, b"")
 
 
 class TPMECCParameters(TPMCommand):
@@ -635,8 +648,8 @@ class TPMECCParameters(TPMCommand):
         params = curve_value.to_bytes(2, BYTE_ORDER)
 
         super().__init__(
-            TPM_ST.NO_SESSIONS,
-            TPM_CC.ECC_PARAMETERS,
+            TPM_ST.TPM_ST_NO_SESSIONS,
+            TPM_CC.TPM_CC_ECC_PARAMETERS,
             params=params,
         )
 
@@ -691,14 +704,14 @@ class TPMLoadExternal(TPMCommand):
 
         params = in_private + in_public + hierarchy_bytes
 
-        super().__init__(TPM_ST.NO_SESSIONS, TPM_CC.LOADEXTERNAL, params)
+        super().__init__(TPM_ST.TPM_ST_NO_SESSIONS, TPM_CC.TPM_CC_LOAD_EXTERNAL, params)
 
 
 class TPMSign(TPMCommand):
     """
     TPM2_Sign command.
 
-    Command structure (TPM_ST_SESSIONS):
+    Command structure (TPM_ST.TPM_ST_SESSIONS):
       keyHandle(4) | authArea | digest: TPM2B_DIGEST |
       inScheme: TPMT_SIG_SCHEME | validation: TPMT_TK_HASHCHECK
     """
@@ -731,14 +744,14 @@ class TPMSign(TPMCommand):
             + validation.to_bytes()
         )
 
-        super().__init__(TPM_ST.SESSIONS, TPM_CC.SIGN, params=params)
+        super().__init__(TPM_ST.TPM_ST_SESSIONS, TPM_CC.TPM_CC_SIGN, params=params)
 
 
 class TPMRSADecrypt(TPMCommand):
     """
     TPM2_RSA_Decrypt command (TPM spec Part 3, Section 14.2).
 
-    Command structure (TPM_ST_SESSIONS):
+    Command structure (TPM_ST.TPM_ST_SESSIONS):
       keyHandle(4) | authArea | cipherText: TPM2B_PUBLIC_KEY_RSA |
       inScheme: TPMT_RSA_DECRYPT | label: TPM2B_DATA
     """
@@ -777,7 +790,9 @@ class TPMRSADecrypt(TPMCommand):
             + label_bytes
         )
 
-        super().__init__(TPM_ST.SESSIONS, TPM_CC.RSA_DECRYPT, params=params)
+        super().__init__(
+            TPM_ST.TPM_ST_SESSIONS, TPM_CC.TPM_CC_RSA_DECRYPT, params=params
+        )
 
     def to_proto(self) -> Optional[dict]:
         from tpm_commands import tpm_rsa_decrypt_pb2  # type: ignore
@@ -832,14 +847,14 @@ class TPMPCRRead(TPMCommand):
     """
     TPM2_PCR_Read — read PCR values.
 
-    Command Structure (TPM_ST_NO_SESSIONS):
+    Command Structure (TPM_ST.TPM_ST_NO_SESSIONS):
       [tag][commandSize][TPM_CC_PCR_READ][TPML_PCR_SELECTION]
     """
 
     def __init__(self, pcr_selection: TPML_PCR_SELECTION):
         super().__init__(
-            TPM_ST.NO_SESSIONS,
-            TPM_CC.PCR_READ,
+            TPM_ST.TPM_ST_NO_SESSIONS,
+            TPM_CC.TPM_CC_PCR_READ,
             params=pcr_selection.to_bytes(),
         )
 
@@ -848,7 +863,7 @@ class TPMPCRExtend(TPMCommand):
     """
     TPM2_PCR_Extend — extend a PCR with one or more digests.
 
-    Command Structure (TPM_ST_SESSIONS):
+    Command Structure (TPM_ST.TPM_ST_SESSIONS):
       [tag][commandSize][TPM_CC_PCR_EXTEND]
       [pcrHandle][authArea][TPML_DIGEST_VALUES]
     """
@@ -875,14 +890,16 @@ class TPMPCRExtend(TPMCommand):
             + digests.to_bytes()
         )
 
-        super().__init__(TPM_ST.SESSIONS, TPM_CC.PCR_EXTEND, params=params)
+        super().__init__(
+            TPM_ST.TPM_ST_SESSIONS, TPM_CC.TPM_CC_PCR_EXTEND, params=params
+        )
 
 
 class TPMPCRReset(TPMCommand):
     """
     TPM2_PCR_Reset — reset a resettable PCR to zero.
 
-    Command Structure (TPM_ST_SESSIONS):
+    Command Structure (TPM_ST.TPM_ST_SESSIONS):
       [tag][commandSize][TPM_CC_PCR_RESET]
       [pcrHandle][authArea]
     """
@@ -903,13 +920,15 @@ class TPMPCRReset(TPMCommand):
 
         params = pcr_handle.to_bytes(4, BYTE_ORDER) + auth_area.to_bytes()
 
-        super().__init__(TPM_ST.SESSIONS, TPM_CC.PCR_RESET, params=params)
+        super().__init__(TPM_ST.TPM_ST_SESSIONS, TPM_CC.TPM_CC_PCR_RESET, params=params)
 
 
 class TPMTestParms(TPMCommand):
     def __init__(self, params: Optional[TPMT_PUBLIC_PARMS] = None):
         params = params or TPMT_PUBLIC_PARMS(TPM_ALG.RSA)
-        super().__init__(TPM_ST.NO_SESSIONS, TPM_CC.TESTPARMS, params.to_bytes())
+        super().__init__(
+            TPM_ST.TPM_ST_NO_SESSIONS, TPM_CC.TPM_CC_TEST_PARMS, params.to_bytes()
+        )
 
 
 class TPMNVDefineSpace(TPMCommand):
@@ -942,7 +961,7 @@ class TPMNVDefineSpace(TPMCommand):
             + nv_public.to_bytes()
         )
 
-        super().__init__(TPM_ST.SESSIONS, TPM_CC.NV_DEFINESPACE, params)
+        super().__init__(TPM_ST.TPM_ST_SESSIONS, TPM_CC.TPM_CC_NV_DEFINE_SPACE, params)
 
 
 class TPMNVUndefineSpace(TPMCommand):
@@ -961,7 +980,9 @@ class TPMNVUndefineSpace(TPMCommand):
             + auth_area.to_bytes()
         )
 
-        super().__init__(TPM_ST.SESSIONS, TPM_CC.NV_UNDEFINESPACE, params)
+        super().__init__(
+            TPM_ST.TPM_ST_SESSIONS, TPM_CC.TPM_CC_NV_UNDEFINE_SPACE, params
+        )
 
 
 class TPMNVWriteLock(TPMCommand):
@@ -983,7 +1004,7 @@ class TPMNVWriteLock(TPMCommand):
             + auth_area.to_bytes()
         )
 
-        super().__init__(TPM_ST.SESSIONS, TPM_CC.NV_WRITELOCK, params)
+        super().__init__(TPM_ST.TPM_ST_SESSIONS, TPM_CC.TPM_CC_NV_WRITE_LOCK, params)
 
 
 class TPMNVReadLock(TPMCommand):
@@ -1005,14 +1026,14 @@ class TPMNVReadLock(TPMCommand):
             + auth_area.to_bytes()
         )
 
-        super().__init__(TPM_ST.SESSIONS, TPM_CC.NV_READLOCK, params)
+        super().__init__(TPM_ST.TPM_ST_SESSIONS, TPM_CC.TPM_CC_NV_READ_LOCK, params)
 
 
 class TPMNVWrite(TPMCommand):
     """
     TPM2_NV_Write command.
 
-    Command structure (TPM_ST_SESSIONS):
+    Command structure (TPM_ST.TPM_ST_SESSIONS):
       authHandle(4) | nvIndex(4) | authArea | data: TPM2B_MAX_NV_BUFFER | offset(UINT16)
 
     Typical usage after NV_DefineSpace with AUTHWRITE and empty authValue:
@@ -1062,7 +1083,7 @@ class TPMNVWrite(TPMCommand):
             + int(offset).to_bytes(2, BYTE_ORDER)
         )
 
-        super().__init__(TPM_ST.SESSIONS, TPM_CC.NV_WRITE, params=params)
+        super().__init__(TPM_ST.TPM_ST_SESSIONS, TPM_CC.TPM_CC_NV_WRITE, params=params)
 
 
 class TPMNVRead(TPMCommand):
@@ -1089,14 +1110,14 @@ class TPMNVRead(TPMCommand):
             + offset.to_bytes(2, BYTE_ORDER)
         )
 
-        super().__init__(TPM_ST.SESSIONS, TPM_CC.NV_READ, params)
+        super().__init__(TPM_ST.TPM_ST_SESSIONS, TPM_CC.TPM_CC_NV_READ, params)
 
 
 class TPMNVExtend(TPMCommand):
     """
     TPM2_NV_Extend command.
 
-    Command structure (TPM_ST_SESSIONS):
+    Command structure (TPM_ST.TPM_ST_SESSIONS):
       authHandle(4) | nvIndex(4) | authArea | data: TPM2B_MAX_NV_BUFFER
     """
 
@@ -1134,7 +1155,7 @@ class TPMNVExtend(TPMCommand):
             + data_2b
         )
 
-        super().__init__(TPM_ST.SESSIONS, TPM_CC.NV_EXTEND, params=params)
+        super().__init__(TPM_ST.TPM_ST_SESSIONS, TPM_CC.TPM_CC_NV_EXTEND, params=params)
 
 
 class TPMNVSetBits(TPMCommand):
@@ -1164,14 +1185,14 @@ class TPMNVSetBits(TPMCommand):
             + bits.to_bytes(8, BYTE_ORDER)
         )
 
-        super().__init__(TPM_ST.SESSIONS, TPM_CC.NV_SET_BITS, params)
+        super().__init__(TPM_ST.TPM_ST_SESSIONS, TPM_CC.TPM_CC_NV_SET_BITS, params)
 
 
 class TPMLoad(TPMCommand):
     """
     TPM2_Load — load a private/public blob (output of TPM2_Create) into the TPM.
 
-    Command structure (TPM_ST_SESSIONS):
+    Command structure (TPM_ST.TPM_ST_SESSIONS):
       parentHandle(4) | authArea | inPrivate: TPM2B_PRIVATE | inPublic: TPM2B_PUBLIC
 
     `in_private` is the raw bytes of TPM2B_PRIVATE from the Create response.
@@ -1201,14 +1222,14 @@ class TPMLoad(TPMCommand):
             + in_public
         )
 
-        super().__init__(TPM_ST.SESSIONS, TPM_CC.LOAD, params=params)
+        super().__init__(TPM_ST.TPM_ST_SESSIONS, TPM_CC.TPM_CC_LOAD, params=params)
 
 
 class TPMUnseal(TPMCommand):
     """
     TPM2_Unseal — return the data held in a sealed data blob.
 
-    Command structure (TPM_ST_SESSIONS):
+    Command structure (TPM_ST.TPM_ST_SESSIONS):
       itemHandle(4) | authArea
     """
 
@@ -1227,14 +1248,14 @@ class TPMUnseal(TPMCommand):
 
         params = item_handle.to_bytes(4, BYTE_ORDER) + auth_area.to_bytes()
 
-        super().__init__(TPM_ST.SESSIONS, TPM_CC.UNSEAL, params=params)
+        super().__init__(TPM_ST.TPM_ST_SESSIONS, TPM_CC.TPM_CC_UNSEAL, params=params)
 
 
 class TPMRSAEncrypt(TPMCommand):
     """
     TPM2_RSA_Encrypt command (TPM spec Part 3, Section 14.2).
 
-    Command structure (TPM_ST_SESSIONS | TPM_ST_NO_SESSIONS):
+    Command structure (TPM_ST.TPM_ST_SESSIONS | TPM_ST.TPM_ST_NO_SESSIONS):
       keyHandle(4) | authArea | message: TPM2B_PUBLIC_KEY_RSA |
       inScheme: TPMT_RSA_DECRYPT | label: TPM2B_DATA
     """
@@ -1261,7 +1282,9 @@ class TPMRSAEncrypt(TPMCommand):
             + label
         )
 
-        super().__init__(TPM_ST.NO_SESSIONS, TPM_CC.RSA_ENCRYPT, params=params)
+        super().__init__(
+            TPM_ST.TPM_ST_NO_SESSIONS, TPM_CC.TPM_CC_RSA_ENCRYPT, params=params
+        )
 
     def to_proto(self) -> Optional[dict]:
         from tpm_commands import tpm_rsa_encrypt_pb2  # type: ignore

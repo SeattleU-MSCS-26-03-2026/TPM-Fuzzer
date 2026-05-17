@@ -9,7 +9,7 @@ commands {
     bind: TPM_RH_NULL
     nonce {
       size: 16
-      buffer: "w\333M\030\026:\344!\354(\305\207M\233\020l"
+      buffer: "\366\\\325\177\031\377\331\310\311Ad\254\204\321\371\315"
     }
     encrypted_salt {
     }

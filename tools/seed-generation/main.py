@@ -14,6 +14,7 @@ Usage:
 Options:
     -recreate: Recreate all existing seed files.
     --output-dir=<dir>: Specify a different output directory for the seed files (default is "seeds/").
+    --test-script=<path>: Specify the script used to validate seed files.
 
 Resources:
     - TPM Specification: https://trustedcomputinggroup.org/resource/tpm-library-specification/
@@ -38,6 +39,9 @@ SeedFunction = Callable[[], SeedVariants]
 SeedDefinition = Union[SeedFunction, TPMCommand, SeedVariants]
 
 DEFAULT_SEED_DIRECTORY = "seeds/"
+DEFAULT_TEST_SEED_SCRIPT = os.path.join(
+    os.path.dirname(os.path.abspath(__file__)), "scripts", "test_seed.sh"
+)
 BYTE_ORDER = "big"
 
 # TPM Public Key identifiers for SPDM
@@ -202,7 +206,7 @@ def tpm_get_rand_seeds() -> SeedVariants:
     """
     variants: SeedVariants = []
     test_cases = [16, 32, 64, 0, 48]
-    for st in [TPM_ST.NO_SESSIONS, TPM_ST.SESSIONS]:
+    for st in [TPM_ST.TPM_ST_NO_SESSIONS, TPM_ST.TPM_ST_SESSIONS]:
         for bytes_requested in test_cases:
             variants.append([TPMGetRandom(bytes_requested, st)])
     return variants
@@ -509,7 +513,9 @@ def _create_variant(
     timestamp: str,
     directory: str,
     content: bytes,
+    test_script: str,
     force: Optional[bool] = False,
+    proto: Optional[bool] = True,
 ):
     def request_section(input: str) -> str:
         pattern = r"=+\n\s*REQUEST\s*\n=+\n" r"(.*?)" r"(?==+\n\s*RESPONSE\s*\n=+)"
@@ -530,33 +536,38 @@ def _create_variant(
 
         if data != content and force:
             print(f"EXPECTED BYTES CHANGED: {name}\n")
-            pwd = os.getcwd()
-            actual = request_section(
-                subprocess.run(
-                    [f"{pwd}/scripts/test_seed.sh", out],
-                    capture_output=True,
-                    text=True,
-                    check=True,
-                ).stdout
-            )
-
             current = os.path.join(directory, f"{name}-{timestamp}")
             with open(current, "wb") as f:
                 f.write(content)
 
-            expected = request_section(
-                subprocess.run(
-                    [f"{pwd}/scripts/test_seed.sh", current],
-                    capture_output=True,
-                    text=True,
-                    check=True,
-                ).stdout
-            )
+            if not proto:
+                actual = request_section(
+                    subprocess.run(
+                        [test_script, "-local", out],
+                        capture_output=True,
+                        text=True,
+                        check=True,
+                    ).stdout
+                )
 
-            diff = difflib.unified_diff(
-                actual.splitlines(keepends=True),
-                expected.splitlines(keepends=True),
-            )
+                expected = request_section(
+                    subprocess.run(
+                        [test_script, "-local", current],
+                        capture_output=True,
+                        text=True,
+                        check=True,
+                    ).stdout
+                )
+
+                diff = difflib.unified_diff(
+                    actual.splitlines(keepends=True),
+                    expected.splitlines(keepends=True),
+                )
+            else:
+                diff = difflib.unified_diff(
+                    data.decode("utf-8").splitlines(keepends=True),
+                    content.decode("utf-8").splitlines(keepends=True),
+                )
 
             changes = "".join(diff)
             if len(changes.strip()) > 0:
@@ -584,6 +595,7 @@ def _run_commands(
     command: SeedDefinition,
     timestamp: str,
     force: bool,
+    test_script: str,
 ):
     for i, sequence in enumerate(_normalize_variants(command)):
         variant_name = f"{cmd}-variant{i}"
@@ -592,6 +604,7 @@ def _run_commands(
             timestamp,
             directory,
             _serialize_sequence(sequence),
+            test_script,
             force,
         )
 
@@ -602,7 +615,9 @@ def _run_commands(
                 timestamp,
                 proto_directory,
                 proto_content,
+                test_script,
                 force,
+                True,
             )
 
 
@@ -610,6 +625,7 @@ def _generate_seeds(
     directory: str,
     recreate: bool,
     seeds: Dict[str, SeedDefinition],
+    test_script: str,
 ):
     """
     Generate seeds for all supported TPM Commands.
@@ -617,6 +633,7 @@ def _generate_seeds(
     Args:
         directory (str): Output directory for the generated seeds.
         recreate (bool): Flag to indicate whether to recreate existing seeds.
+        test_script (str): Script used to validate generated seed files.
     """
     byte_directory = os.path.join(directory, "bytearray")
     proto_directory = os.path.join(directory, "proto")
@@ -634,6 +651,7 @@ def _generate_seeds(
             command,
             current_timestamp,
             force=recreate,
+            test_script=test_script,
         )
 
 
@@ -709,6 +727,7 @@ def tpm_rsa_encrypt_seeds() -> SeedVariants:
     ]
 
     return [variant0, variant1, variant2, variant3]
+
 
 def tpm_rsa_decrypt_seeds() -> SeedVariants:
     """
@@ -830,9 +849,15 @@ if __name__ == "__main__":
             ],
         ],
         "TPMStartAuthSessionHMAC": [
-            [TPMStartAuthSession(TPM_RH.NULL, TPM_RH.NULL, session_type=TPM_SE.HMAC)],
             [
-                TPMStartAuthSession(TPM_RH.NULL, TPM_RH.NULL, session_type=TPM_SE.HMAC),
+                TPMStartAuthSession(
+                    TPM_RH.NULL, TPM_RH.NULL, session_type=TPM_SE.TPM_SE_HMAC
+                )
+            ],
+            [
+                TPMStartAuthSession(
+                    TPM_RH.NULL, TPM_RH.NULL, session_type=TPM_SE.TPM_SE_HMAC
+                ),
                 TPMCreatePrimary(TPM_FIRST_HMAC_SESSION_HANDLE, TPM_ALG.SHA256, 2048),
             ],
         ],
@@ -1253,6 +1278,11 @@ if __name__ == "__main__":
         default=DEFAULT_SEED_DIRECTORY,
         help="Override output directory for seeds.",
     )
+    parser.add_argument(
+        "--test-script",
+        default=DEFAULT_TEST_SEED_SCRIPT,
+        help="Override the script used to validate generated seeds.",
+    )
     args = parser.parse_args()
 
-    _generate_seeds(args.output_dir, args.recreate, TEST_CASES)
+    _generate_seeds(args.output_dir, args.recreate, TEST_CASES, args.test_script)

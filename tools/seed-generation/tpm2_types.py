@@ -2,9 +2,13 @@ from dataclasses import dataclass, field
 from typing import Union, Optional, List
 from enum import Enum
 
-from constants import tpm_st_pb2, tpm_cc_pb2
+from constants import tpm_st_pb2, tpm_cc_pb2, tpm_se_pb2
 
 BYTE_ORDER = "big"
+
+TPM_CC = tpm_cc_pb2.TPMCC  # type: ignore
+TPM_ST = tpm_st_pb2.TPMST  # type: ignore
+TPM_SE = tpm_se_pb2.TPMSE  # type: ignore
 
 
 class TPMI_YES_NO(Enum):
@@ -15,65 +19,6 @@ class TPMI_YES_NO(Enum):
     YES = 0x00
     NO = 0x01
 
-
-class TPM_ST(Enum):
-    """
-    TPM Structure tags
-    """
-
-    NULL = 0x8000
-    NO_SESSIONS = 0x8001
-    SESSIONS = 0x8002
-    HASHCHECK = 0x8024
-
-    def proto_value(self):
-        return tpm_st_pb2.TPMST.Name(self.value)  # type: ignore
-
-
-class TPM_CC(Enum):
-    """
-    TPM Command Codes
-    """
-
-    CLEAR = 0x00000126
-    GETCAPABILITY = 0x0000017A
-    GETRANDOM = 0x0000017B
-    STARTAUTHSESSION = 0x00000176
-    CREATEPRIMARY = 0x00000131
-    CREATE = 0x00000153
-    LOAD = 0x00000157
-    UNSEAL = 0x0000015E
-    HASH = 0x0000017D
-    GETTESTRESULT = 0x0000017C
-    SELFTEST = 0x00000143
-    INCREMENTALSELFTEST = 0x00000142
-    READCLOCK = 0x00000181
-    VENDORTCGTEST = 0x20000000
-    STIRRANDOM = 0x00000146
-    ECC_PARAMETERS = 0x00000178
-    LOADEXTERNAL = 0x00000167
-    SIGN = 0x0000015D
-    PCR_READ = 0x0000017E
-    PCR_EXTEND = 0x00000182
-    PCR_RESET = 0x0000013D
-    TESTPARMS = 0x0000018A
-    NV_DEFINESPACE = 0x0000012A
-    NV_UNDEFINESPACE = 0x00000122
-    NV_SET_BITS = 0x00000135
-    NV_WRITE = 0x00000137
-    NV_WRITELOCK = 0x00000138
-    NV_READ = 0x0000014E
-    NV_READLOCK = 0x0000014F
-    NV_EXTEND = 0x00000136
-    RSA_DECRYPT = 0x00000159
-    RSA_ENCRYPT = 0x00000174;
-
-    def proto_value(self):
-        try:
-            return tpm_cc_pb2.TPMCC.Name(self.value)  # type: ignore
-        except ValueError as e:
-            # NOTE: Protobuf does not define CC
-            return tpm_cc_pb2.TPMCC.Name(0)  # type: ignore
 
 class TPM_RH(Enum):
     """
@@ -92,16 +37,6 @@ class TPM_RS(Enum):
     """
 
     PW = 0x40000009
-
-
-class TPM_SE(Enum):
-    """
-    TPM Session Types
-    """
-
-    HMAC = 0x00
-    POLICY = 0x01
-    TRIAL = 0x03
 
 
 class TPM_HT(Enum):
@@ -536,10 +471,7 @@ class TPMT_RSA_DECRYPT:
 
     def to_bytes(self) -> bytes:
         s = _alg_to_int(self.scheme).to_bytes(2, BYTE_ORDER)
-        if (
-            _alg_to_int(self.scheme) == TPM_ALG.OAEP.value
-            and self.hash_alg is not None
-        ):
+        if _alg_to_int(self.scheme) == TPM_ALG.OAEP.value and self.hash_alg is not None:
             s += _alg_to_int(self.hash_alg).to_bytes(2, BYTE_ORDER)
         return s
 
@@ -556,7 +488,7 @@ class TPMT_TK_HASHCHECK:
     digest: bytes = b""
 
     def to_bytes(self) -> bytes:
-        tag = TPM_ST.HASHCHECK.value.to_bytes(2, BYTE_ORDER)
+        tag = TPM_ST.TPM_ST_HASHCHECK.to_bytes(2, BYTE_ORDER)
         h = (
             self.hierarchy.value
             if isinstance(self.hierarchy, TPM_RH)

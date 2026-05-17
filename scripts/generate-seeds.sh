@@ -10,7 +10,7 @@ main() {
         -v "$(pwd)/seeds:/seeds" \
         -w /srv/tools/seed-generation \
         fuzzer \
-        uv run main.py --output-dir=/seeds "$@"
+        uv run main.py --output-dir=/seeds --test-script=../../scripts/test-seed.sh -recreate "$@"
     exit 0
 }
 
