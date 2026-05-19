@@ -8,6 +8,7 @@ import "tpm_commands/tpm_createprimary.proto";
 import "tpm_commands/tpm_startauthsession.proto";
 import "tpm_commands/tpm_rsa_decrypt.proto";
 import "tpm_commands/tpm_clear.proto";
+import "tpm_commands/tpm_pcr_allocate.proto";
 import "tpm_commands/tpm_rsa_encrypt.proto";
 import "tpm_commands/tpm_pcr_event.proto";
 
@@ -21,6 +22,7 @@ message TPMCommand {
     tpm_commands.TPMClear            clear            = 6;
     tpm_commands.TPMRSAEncrypt       rsaencrypt       = 7;
     tpm_commands.TPMPCREvent         pcrevent         = 8;
+    tpm_commands.TPMPCRAllocate      pcrallocate      = 9;
   }
 }
 

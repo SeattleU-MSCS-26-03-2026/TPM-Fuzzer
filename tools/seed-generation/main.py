@@ -309,6 +309,41 @@ def tpm_pcr_read_seeds() -> SeedVariants:
     return variants
 
 
+def tpm_pcr_allocate_seeds() -> SeedVariants:
+    """
+    Generates seeds for the TPM2_PCR_Allocate command targeting line
+    coverage of PCR_Allocate.c and the key PCRAllocate() branches.
+    """
+    variants: SeedVariants = []
+
+    test_cases = [
+        # Valid single-bank allocation. PCR 0 (HCRTM) and 17 (DRTM) must remain set.
+        TPML_PCR_SELECTION(
+            selections=[
+                TPMS_PCR_SELECTION(hash=TPM_ALG.SHA256, pcr_select=bytes.fromhex("010002"))
+            ]
+        ),
+        # Duplicate SHA256 entries exercise "last one wins" replacement logic.
+        TPML_PCR_SELECTION(
+            selections=[
+                TPMS_PCR_SELECTION(hash=TPM_ALG.SHA256, pcr_select=bytes.fromhex("010000")),
+                TPMS_PCR_SELECTION(hash=TPM_ALG.SHA256, pcr_select=bytes.fromhex("010002")),
+            ]
+        ),
+        # Invalid allocation: preserves PCR 0 but clears PCR 17, triggering TPM_RC_PCR.
+        TPML_PCR_SELECTION(
+            selections=[
+                TPMS_PCR_SELECTION(hash=TPM_ALG.SHA256, pcr_select=bytes.fromhex("010000"))
+            ]
+        ),
+    ]
+
+    for pcr_allocation in test_cases:
+        variants.append([TPMPCRAllocate(pcr_allocation)])
+
+    return variants
+
+
 def tpm_pcr_extend_seeds() -> SeedVariants:
     """
     Generates seeds for the TPM2_PCR_Extend command targeting line
@@ -1073,6 +1108,7 @@ if __name__ == "__main__":
                 ),
             ],
         ],
+        "TPMPCRAllocate": tpm_pcr_allocate_seeds,
         "TPMPCRRead": tpm_pcr_read_seeds,
         "TPMPCRExtend": tpm_pcr_extend_seeds,
         "TPMPCRReset": tpm_pcr_reset_seeds,

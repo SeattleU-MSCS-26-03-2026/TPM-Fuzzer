@@ -28,19 +28,20 @@ from tpm_commands import tpm_createprimary_pb2 as tpm__commands_dot_tpm__createp
 from tpm_commands import tpm_startauthsession_pb2 as tpm__commands_dot_tpm__startauthsession__pb2
 from tpm_commands import tpm_rsa_decrypt_pb2 as tpm__commands_dot_tpm__rsa__decrypt__pb2
 from tpm_commands import tpm_clear_pb2 as tpm__commands_dot_tpm__clear__pb2
+from tpm_commands import tpm_pcr_allocate_pb2 as tpm__commands_dot_tpm__pcr__allocate__pb2
 from tpm_commands import tpm_rsa_encrypt_pb2 as tpm__commands_dot_tpm__rsa__encrypt__pb2
 from tpm_commands import tpm_pcr_event_pb2 as tpm__commands_dot_tpm__pcr__event__pb2
 
 
-DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n\x12tpm_commands.proto\x12\x03tpm\x1a tpm_commands/tpm_getrandom.proto\x1a\x1dtpm_commands/tpm_create.proto\x1a$tpm_commands/tpm_createprimary.proto\x1a\'tpm_commands/tpm_startauthsession.proto\x1a\"tpm_commands/tpm_rsa_decrypt.proto\x1a\x1ctpm_commands/tpm_clear.proto\x1a\"tpm_commands/tpm_rsa_encrypt.proto\x1a tpm_commands/tpm_pcr_event.proto\"\xa9\x03\n\nTPMCommand\x12/\n\tgetrandom\x18\x01 \x01(\x0b\x32\x1a.tpm_commands.TPMGetRandomH\x00\x12)\n\x06\x63reate\x18\x02 \x01(\x0b\x32\x17.tpm_commands.TPMCreateH\x00\x12\x37\n\rcreateprimary\x18\x03 \x01(\x0b\x32\x1e.tpm_commands.TPMCreatePrimaryH\x00\x12=\n\x10startauthsession\x18\x04 \x01(\x0b\x32!.tpm_commands.TPMStartAuthSessionH\x00\x12\x31\n\nrsadecrypt\x18\x05 \x01(\x0b\x32\x1b.tpm_commands.TPMRSADecryptH\x00\x12\'\n\x05\x63lear\x18\x06 \x01(\x0b\x32\x16.tpm_commands.TPMClearH\x00\x12\x31\n\nrsaencrypt\x18\x07 \x01(\x0b\x32\x1b.tpm_commands.TPMRSAEncryptH\x00\x12-\n\x08pcrevent\x18\x08 \x01(\x0b\x32\x19.tpm_commands.TPMPCREventH\x00\x42\t\n\x07\x63ommand\"7\n\x12TPMCommandSequence\x12!\n\x08\x63ommands\x18\x01 \x03(\x0b\x32\x0f.tpm.TPMCommandb\x06proto3')
+DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n\x12tpm_commands.proto\x12\x03tpm\x1a tpm_commands/tpm_getrandom.proto\x1a\x1dtpm_commands/tpm_create.proto\x1a$tpm_commands/tpm_createprimary.proto\x1a\'tpm_commands/tpm_startauthsession.proto\x1a\"tpm_commands/tpm_rsa_decrypt.proto\x1a\x1ctpm_commands/tpm_clear.proto\x1a#tpm_commands/tpm_pcr_allocate.proto\x1a\"tpm_commands/tpm_rsa_encrypt.proto\x1a tpm_commands/tpm_pcr_event.proto\"\xde\x03\n\nTPMCommand\x12/\n\tgetrandom\x18\x01 \x01(\x0b\x32\x1a.tpm_commands.TPMGetRandomH\x00\x12)\n\x06\x63reate\x18\x02 \x01(\x0b\x32\x17.tpm_commands.TPMCreateH\x00\x12\x37\n\rcreateprimary\x18\x03 \x01(\x0b\x32\x1e.tpm_commands.TPMCreatePrimaryH\x00\x12=\n\x10startauthsession\x18\x04 \x01(\x0b\x32!.tpm_commands.TPMStartAuthSessionH\x00\x12\x31\n\nrsadecrypt\x18\x05 \x01(\x0b\x32\x1b.tpm_commands.TPMRSADecryptH\x00\x12\'\n\x05\x63lear\x18\x06 \x01(\x0b\x32\x16.tpm_commands.TPMClearH\x00\x12\x31\n\nrsaencrypt\x18\x07 \x01(\x0b\x32\x1b.tpm_commands.TPMRSAEncryptH\x00\x12-\n\x08pcrevent\x18\x08 \x01(\x0b\x32\x19.tpm_commands.TPMPCREventH\x00\x12\x33\n\x0bpcrallocate\x18\t \x01(\x0b\x32\x1c.tpm_commands.TPMPCRAllocateH\x00\x42\t\n\x07\x63ommand\"7\n\x12TPMCommandSequence\x12!\n\x08\x63ommands\x18\x01 \x03(\x0b\x32\x0f.tpm.TPMCommandb\x06proto3')
 
 _globals = globals()
 _builder.BuildMessageAndEnumDescriptors(DESCRIPTOR, _globals)
 _builder.BuildTopDescriptorsAndMessages(DESCRIPTOR, 'tpm_commands_pb2', _globals)
 if not _descriptor._USE_C_DESCRIPTORS:
   DESCRIPTOR._loaded_options = None
-  _globals['_TPMCOMMAND']._serialized_start=308
-  _globals['_TPMCOMMAND']._serialized_end=733
-  _globals['_TPMCOMMANDSEQUENCE']._serialized_start=735
-  _globals['_TPMCOMMANDSEQUENCE']._serialized_end=790
+  _globals['_TPMCOMMAND']._serialized_start=345
+  _globals['_TPMCOMMAND']._serialized_end=823
+  _globals['_TPMCOMMANDSEQUENCE']._serialized_start=825
+  _globals['_TPMCOMMANDSEQUENCE']._serialized_end=880
 # @@protoc_insertion_point(module_scope)

@@ -859,6 +859,64 @@ class TPMPCRRead(TPMCommand):
         )
 
 
+class TPMPCRAllocate(TPMCommand):
+    """
+    TPM2_PCR_Allocate — reconfigure active PCR banks.
+
+    Command Structure (TPM_ST_SESSIONS):
+      [tag][commandSize][TPM_CC_PCR_ALLOCATE]
+      [authHandle][authArea][TPML_PCR_SELECTION]
+    """
+
+    def __init__(
+        self,
+        pcr_allocation: TPML_PCR_SELECTION,
+        auth_handle: Union[int, TPM_RH] = TPM_RH.PLATFORM,
+        session_handle: Union[int, TPM_RS] = TPM_RS.PW,
+    ):
+        self._pcr_allocation = pcr_allocation
+        self._auth_handle = (
+            auth_handle.value if isinstance(auth_handle, TPM_RH) else auth_handle
+        )
+        self._session_handle_val = (
+            session_handle.value
+            if isinstance(session_handle, TPM_RS)
+            else session_handle
+        )
+
+        auth = TPMS_AUTH_COMMAND(session_handle=self._session_handle_val)
+        auth_area = TPM_AUTH_AREA(commands=[auth])
+
+        params = (
+            self._auth_handle.to_bytes(4, BYTE_ORDER)
+            + auth_area.to_bytes()
+            + pcr_allocation.to_bytes()
+        )
+
+        super().__init__(
+            TPM_ST.TPM_ST_SESSIONS, TPM_CC.TPM_CC_PCR_ALLOCATE, params=params
+        )
+
+    def to_proto(self) -> Optional[dict]:
+        session = tpm_session_pb2.TPMSession(  # type: ignore
+            session_handle=self._session_handle_val,
+            nonce_size=0,
+            session_attributes=0,
+            hmac_size=0,
+        )
+
+        return {
+            "pcrallocate": tpm_commands_pb2.tpm__commands_dot_tpm__pcr__allocate__pb2.TPMPCRAllocate(  # type: ignore
+                header=self._proto_header(),
+                auth_handle=self._auth_handle,
+                sessions=[session],
+                pcr_allocation=self._proto_pcr_selection(
+                    self._pcr_allocation.to_bytes()
+                ),
+            )
+        }
+
+
 class TPMPCRExtend(TPMCommand):
     """
     TPM2_PCR_Extend — extend a PCR with one or more digests.

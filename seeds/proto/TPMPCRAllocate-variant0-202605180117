@@ -1,0 +1,21 @@
+commands {
+  pcrallocate {
+    header {
+      tag: TPM_ST_SESSIONS
+      command_size: 37
+      command_code: TPM_CC_PCR_ALLOCATE
+    }
+    auth_handle: TPM_RH_PLATFORM
+    sessions {
+      session_handle: 1073741833
+    }
+    pcr_allocation {
+      count: 1
+      pcr_selections {
+        hash: TPM_ALG_SHA256
+        sizeof_select: 3
+        pcr_select: "\001\000\002"
+      }
+    }
+  }
+}

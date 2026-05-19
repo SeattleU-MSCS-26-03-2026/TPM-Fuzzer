@@ -40,6 +40,14 @@ static protobuf_mutator::libfuzzer::PostProcessorRegistration<
     }};
 
 static protobuf_mutator::libfuzzer::PostProcessorRegistration<
+    tpm_commands::TPMPCRAllocate>
+    reg_pcr_allocate = {[](tpm_commands::TPMPCRAllocate* msg,
+                           unsigned int /* seed */) {
+      msg->mutable_header()->set_tag(constants::TPM_ST_SESSIONS);
+      msg->mutable_header()->set_command_code(constants::TPM_CC_PCR_ALLOCATE);
+    }};
+
+static protobuf_mutator::libfuzzer::PostProcessorRegistration<
     tpm_commands::TPMGetRandom>
     reg_getrandom = {
         [](tpm_commands::TPMGetRandom* msg, unsigned int /* seed */) {
