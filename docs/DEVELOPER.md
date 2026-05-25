@@ -190,13 +190,13 @@ Seeds are critical for:
 
 Seed files are organized into initial inputs and runtime-generated corpus data:
 
-**Initial seeds (checked into the repository):**
-- `seeds/` – initial inputs used to bootstrap byte-level fuzzing
-- `proto-seeds/` – initial structure-aware seeds (protobuf-based)
+**Initial seeds (checked into the repository) under seeds/:**
+- `bytearray/` – initial inputs used to bootstrap byte-level fuzzing
+- `proto/` – initial structure-aware seeds (protobuf-based)
 
-**Generated corpus (produced during fuzzing):**
-- `corpus/` – runtime-generated inputs for byte-level fuzzing
-- `proto-corpus/` – runtime-generated inputs for structure-aware fuzzing
+**Generated corpus (produced during fuzzing) under corpus/:**
+- `bytearray/` – runtime-generated inputs for byte-level fuzzing
+- `proto/` – runtime-generated inputs for structure-aware fuzzing
 
 Generated corpus files may be included when available to improve coverage and provide additional starting points for future fuzzing runs.
 

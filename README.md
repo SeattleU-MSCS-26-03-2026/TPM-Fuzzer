@@ -87,3 +87,4 @@ drwxr-xr-x 2 user users   4096 Apr 13 21:27 seeds
 - [Developer Guide](./docs/DEVELOPER.md)
 - [Seed Corpus](./docs/SEEDS.md)
 - [Custom TPM Implementation](./docs/CUSTOM_TPM.md)
+- [Future Work](./docs/FUTURE_WORK.md)
