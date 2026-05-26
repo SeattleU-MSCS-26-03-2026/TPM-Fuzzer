@@ -463,6 +463,33 @@ def tpm_nv_extend_seeds() -> SeedVariants:
     return [variant0, variant1, variant2, variant3, variant4]
 
 
+def tpm_nv_definespace_seeds() -> SeedVariants:
+    """
+    Seeds for TPM2_NV_DefineSpace.
+
+    Variant 0 — password session (PW): exercises the non-HMAC dispatch path;
+      this is the same shape the tool emitted previously as the sole variant.
+
+    Variant 1 — HMAC session: StartAuthSession followed by NV_DefineSpace using
+      the first HMAC session handle. Exercises the HMAC patching path in
+      session_auth.cc (cpHash + authHMAC computation + auth area rewrite).
+    """
+    nv_index = TPM_HT.NV_INDEX.value << 24
+
+    variant0 = [TPMNVDefineSpace()]
+
+    variant1 = [
+        TPMStartAuthSession(TPM_RH.NULL, TPM_RH.NULL, session_type=TPM_SE.HMAC),
+        TPMNVDefineSpace(
+            nv_index=nv_index,
+            attributes=[TPMA_NV.OWNERWRITE, TPMA_NV.OWNERREAD, TPMA_NV.NO_DA],
+            session_handle=TPM_FIRST_HMAC_SESSION_HANDLE,
+        ),
+    ]
+
+    return [variant0, variant1]
+
+
 def tpm_nv_setbits_seeds() -> SeedVariants:
     """
     Generates seeds for TPM2_NV_SetBits.
@@ -1113,7 +1140,7 @@ if __name__ == "__main__":
         "TPMPCRExtend": tpm_pcr_extend_seeds,
         "TPMPCRReset": tpm_pcr_reset_seeds,
         "TPMTestParms": TPMTestParms(),
-        "TPMNVDefineSpace": TPMNVDefineSpace(),
+        "TPMNVDefineSpace": tpm_nv_definespace_seeds,
         "TPMNVSetBits": tpm_nv_setbits_seeds,
         "TPMClear": [
             [

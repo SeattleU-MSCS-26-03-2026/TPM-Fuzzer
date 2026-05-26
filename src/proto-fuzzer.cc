@@ -5,28 +5,31 @@
 #include "tpm_commands.pb.h"
 
 extern "C" {
+#include <harness/session_auth.h>
 #include <harness/tpm_wrapper.h>
 }
 #include "harness/proto_conversion.h"
 
+// Commands that have no active session or were not sent with a session
+// tag (TPM_ST_SESSIONS) pass through the session auth functions unchanged.
+
 namespace {
 const bool kRegisteredPostProcessors = RegisterPostProcessors();
 
-void ExecuteCommandBuffer(const std::vector<uint8_t>& command_buffer,
+void ExecuteCommandBuffer(const uint8_t* buf, size_t size,
                           std::vector<uint8_t>* response_storage) {
-  if (command_buffer.empty()) {
-    return;
-  }
+  if (size == 0) return;
 
   InBuffer request;
-  request.buffer = command_buffer.data();
-  request.buffer_size = command_buffer.size();
+  request.buffer = buf;
+  request.buffer_size = size;
 
   OutBuffer response;
   response.buffer = response_storage->data();
   response.buffer_size = response_storage->size();
 
   TPMSendCommand(kDefaultLocality, request, &response);
+  SessionAuthProcessResponse(response.buffer, response.buffer_size);
 }
 }  // namespace
 
@@ -34,7 +37,7 @@ DEFINE_PROTO_FUZZER(const tpm::TPMCommandSequence& sequence) {
   TPMManufactureIfNeeded();
   TPMStartup();
   SendTPM2StartupCommand();
-
+  SessionAuthReset();
   std::vector<uint8_t> command_buffer;
   std::vector<uint8_t> response_storage(kMaxBuffers);
 
@@ -42,7 +45,15 @@ DEFINE_PROTO_FUZZER(const tpm::TPMCommandSequence& sequence) {
     if (!MarshalCommand(cmd, &command_buffer)) {
       continue;
     }
-    ExecuteCommandBuffer(command_buffer, &response_storage);
+    size_t cmd_size = command_buffer.size();
+    // Reserve extra space for the HMAC bytes added by SessionAuthPatchCommand.
+    // Commands without a session are left untouched, so this resize is safe.
+    if (command_buffer.size() < cmd_size + 64) {
+      command_buffer.resize(cmd_size + 64);
+    }
+    cmd_size = SessionAuthPatchCommand(command_buffer.data(), cmd_size,
+                                       command_buffer.size());
+    ExecuteCommandBuffer(command_buffer.data(), cmd_size, &response_storage);
   }
 
   SendTPM2ShutdownCommand();

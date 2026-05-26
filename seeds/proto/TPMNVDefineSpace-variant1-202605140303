@@ -1,0 +1,43 @@
+commands {
+  startauthsession {
+    header {
+      tag: TPM_ST_NO_SESSIONS
+      command_size: 43
+      command_code: TPM_CC_START_AUTH_SESSION
+    }
+    tpm_key: TPM_RH_NULL
+    bind: TPM_RH_NULL
+    nonce {
+      size: 16
+      buffer: "\316A.S\205\221\2729\003\t\364\276\365a\256u"
+    }
+    encrypted_salt {
+    }
+    symmetric {
+      algorithm: TPM_ALG_NULL
+      mode: TPM_ALG_NULL
+    }
+    auth_hash: TPM_ALG_SHA256
+  }
+}
+commands {
+  nvdefinespace {
+    header {
+      tag: TPM_ST_SESSIONS
+      command_size: 45
+      command_code: TPM_CC_NV_DEFINE_SPACE
+    }
+    auth_handle: 1073741825
+    sessions {
+      session_handle: 33554432
+    }
+    auth {
+    }
+    nv_public {
+      nv_index: 16777216
+      name_alg: TPM_ALG_SHA256
+      attributes: 33685506
+      data_size: 32
+    }
+  }
+}

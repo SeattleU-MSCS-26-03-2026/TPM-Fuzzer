@@ -1,15 +1,18 @@
 find_package(Catch2 3 REQUIRED)
+find_package(OpenSSL REQUIRED)
 
 add_executable(FUZZER_TESTS
   parser/byte_parser_test.cc
   harness/tpm_wrapper_test.cc
   ${CMAKE_SOURCE_DIR}/src/parser/byte_parser.cc
   ${CMAKE_SOURCE_DIR}/src/harness/tpm_wrapper.c
+  ${CMAKE_SOURCE_DIR}/src/harness/session_auth.cc
 )
 
 target_link_libraries(FUZZER_TESTS
   PRIVATE
     Catch2::Catch2WithMain
+    OpenSSL::Crypto
 )
 
 target_include_directories(FUZZER_TESTS

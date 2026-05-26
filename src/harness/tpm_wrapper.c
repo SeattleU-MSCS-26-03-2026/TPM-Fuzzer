@@ -1,10 +1,13 @@
 #include <Platform.h>
+#include <harness/session_auth.h>
 #include <harness/tpm_wrapper.h>
 #include <platform_interface/prototypes/Manufacture_fp.h>
 #include <platform_interface/prototypes/_TPM_Hash_End_fp.h>
 #include <platform_interface/prototypes/_TPM_Init_fp.h>
 #include <prototypes/platform_public_interface.h>
+#include <stdint.h>
 #include <stdio.h>
+#include <string.h>
 
 const size_t kMaxBuffers = 1048576;
 const int kDefaultLocality = 0;

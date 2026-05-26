@@ -1021,6 +1021,61 @@ class TPMNVDefineSpace(TPMCommand):
 
         super().__init__(TPM_ST.TPM_ST_SESSIONS, TPM_CC.TPM_CC_NV_DEFINE_SPACE, params)
 
+    def to_proto(self) -> Optional[dict]:
+        params = self.params
+        offset = 0
+
+        auth_handle = int.from_bytes(params[offset : offset + 4], BYTE_ORDER)
+        offset += 4
+
+        sessions = []
+        if self.tag != TPM_ST.NO_SESSIONS:
+            auth_size = int.from_bytes(params[offset : offset + 4], BYTE_ORDER)
+            auth_end = offset + 4 + auth_size
+            auth_bytes = params[offset:auth_end]
+            offset = auth_end
+            sessions = self._proto_sessions(auth_bytes)
+
+        auth_value, offset = self._parse_tpm2b(params, offset)
+        nv_outer, offset = self._parse_tpm2b(params, offset)
+        nv_inner = nv_outer[2:]
+
+        inner = 0
+        nv_index = int.from_bytes(nv_inner[inner : inner + 4], BYTE_ORDER)
+        inner += 4
+        name_alg = int.from_bytes(nv_inner[inner : inner + 2], BYTE_ORDER)
+        inner += 2
+        nv_attributes = int.from_bytes(nv_inner[inner : inner + 4], BYTE_ORDER)
+        inner += 4
+        policy_size = int.from_bytes(nv_inner[inner : inner + 2], BYTE_ORDER)
+        inner += 2
+        auth_policy = nv_inner[inner : inner + policy_size]
+        inner += policy_size
+        data_size = int.from_bytes(nv_inner[inner : inner + 2], BYTE_ORDER)
+
+        nv_definespace_pb2 = (
+            tpm_commands_pb2.tpm__commands_dot_tpm__nv__definespace__pb2  # type: ignore
+        )
+        nv_public_pb2 = (
+            nv_definespace_pb2.tpm__types_dot_tpm__nv__public__pb2  # type: ignore
+        )
+
+        return {
+            "nvdefinespace": nv_definespace_pb2.TPMNvDefineSpace(  # type: ignore
+                header=self._proto_header(),
+                auth_handle=auth_handle,
+                sessions=sessions,
+                auth=self._proto_tpm2b_data(auth_value[2:]),
+                nv_public=nv_public_pb2.TPMNvPublic(  # type: ignore
+                    nv_index=nv_index,
+                    name_alg=tpm_alg_pb2.TPMALG.Name(name_alg),  # type: ignore
+                    attributes=nv_attributes,
+                    auth_policy=auth_policy,
+                    data_size=data_size,
+                ),
+            )
+        }
+
 
 class TPMNVUndefineSpace(TPMCommand):
     def __init__(

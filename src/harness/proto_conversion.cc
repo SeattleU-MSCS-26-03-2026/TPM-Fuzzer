@@ -1,10 +1,13 @@
 #include "harness/proto_conversion.h"
 
-#include <cstring>
+// Serializes proto commands to TPM wire bytes.
+// MarshalMessageField dispatches on sub-message type name -- if a type is
+// missing, the command is silently skipped (symptom: 0% coverage on that file).
 #include <limits>
 #include <string>
 
 #include "tpm_types/tpm2b_event.pb.h"
+#include "tpm_types/tpm_nv_public.pb.h"
 #include "tss2_common.h"
 
 constexpr size_t kMaxBuffer = 1024 * 1024;
@@ -191,6 +194,12 @@ bool MarshalMessageField(const google::protobuf::Message& child,
     const auto* event = dynamic_cast<const tpm_types::TPM2BEvent*>(&child);
     if (!event) return false;
     return MarshalTPM2BEvent(*event, buf, offset);
+  }
+
+  if (name == "tpm_types.TPMNvPublic") {
+    const auto* nv = dynamic_cast<const tpm_types::TPMNvPublic*>(&child);
+    if (!nv) return false;
+    return MarshalTPMNvPublic(*nv, buf, offset);
   }
 
   return false;
@@ -464,6 +473,27 @@ bool MarshalTPMTRSADecrypt(const tpm_types::TPMTRSADecrypt& scheme_proto,
       return false;
   }
   return true;
+}
+
+bool MarshalTPMNvPublic(const tpm_types::TPMNvPublic& pub,
+                        std::vector<uint8_t>* buf, size_t& offset) {
+  TPM2B_NV_PUBLIC nv_pub = {};
+  nv_pub.nvPublic.nvIndex = static_cast<TPMI_RH_NV_INDEX>(pub.nv_index());
+  nv_pub.nvPublic.nameAlg = static_cast<TPMI_ALG_HASH>(pub.name_alg());
+  nv_pub.nvPublic.attributes = static_cast<TPMA_NV>(pub.attributes());
+  FillTpm2b(pub.auth_policy(), &nv_pub.nvPublic.authPolicy);
+  nv_pub.nvPublic.dataSize = static_cast<UINT16>(pub.data_size());
+
+  // Get the marshaled size of TPMS_NV_PUBLIC so nv_pub.size is
+  // correct. Some tss2 versions use the size field literally and write a
+  // zero-length TPM2B if it is left unset.
+  size_t content_size = 0;
+  Tss2_MU_TPMS_NV_PUBLIC_Marshal(&nv_pub.nvPublic, nullptr, SIZE_MAX,
+                                 &content_size);
+  nv_pub.size = static_cast<UINT16>(content_size);
+
+  return !MUCommandFailed(Tss2_MU_TPM2B_NV_PUBLIC_Marshal(
+      &nv_pub, buf->data(), buf->size(), &offset));
 }
 
 bool MarshalTPM2BEvent(const tpm_types::TPM2BEvent& data,

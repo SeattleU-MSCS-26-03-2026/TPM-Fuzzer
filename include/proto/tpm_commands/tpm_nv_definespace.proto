@@ -1,0 +1,16 @@
+syntax = "proto3";
+
+package tpm_commands;
+
+import "tpm_types/tpm_header.proto";
+import "tpm_types/tpm_session.proto";
+import "tpm_types/tpm2b_data.proto";
+import "tpm_types/tpm_nv_public.proto";
+
+message TPMNvDefineSpace {
+  tpm_types.TPMHeader           header      = 1;
+  uint32                        auth_handle = 2;
+  repeated tpm_types.TPMSession sessions    = 3;
+  tpm_types.TPM2BData           auth        = 4;
+  tpm_types.TPMNvPublic         nv_public   = 5;
+}

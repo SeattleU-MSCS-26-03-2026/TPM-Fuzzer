@@ -53,6 +53,8 @@ target_sources(TPMHarness
     harness/proto_normalization.h
     harness/proto_conversion.h
     harness/tpm_wrapper.h
+    harness/session_auth.h
+    harness/command_attributes.h
     parser/byte_parser.h
 )
 

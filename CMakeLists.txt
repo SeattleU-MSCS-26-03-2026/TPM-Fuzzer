@@ -75,6 +75,7 @@ if (BUILD_REFERENCE_WRAPPER)
             src/harness/proto_postprocessors.cc
             src/harness/proto_normalization.cc
             src/harness/proto_conversion.cc
+            src/harness/session_auth.cc
             src/parser/byte_parser.cc
     )
 
@@ -82,6 +83,7 @@ if (BUILD_REFERENCE_WRAPPER)
         PUBLIC
             TPM
             TPMHarness
+            OpenSSL::Crypto
     )
     target_compile_options(TPMReference
       PUBLIC

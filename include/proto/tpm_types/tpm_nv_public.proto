@@ -1,0 +1,13 @@
+syntax = "proto3";
+
+package tpm_types;
+
+import "constants/tpm_alg.proto";
+
+message TPMNvPublic {
+  uint32           nv_index    = 1;
+  constants.TPMALG name_alg    = 2;
+  uint32           attributes  = 3;
+  bytes            auth_policy = 4;
+  uint32           data_size   = 5;
+}

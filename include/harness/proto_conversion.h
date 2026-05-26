@@ -7,6 +7,7 @@
 #include "tpm_types/tpm2b_public.pb.h"
 #include "tpm_types/tpm2b_public_key_rsa.pb.h"
 #include "tpm_types/tpm2b_sensitive_create.pb.h"
+#include "tpm_types/tpm_nv_public.pb.h"
 #include "tpm_types/tpm_session.pb.h"
 #include "tpm_types/tpml_pcr_selection.pb.h"
 #include "tpm_types/tpmt_rsa_decrypt.pb.h"
@@ -100,6 +101,9 @@ bool MarshalTPM2BPublicKeyRSA(const tpm_types::TPM2BPublicKeyRSA& rsa,
 
 bool MarshalTPMTRSADecrypt(const tpm_types::TPMTRSADecrypt& scheme,
                            std::vector<uint8_t>* buf, size_t& offset);
+
+bool MarshalTPMNvPublic(const tpm_types::TPMNvPublic& pub,
+                        std::vector<uint8_t>* buf, size_t& offset);
 
 bool MarshalTPM2BEvent(const tpm_types::TPM2BEvent& data,
                        std::vector<uint8_t>* buf, size_t& offset);

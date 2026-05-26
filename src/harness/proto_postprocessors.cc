@@ -6,6 +6,7 @@
 #include "src/libfuzzer/libfuzzer_macro.h"
 #include "tpm_commands.pb.h"
 #include "tpm_commands/tpm_clear.pb.h"
+#include "tpm_commands/tpm_nv_definespace.pb.h"
 #include "tpm_commands/tpm_pcr_event.pb.h"
 #include "tpm_commands/tpm_rsa_decrypt.pb.h"
 #include "tpm_commands/tpm_rsa_encrypt.pb.h"
@@ -100,6 +101,16 @@ static protobuf_mutator::libfuzzer::PostProcessorRegistration<
           msg->mutable_header()->set_tag(constants::TPM_ST_SESSIONS);
           msg->mutable_header()->set_command_code(constants::TPM_CC_PCR_EVENT);
         }};
+
+static protobuf_mutator::libfuzzer::PostProcessorRegistration<
+    tpm_commands::TPMNvDefineSpace>
+    reg_nvdefinespace = {
+        [](tpm_commands::TPMNvDefineSpace* msg, unsigned int /* seed */) {
+          msg->mutable_header()->set_tag(constants::TPM_ST_SESSIONS);
+          msg->mutable_header()->set_command_code(
+              constants::TPM_CC_NV_DEFINE_SPACE);
+        }};
+
 }  // namespace
 
 bool RegisterPostProcessors() { return true; }
