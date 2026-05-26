@@ -20,7 +20,6 @@
 BLUE="\033[34m"
 RESET="\033[0m"
 COVERAGE_HISTORY="${FUZZER_COV_HISTORY:-coverage-history/history.csv}"
-COVERAGE_REPORT="${FUZZER_COV_REPORT:-coverage/report.txt}"
 FUZZER_BIN="${FUZZER_BIN:-Fuzzer}"
 
 # Append summarized coverage data into a CSV history file.
@@ -35,7 +34,14 @@ FUZZER_BIN="${FUZZER_BIN:-Fuzzer}"
 #       * Current Git commit short SHA (or "unknown" if not in a git repo)
 #       * Coverage metrics for regions, functions, lines, and branches
 track_coverage() {
-    local report="$1"
+    local bin="$1"
+    local report
+
+    if [[ $bin = "fuzzer" ]]; then
+        report="coverage/bytearray/report.txt"
+    else
+        report="coverage/bytearray/report.txt"
+    fi
 
     if [[ -z $report ]]; then
         echo "Usage: track-coverage <REPORT_TXT>"
@@ -204,7 +210,7 @@ main() {
 
     if [[ $track -eq 1 ]]; then
         echo -e "${BLUE}[4/4] Tracking Coverage.${RESET}\n"
-        track_coverage "$COVERAGE_REPORT"
+        track_coverage "$bin"
         archive_coverage
     fi
 
