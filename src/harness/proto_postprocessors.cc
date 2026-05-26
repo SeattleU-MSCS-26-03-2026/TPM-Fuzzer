@@ -10,6 +10,7 @@
 #include "tpm_commands/tpm_pcr_event.pb.h"
 #include "tpm_commands/tpm_rsa_decrypt.pb.h"
 #include "tpm_commands/tpm_rsa_encrypt.pb.h"
+#include "tpm_commands/tpm_setprimarypolicy.pb.h"
 
 namespace {
 void NormalizeStartAuthSession(tpm_commands::TPMStartAuthSession* msg) {
@@ -48,6 +49,12 @@ static protobuf_mutator::libfuzzer::PostProcessorRegistration<
       msg->mutable_header()->set_command_code(constants::TPM_CC_PCR_ALLOCATE);
     }};
 
+static protobuf_mutator::libfuzzer::PostProcessorRegistration<
+    tpm_commands::TPMSetPrimaryPolicy>
+    reg_setprimarypolicy = {
+        [](tpm_commands::TPMSetPrimaryPolicy* msg, unsigned int /* seed */) {
+          NormalizeSetPrimaryPolicy(msg);
+        }};
 static protobuf_mutator::libfuzzer::PostProcessorRegistration<
     tpm_commands::TPMGetRandom>
     reg_getrandom = {

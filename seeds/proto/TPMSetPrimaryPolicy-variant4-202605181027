@@ -1,0 +1,18 @@
+commands {
+  setprimarypolicy {
+    header {
+      tag: TPM_ST_SESSIONS
+      command_size: 51
+      command_code: TPM_CC_SET_PRIMARY_POLICY
+    }
+    auth_handle: TPM_RH_LOCKOUT
+    sessions {
+      session_handle: 1073741833
+    }
+    auth_policy {
+      size: 20
+      buffer: "33333333333333333333"
+    }
+    hash_alg: TPM_ALG_SHA1
+  }
+}

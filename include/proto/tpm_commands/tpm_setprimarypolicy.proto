@@ -1,0 +1,17 @@
+syntax = "proto3";
+
+package tpm_commands;
+
+import "tpm_types/tpm_header.proto";
+import "tpm_types/tpm_session.proto";
+import "tpm_types/tpm2b_digest.proto";
+import "constants/tpm_rh.proto";
+import "constants/tpm_alg.proto";
+
+message TPMSetPrimaryPolicy {
+  tpm_types.TPMHeader header = 1;
+  constants.TPMRH auth_handle = 2;
+  repeated tpm_types.TPMSession sessions = 3;
+  tpm_types.TPM2BDigest auth_policy = 4;
+  constants.TPMALG hash_alg = 5;
+}

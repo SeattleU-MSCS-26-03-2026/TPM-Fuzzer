@@ -7,6 +7,7 @@
 #include "constants/tpm_rh.pb.h"
 #include "constants/tpm_st.pb.h"
 #include "tpm_commands/tpm_clear.pb.h"
+#include "tpm_commands/tpm_setprimarypolicy.pb.h"
 #include "tpm_commands/tpm_startauthsession.pb.h"
 
 namespace {
@@ -117,5 +118,55 @@ void NormalizeClear(tpm_commands::TPMClear* msg) {
 
   if (msg->sessions().empty()) {
     SetPasswordSession(msg->add_sessions());
+  }
+}
+
+void NormalizeSetPrimaryPolicy(tpm_commands::TPMSetPrimaryPolicy* msg) {
+  msg->mutable_header()->set_tag(constants::TPM_ST_SESSIONS);
+  msg->mutable_header()->set_command_code(constants::TPM_CC_SET_PRIMARY_POLICY);
+
+  if (msg->auth_handle() == constants::TPM_RH_UNSPECIFIED) {
+    msg->set_auth_handle(constants::TPM_RH_OWNER);
+  }
+
+  if (msg->sessions().empty()) {
+    SetPasswordSession(msg->add_sessions());
+  }
+
+  // Keep auth_policy size consistent with hash_alg for valid paths.
+  // This helps the fuzzer reach the switch(authHandle) cases in
+  // SetPrimaryPolicy.c.
+  switch (msg->hash_alg()) {
+    case constants::TPM_ALG_SHA1:
+      msg->mutable_auth_policy()->set_size(20);
+      if (msg->auth_policy().buffer().size() != 20) {
+        msg->mutable_auth_policy()->set_buffer(std::string(20, '\0'));
+      }
+      break;
+
+    case constants::TPM_ALG_SHA256:
+      msg->mutable_auth_policy()->set_size(32);
+      if (msg->auth_policy().buffer().size() != 32) {
+        msg->mutable_auth_policy()->set_buffer(std::string(32, '\0'));
+      }
+      break;
+
+    case constants::TPM_ALG_SHA384:
+      msg->mutable_auth_policy()->set_size(48);
+      if (msg->auth_policy().buffer().size() != 48) {
+        msg->mutable_auth_policy()->set_buffer(std::string(48, '\0'));
+      }
+      break;
+
+    case constants::TPM_ALG_NULL:
+      msg->mutable_auth_policy()->set_size(0);
+      msg->mutable_auth_policy()->set_buffer("");
+      break;
+
+    default:
+      msg->set_hash_alg(constants::TPM_ALG_SHA256);
+      msg->mutable_auth_policy()->set_size(32);
+      msg->mutable_auth_policy()->set_buffer(std::string(32, '\0'));
+      break;
   }
 }

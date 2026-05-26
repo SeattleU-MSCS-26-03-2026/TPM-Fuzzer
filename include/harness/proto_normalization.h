@@ -13,6 +13,7 @@
 #include "tpm_commands/tpm_createprimary.pb.h"
 #include "tpm_commands/tpm_nv_definespace.pb.h"
 #include "tpm_commands/tpm_rsa_decrypt.pb.h"
+#include "tpm_commands/tpm_setprimarypolicy.pb.h"
 #include "tpm_types/tpm2b_public.pb.h"
 #include "tpm_types/tpm_session.pb.h"
 
@@ -26,6 +27,8 @@ void NormalizeRsaOrKeyedHashPublic(tpm_types::TPMTPublic* public_area,
 void NormalizeCreatePrimary(tpm_commands::TPMCreatePrimary* msg);
 
 void NormalizeClear(tpm_commands::TPMClear* msg);
+
+void NormalizeSetPrimaryPolicy(tpm_commands::TPMSetPrimaryPolicy* msg);
 
 void NormalizeCreate(tpm_commands::TPMCreate* msg);
 

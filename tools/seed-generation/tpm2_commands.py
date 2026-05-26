@@ -296,6 +296,78 @@ class TPMClear(TPMCommand):
         }
 
 
+class TPMSetPrimaryPolicy(TPMCommand):
+    """
+    TPM2_SetPrimaryPolicy command.
+
+    Command structure with sessions:
+      authHandle(4) | authArea | authPolicy: TPM2B_DIGEST | hashAlg: TPMI_ALG_HASH
+    """
+
+    def __init__(
+        self,
+        auth_handle: Union[int, TPM_RH] = TPM_RH.OWNER,
+        auth_policy: bytes = b"",
+        hash_alg: TPM_ALG = TPM_ALG.NULL,
+        session_handle: Union[int, TPM_RS] = TPM_RS.PW,
+    ):
+        self._auth_handle = (
+            auth_handle.value if isinstance(auth_handle, TPM_RH) else auth_handle
+        )
+        self._auth_policy = auth_policy
+        self._hash_alg_val = (
+            hash_alg.value if isinstance(hash_alg, TPM_ALG) else int(hash_alg)
+        )
+        self._session_handle_val = (
+            session_handle.value
+            if isinstance(session_handle, TPM_RS)
+            else session_handle
+        )
+
+        auth = TPMS_AUTH_COMMAND(session_handle=self._session_handle_val)
+        auth_area = TPM_AUTH_AREA(commands=[auth])
+
+        policy = len(self._auth_policy).to_bytes(2, BYTE_ORDER) + self._auth_policy
+
+        params = (
+            self._auth_handle.to_bytes(4, BYTE_ORDER)
+            + auth_area.to_bytes()
+            + policy
+            + self._hash_alg_val.to_bytes(2, BYTE_ORDER)
+        )
+
+        super().__init__(
+            TPM_ST.TPM_ST_SESSIONS,
+            TPM_CC.TPM_CC_SET_PRIMARY_POLICY,
+            params=params,
+        )
+
+        session = tpm_session_pb2.TPMSession(  # type: ignore
+            session_handle=self._session_handle_val,
+            nonce_size=0,
+            nonce=b"",
+            session_attributes=0,
+            hmac_size=0,
+            hmac=b"",
+        )
+
+        self.proto = {
+            "setprimarypolicy": tpm_commands_pb2.tpm__commands_dot_tpm__setprimarypolicy__pb2.TPMSetPrimaryPolicy(  # type: ignore
+                header=self._proto_header(),
+                auth_handle=self._auth_handle,
+                sessions=[session],
+                auth_policy=tpm2b_digest_pb2.TPM2BDigest(  # type: ignore
+                    size=len(self._auth_policy),
+                    buffer=self._auth_policy,
+                ),
+                hash_alg=self._hash_alg_val,
+            )
+        }
+
+    def to_proto(self) -> Optional[dict]:
+        return self.proto
+
+
 class TPMIncrementalSelfTest(TPMCommand):
     def __init__(self, algorithms: List[TPM_ALG]):
         count = len(algorithms).to_bytes(4, BYTE_ORDER)

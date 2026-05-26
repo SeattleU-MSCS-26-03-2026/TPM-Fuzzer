@@ -1150,6 +1150,56 @@ if __name__ == "__main__":
                 TPMClear(auth_handle=TPM_RH.PLATFORM),
             ],
         ],
+        "TPMSetPrimaryPolicy": [
+            # Variant 0: valid empty policy, size 0 matches TPM_ALG_NULL
+            [
+                TPMSetPrimaryPolicy(
+                    auth_handle=TPM_RH.OWNER,
+                    auth_policy=b"",
+                    hash_alg=TPM_ALG.NULL,
+                )
+            ],
+            # Variant 1: OWNER success path
+            [
+                TPMSetPrimaryPolicy(
+                    auth_handle=TPM_RH.OWNER,
+                    auth_policy=b"\x00" * 32,
+                    hash_alg=TPM_ALG.SHA256,
+                )
+            ],
+            # Variant 2: ENDORSEMENT success path
+            [
+                TPMSetPrimaryPolicy(
+                    auth_handle=TPM_RH.ENDORSEMENT,
+                    auth_policy=b"\x11" * 32,
+                    hash_alg=TPM_ALG.SHA256,
+                )
+            ],
+            # Variant 3: PLATFORM success path
+            [
+                TPMSetPrimaryPolicy(
+                    auth_handle=TPM_RH.PLATFORM,
+                    auth_policy=b"\x22" * 32,
+                    hash_alg=TPM_ALG.SHA256,
+                )
+            ],
+            # Variant 4: LOCKOUT success path
+            [
+                TPMSetPrimaryPolicy(
+                    auth_handle=TPM_RH.LOCKOUT,
+                    auth_policy=b"\x33" * 20,
+                    hash_alg=TPM_ALG.SHA1,
+                )
+            ],
+            # Variant 5: invalid size path, should hit TPM_RCS_SIZE
+            [
+                TPMSetPrimaryPolicy(
+                    auth_handle=TPM_RH.OWNER,
+                    auth_policy=b"",
+                    hash_alg=TPM_ALG.SHA256,
+                )
+            ],
+        ],
         "TPMNVWriteLock": [
             # Lock once success
             [

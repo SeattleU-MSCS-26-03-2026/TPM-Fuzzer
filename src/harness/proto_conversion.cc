@@ -6,6 +6,7 @@
 #include <limits>
 #include <string>
 
+#include "tpm_types/tpm2b_digest.pb.h"
 #include "tpm_types/tpm2b_event.pb.h"
 #include "tpm_types/tpm_nv_public.pb.h"
 #include "tss2_common.h"
@@ -153,6 +154,12 @@ bool MarshalMessageField(const google::protobuf::Message& child,
     return MarshalTPM2BData(*data, buf, offset);
   }
 
+  if (name == "tpm_types.TPM2BDigest") {
+    const auto* digest = dynamic_cast<const tpm_types::TPM2BDigest*>(&child);
+    if (!digest) return false;
+    return MarshalTPM2BDigest(*digest, buf, offset);
+  }
+
   if (name == "tpm_types.TPMTSymDef") {
     const auto* sym = dynamic_cast<const tpm_types::TPMTSymDef*>(&child);
     if (!sym) return false;
@@ -259,6 +266,29 @@ bool MarshalTPM2BData(const tpm_types::TPM2BData& data,
 
   return !MUCommandFailed(
       Tss2_MU_TPM2B_DATA_Marshal(&tpm_data, buf->data(), buf->size(), &offset));
+}
+
+bool MarshalTPM2BDigest(const tpm_types::TPM2BDigest& digest,
+                        std::vector<uint8_t>* buf, size_t& offset) {
+  const std::string& data = digest.buffer();
+
+  if (data.size() > std::numeric_limits<UINT16>::max()) {
+    return false;
+  }
+
+  if (MUCommandFailed(Tss2_MU_UINT16_Marshal(static_cast<UINT16>(data.size()),
+                                             buf->data(), buf->size(),
+                                             &offset))) {
+    return false;
+  }
+
+  if (!data.empty()) {
+    if (offset + data.size() > buf->size()) return false;
+    std::memcpy(buf->data() + offset, data.data(), data.size());
+    offset += data.size();
+  }
+
+  return true;
 }
 
 bool MarshalTPMTSymDef(const tpm_types::TPMTSymDef& sym,
