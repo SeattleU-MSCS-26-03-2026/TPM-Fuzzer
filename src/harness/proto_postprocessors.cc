@@ -7,6 +7,7 @@
 #include "tpm_commands.pb.h"
 #include "tpm_commands/tpm_clear.pb.h"
 #include "tpm_commands/tpm_load.pb.h"
+#include "tpm_commands/tpm_makecredential.pb.h"
 #include "tpm_commands/tpm_nv_definespace.pb.h"
 #include "tpm_commands/tpm_pcr_allocate.pb.h"
 #include "tpm_commands/tpm_pcr_event.pb.h"
@@ -133,6 +134,14 @@ static protobuf_mutator::libfuzzer::PostProcessorRegistration<
               constants::TPM_CC_NV_DEFINE_SPACE);
         }};
 
+static protobuf_mutator::libfuzzer::PostProcessorRegistration<
+    tpm_commands::TPMMakeCredential>
+    reg_makecredential = {
+        [](tpm_commands::TPMMakeCredential* msg, unsigned int /* seed */) {
+          msg->mutable_header()->set_tag(constants::TPM_ST_NO_SESSIONS);
+          msg->mutable_header()->set_command_code(
+              constants::TPM_CC_MAKE_CREDENTIAL);
+        }};
 }  // namespace
 
 bool RegisterPostProcessors() { return true; }

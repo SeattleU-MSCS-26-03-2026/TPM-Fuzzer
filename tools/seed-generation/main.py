@@ -805,6 +805,90 @@ def _generate_seeds(
         )
 
 
+def tpm_make_credential_seeds() -> SeedVariants:
+    """
+    Generates seeds for TPM2_MakeCredential targeting line coverage of
+    MakeCredential.c.
+    
+    Command structure (TPM_ST_NO_SESSIONS):
+      handle(4) | credential: TPM2B_DIGEST | objectName: TPM2B_NAME
+
+    MakeCredential.c branches:
+      1. Key type is not asymmetric       → TPM_RC_KEY    (variant 1)
+      2. Key lacks RESTRICTED | DECRYPT   → TPM_RC_KEY    (variant 2)
+      3. Success path (credential wrapped) → TPM_RC_SUCCESS (variant 0)
+    """
+    # Standard 16-byte credential — well within SHA-256 digest size limit.
+    credential = b"\xAB" * 16
+
+    # A syntactically valid SHA-256 name (nameAlg=0x000B + 32-byte digest).
+    sha256_name = (0x000B).to_bytes(2, BYTE_ORDER) + b"\x00" * 32
+
+    restricted_decrypt_primary = TPMCreatePrimary(
+        session_handle=TPM_RS.PW,
+        hashAlg=TPM_ALG.SHA256,
+        keyBits=2048,
+    )
+
+    signing_primary = TPMCreatePrimary(
+        session_handle=TPM_RS.PW,
+        hashAlg=TPM_ALG.SHA256,
+        keyBits=2048,
+        public_template=TPM2B_PUBLIC(
+            public_area=TPMT_PUBLIC(
+                type=TPM_ALG.RSA,
+                name_alg=TPM_ALG.SHA256,
+                object_attributes=[
+                    TPMA_OBJECT.FIXEDTPM,
+                    TPMA_OBJECT.FIXEDPARENT,
+                    TPMA_OBJECT.SENSITIVEDATAORIGIN,
+                    TPMA_OBJECT.USERWITHAUTH,
+                    TPMA_OBJECT.NODA,
+                    TPMA_OBJECT.SIGN_ENCRYPT,
+                ],
+                rsa_parameters=TPMS_RSA_PARMS(
+                    symmetric=TPMS_SYM_DEF_OBJECT(algorithm=TPM_ALG.NULL),
+                    scheme=TPM_ALG.NULL,
+                    key_bits=2048,
+                ),
+            )
+        ),
+    )
+
+    # Variant 0: success path — restricted decrypt key wraps the credential.
+    variant0 = [
+        restricted_decrypt_primary,
+        TPMMakeCredential(
+            handle=0x80000000,
+            credential=credential,
+            object_name=sha256_name,
+        ),
+    ]
+
+    # Variant 1: key type error — signing key lacks RESTRICTED | DECRYPT.
+    # MakeCredential rejects it with TPM_RC_KEY before touching the credential.
+    variant1 = [
+        signing_primary,
+        TPMMakeCredential(
+            handle=0x80000000,
+            credential=credential,
+            object_name=sha256_name,
+        ),
+    ]
+
+    # Variant 2: empty credential — exercises the zero-length edge case.
+    variant2 = [
+        restricted_decrypt_primary,
+        TPMMakeCredential(
+            handle=0x80000000,
+            credential=b"",
+            object_name=sha256_name,
+        ),
+    ]
+
+    return [variant0, variant1, variant2]
+
+
 def tpm_rsa_encrypt_seeds() -> SeedVariants:
     """
     Generates seeds for TPM2_RSA_Encrypt
@@ -1014,6 +1098,7 @@ if __name__ == "__main__":
         ],
         "TPMRSADecrypt": tpm_rsa_decrypt_seeds,
         "TPMRSAEncrypt": tpm_rsa_encrypt_seeds,
+        "TPMMakeCredential": tpm_make_credential_seeds,
         "TPMIncrementalSelfTest": tpm_incremental_self_test_seeds,
         "TPMGetCapability": tpm_get_capability_seeds,
         "TPMECCParameters": TPMECCParameters(TPM_ECC_CURVE.NIST_P192),

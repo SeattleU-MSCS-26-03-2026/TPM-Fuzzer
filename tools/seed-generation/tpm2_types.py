@@ -45,7 +45,8 @@ class TPM_HT(Enum):
     TPM Handle Types
     """
 
-    NV_INDEX = 0x01
+    NV_INDEX  = 0x01
+    TRANSIENT = 0x80
 
 
 class TPM_ALG(Enum):

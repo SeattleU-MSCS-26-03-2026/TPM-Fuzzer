@@ -1540,6 +1540,49 @@ class TPMRSAEncrypt(TPMCommand):
         }
 
 
+class TPMMakeCredential(TPMCommand):
+    """
+    TPM2_MakeCredential command.
+
+    Command structure (TPM_ST_NO_SESSIONS):
+      handle(4) | credential: TPM2B_DIGEST | objectName: TPM2B_NAME
+    """
+
+    def __init__(
+        self,
+        handle: int,
+        credential: bytes,
+        object_name: bytes,
+    ):
+        self._handle = handle
+        self._credential = credential
+        self._object_name = object_name
+
+        params = (
+            handle.to_bytes(4, BYTE_ORDER)
+            + len(credential).to_bytes(2, BYTE_ORDER)
+            + credential
+            + len(object_name).to_bytes(2, BYTE_ORDER)
+            + object_name
+        )
+
+        super().__init__(
+            TPM_ST.TPM_ST_NO_SESSIONS, TPM_CC.TPM_CC_MAKE_CREDENTIAL, params
+        )
+
+    def to_proto(self) -> Optional[dict]:
+        from tpm_commands import tpm_makecredential_pb2  # type: ignore
+
+        return {
+            "makecredential": tpm_makecredential_pb2.TPMMakeCredential(  # type: ignore
+                header=self._proto_header(),
+                handle=self._handle,
+                credential=self._proto_tpm2b_data(self._credential),
+                object_name=self._proto_tpm2b_data(self._object_name),
+            )
+        }
+
+
 class TPMPCREvent(TPMCommand):
     """
     TPM2_PCR_Event Command (Specification part 22.3) - Causes an update to the indicated PCR.
