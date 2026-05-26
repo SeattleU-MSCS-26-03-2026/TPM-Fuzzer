@@ -924,11 +924,34 @@ class TPMPCRRead(TPMCommand):
     """
 
     def __init__(self, pcr_selection: TPML_PCR_SELECTION):
+        from tpm_commands import tpm_pcr_read_pb2
+        from tpm_types import (
+            tpml_pcr_selection_pb2,
+        )
+
         super().__init__(
             TPM_ST.TPM_ST_NO_SESSIONS,
             TPM_CC.TPM_CC_PCR_READ,
             params=pcr_selection.to_bytes(),
         )
+
+        self.proto = tpm_pcr_read_pb2.TPMPCRRead(  # type: ignore
+            header=self._proto_header(),
+            pcrSelection=tpml_pcr_selection_pb2.TPMLPCRSelection(  # type: ignore
+                count=len(pcr_selection.selections),
+                pcr_selections=[
+                    tpml_pcr_selection_pb2.TPMSPCRSelection(  # type: ignore
+                        hash=alg_to_int(sel.hash),
+                        sizeof_select=len(sel.pcr_select),
+                        pcr_select=sel.pcr_select,
+                    )
+                    for sel in pcr_selection.selections
+                ],
+            ),
+        )
+
+    def to_proto(self):
+        return {"pcrread": self.proto}
 
 
 class TPMPCRAllocate(TPMCommand):
@@ -1500,8 +1523,8 @@ class TPMRSAEncrypt(TPMCommand):
         )
 
     def to_proto(self) -> Optional[dict]:
-        from tpm_commands import tpm_rsa_encrypt_pb2  # type: ignore
-        from tpm_types import (  # type: ignore
+        from tpm_commands import tpm_rsa_encrypt_pb2
+        from tpm_types import (
             tpm2b_public_key_rsa_pb2,
             tpmt_rsa_decrypt_pb2,
             tpm2b_data_pb2,
@@ -1591,8 +1614,8 @@ class TPMPCREvent(TPMCommand):
     def __init__(
         self, pcr_handle: int, event_data: bytes, session_handle: int = TPM_RS.PW.value
     ):
-        from tpm_commands import tpm_pcr_event_pb2  # type: ignore
-        from tpm_types import (  # type: ignore
+        from tpm_commands import tpm_pcr_event_pb2
+        from tpm_types import (
             tpm2b_event_pb2,
         )
 
@@ -1627,3 +1650,64 @@ class TPMPCREvent(TPMCommand):
 
     def to_proto(self) -> Optional[dict]:
         return {"pcrevent": self.proto}
+
+
+class TPMPCRSetAuthPolicy(TPMCommand):
+    """
+    TPM2_PCR_SetAuthPolicy Command (Specification part 22.6) - Associates a policy with a PCR or group of PCR.
+    """
+
+    def __init__(
+        self,
+        auth_handle: int,
+        auth_policy: bytes,
+        hash_alg: int | TPM_ALG,
+        pcr_num: int,
+        session_handle: int = TPM_RS.PW.value,
+    ):
+        from tpm_commands import tpm_pcr_setauthpolicy_pb2
+        from tpm_types import (
+            tpm2b_digest_pb2,
+        )
+
+        hash_alg = alg_to_int(hash_alg)
+        auth_cmd = TPMS_AUTH_COMMAND(session_handle=session_handle)
+        auth_area = TPM_AUTH_AREA(commands=[auth_cmd])
+        sessions = [
+            tpm_session_pb2.TPMSession(  # type: ignore
+                session_handle=session_handle,
+                nonce_size=0,
+                nonce=b"",
+                session_attributes=0,
+                hmac_size=0,
+                hmac=b"",
+            )
+        ]
+
+        digest = len(auth_policy).to_bytes(2, BYTE_ORDER) + auth_policy
+
+        params = (
+            auth_handle.to_bytes(4, BYTE_ORDER)
+            + auth_area.to_bytes()
+            + digest
+            + alg_to_int(hash_alg).to_bytes(2, BYTE_ORDER)
+            + pcr_num.to_bytes(4, BYTE_ORDER)
+        )
+
+        super().__init__(
+            TPM_ST.TPM_ST_SESSIONS, TPM_CC.TPM_CC_PCR_SET_AUTH_POLICY, params=params
+        )
+        self.proto = tpm_pcr_setauthpolicy_pb2.TPMPCRSetAuthPolicy(  # type: ignore
+            header=self._proto_header(),
+            auth_handle=auth_handle,
+            sessions=sessions,
+            authPolicy=tpm2b_digest_pb2.TPM2BDigest(  # type: ignore
+                size=len(auth_policy),
+                buffer=auth_policy,
+            ),
+            hashAlg=hash_alg,
+            pcrNum=pcr_num,
+        )
+
+    def to_proto(self) -> Optional[dict]:
+        return {"pcrsetauthpolicy": self.proto}

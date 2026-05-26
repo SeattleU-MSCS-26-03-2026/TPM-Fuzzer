@@ -15,22 +15,26 @@ import "tpm_commands/tpm_pcr_event.proto";
 import "tpm_commands/tpm_setprimarypolicy.proto";
 import "tpm_commands/tpm_load.proto";
 import "tpm_commands/tpm_makecredential.proto";
+import "tpm_commands/tpm_pcr_setauthpolicy.proto";
+import "tpm_commands/tpm_pcr_read.proto";
 
 message TPMCommand {
   oneof command {
-    tpm_commands.TPMGetRandom        getrandom        = 1;
-    tpm_commands.TPMCreate           create           = 2;
-    tpm_commands.TPMCreatePrimary    createprimary    = 3;
+    tpm_commands.TPMGetRandom getrandom = 1;
+    tpm_commands.TPMCreate create = 2;
+    tpm_commands.TPMCreatePrimary createprimary = 3;
     tpm_commands.TPMStartAuthSession startauthsession = 4;
-    tpm_commands.TPMRSADecrypt       rsadecrypt       = 5;
-    tpm_commands.TPMClear            clear            = 6;
-    tpm_commands.TPMRSAEncrypt       rsaencrypt       = 7;
-    tpm_commands.TPMPCREvent         pcrevent         = 8;
-    tpm_commands.TPMPCRAllocate      pcrallocate      = 9;
-    tpm_commands.TPMNvDefineSpace    nvdefinespace    = 10;
+    tpm_commands.TPMRSADecrypt rsadecrypt = 5;
+    tpm_commands.TPMClear clear = 6;
+    tpm_commands.TPMRSAEncrypt rsaencrypt = 7;
+    tpm_commands.TPMPCREvent pcrevent = 8;
+    tpm_commands.TPMPCRAllocate pcrallocate = 9;
+    tpm_commands.TPMNvDefineSpace nvdefinespace = 10;
     tpm_commands.TPMSetPrimaryPolicy setprimarypolicy = 11;
-    tpm_commands.TPMLoad             load             = 12;
-    tpm_commands.TPMMakeCredential   makecredential   = 13;
+    tpm_commands.TPMLoad load = 12;
+    tpm_commands.TPMMakeCredential makecredential = 13;
+    tpm_commands.TPMPCRSetAuthPolicy pcrsetauthpolicy = 14;
+    tpm_commands.TPMPCRRead pcrread = 15;
   }
 }
 

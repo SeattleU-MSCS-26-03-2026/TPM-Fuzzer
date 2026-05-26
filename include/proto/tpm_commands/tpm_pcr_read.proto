@@ -1,0 +1,11 @@
+syntax = "proto3";
+
+package tpm_commands;
+
+import "tpm_types/tpm_header.proto";
+import "tpm_types/tpml_pcr_selection.proto";
+
+message TPMPCRRead {
+  tpm_types.TPMHeader header = 1;
+  tpm_types.TPMLPCRSelection pcrSelection = 2;
+}

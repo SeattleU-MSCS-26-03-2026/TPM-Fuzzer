@@ -4,13 +4,14 @@
 #include "constants/tpm_st.pb.h"
 #include "harness/proto_normalization.h"
 #include "src/libfuzzer/libfuzzer_macro.h"
-#include "tpm_commands.pb.h"
 #include "tpm_commands/tpm_clear.pb.h"
 #include "tpm_commands/tpm_load.pb.h"
 #include "tpm_commands/tpm_makecredential.pb.h"
 #include "tpm_commands/tpm_nv_definespace.pb.h"
 #include "tpm_commands/tpm_pcr_allocate.pb.h"
 #include "tpm_commands/tpm_pcr_event.pb.h"
+#include "tpm_commands/tpm_pcr_read.pb.h"
+#include "tpm_commands/tpm_pcr_setauthpolicy.pb.h"
 #include "tpm_commands/tpm_rsa_decrypt.pb.h"
 #include "tpm_commands/tpm_rsa_encrypt.pb.h"
 #include "tpm_commands/tpm_setprimarypolicy.pb.h"
@@ -142,6 +143,23 @@ static protobuf_mutator::libfuzzer::PostProcessorRegistration<
           msg->mutable_header()->set_command_code(
               constants::TPM_CC_MAKE_CREDENTIAL);
         }};
+
+static protobuf_mutator::libfuzzer::PostProcessorRegistration<
+    tpm_commands::TPMPCRRead>
+    reg_pcr_read = {[](tpm_commands::TPMPCRRead* msg, unsigned int /* seed */) {
+      msg->mutable_header()->set_tag(constants::TPM_ST_NO_SESSIONS);
+      msg->mutable_header()->set_command_code(constants::TPM_CC_PCR_READ);
+    }};
+
+static protobuf_mutator::libfuzzer::PostProcessorRegistration<
+    tpm_commands::TPMPCRSetAuthPolicy>
+    reg_pcr_sap = {
+        [](tpm_commands::TPMPCRSetAuthPolicy* msg, unsigned int /* seed */) {
+          msg->mutable_header()->set_tag(constants::TPM_ST_SESSIONS);
+          msg->mutable_header()->set_command_code(
+              constants::TPM_CC_PCR_SET_AUTH_POLICY);
+        }};  // namespace
+
 }  // namespace
 
 bool RegisterPostProcessors() { return true; }

@@ -1,0 +1,41 @@
+commands {
+  startauthsession {
+    header {
+      tag: TPM_ST_NO_SESSIONS
+      command_size: 43
+      command_code: TPM_CC_START_AUTH_SESSION
+    }
+    tpm_key: TPM_RH_NULL
+    bind: TPM_RH_NULL
+    nonce {
+      size: 16
+      buffer: "\366\\\325\177\031\377\331\310\311Ad\254\204\321\371\315"
+    }
+    encrypted_salt {
+    }
+    symmetric {
+      algorithm: TPM_ALG_NULL
+      mode: TPM_ALG_NULL
+    }
+    auth_hash: TPM_ALG_SHA256
+  }
+}
+commands {
+  pcrsetauthpolicy {
+    header {
+      tag: TPM_ST_SESSIONS
+      command_size: 67
+      command_code: TPM_CC_PCR_SET_AUTH_POLICY
+    }
+    auth_handle: 1073741836
+    sessions {
+      session_handle: 33554432
+    }
+    authPolicy {
+      size: 32
+      buffer: "33333333333333333333333333333333"
+    }
+    hashAlg: TPM_ALG_SHA256
+    pcrNum: 1
+  }
+}

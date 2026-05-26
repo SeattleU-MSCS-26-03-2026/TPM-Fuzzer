@@ -481,6 +481,114 @@ def tpm_pcr_reset_seeds() -> SeedVariants:
     return variants
 
 
+def tpm_pcr_setauthpolicy_seeds() -> SeedVariants:
+    """
+    Generates seeds for the TPM2_PCR_SetAuthPolicy command.
+    """
+    variants: SeedVariants = []
+
+    test_cases = [
+        # (auth_handle, auth_policy, hash_alg, pcr_num, description)
+        (TPM_RH.PLATFORM, b"", TPM_ALG.SHA256, 0x00000000, "clear PCR 0 policy"),
+        (
+            TPM_RH.PLATFORM,
+            bytes.fromhex("00" * 32),
+            TPM_ALG.SHA256,
+            0x0000000B,
+            "SHA256 zero policy for PCR 11",
+        ),
+        (
+            TPM_RH.PLATFORM,
+            bytes.fromhex("11" * 20),
+            TPM_ALG.SHA1,
+            0x00000010,
+            "SHA1 policy for PCR 16",
+        ),
+        (
+            TPM_RH.OWNER,
+            bytes.fromhex("22" * 32),
+            TPM_ALG.SHA256,
+            0x00000000,
+            "non-platform auth handle error path",
+        ),
+    ]
+
+    for auth_handle, auth_policy, hash_alg, pcr_num, _desc in test_cases:
+        variants.append(
+            [
+                TPMPCRSetAuthPolicy(
+                    auth_handle=auth_handle.value,
+                    auth_policy=auth_policy,
+                    hash_alg=hash_alg,
+                    pcr_num=pcr_num,
+                )
+            ]
+        )
+
+    variants.append(
+        [
+            TPMStartAuthSession(
+                TPM_RH.NULL, TPM_RH.NULL, session_type=TPM_SE.TPM_SE_HMAC
+            ),
+            TPMPCRSetAuthPolicy(
+                auth_handle=TPM_RH.PLATFORM.value,
+                auth_policy=bytes.fromhex("33" * 32),
+                hash_alg=TPM_ALG.SHA256,
+                pcr_num=0x00000001,
+                session_handle=TPM_FIRST_HMAC_SESSION_HANDLE,
+            ),
+        ]
+    )
+
+    # set a PCR auth policy, then read the affected PCR bank.
+    variants.append(
+        [
+            TPMPCRSetAuthPolicy(
+                auth_handle=TPM_RH.PLATFORM.value,
+                auth_policy=bytes.fromhex("44" * 32),
+                hash_alg=TPM_ALG.SHA256,
+                pcr_num=0x00000000,
+            ),
+            TPMPCRRead(
+                TPML_PCR_SELECTION(
+                    selections=[
+                        TPMS_PCR_SELECTION(
+                            hash=TPM_ALG.SHA256,
+                            pcr_select=bytes.fromhex("010000"),
+                        )
+                    ]
+                )
+            ),
+        ]
+    )
+    variants.append(
+        [
+            TPMStartAuthSession(
+                TPM_RH.NULL, TPM_RH.NULL, session_type=TPM_SE.TPM_SE_HMAC
+            ),
+            TPMPCRSetAuthPolicy(
+                auth_handle=TPM_RH.PLATFORM.value,
+                auth_policy=bytes.fromhex("66" * 32),
+                hash_alg=TPM_ALG.SHA256,
+                pcr_num=0x00000001,
+                session_handle=TPM_FIRST_HMAC_SESSION_HANDLE,
+            ),
+            TPMPCRRead(
+                TPML_PCR_SELECTION(
+                    selections=[
+                        TPMS_PCR_SELECTION(
+                            hash=TPM_ALG.SHA256,
+                            pcr_select=bytes.fromhex("020000"),
+                        )
+                    ]
+                )
+            ),
+        ]
+    )
+
+    return variants
+
+
 def tpm_nv_extend_seeds() -> SeedVariants:
     """
     Generates seeds for TPM2_NV_Extend targeting line coverage of NV_Extend.c.
@@ -665,7 +773,7 @@ def _create_variant(
     content: bytes,
     test_script: str,
     force: Optional[bool] = False,
-    proto: Optional[bool] = True,
+    proto: Optional[bool] = False,
 ):
     def request_section(input: str) -> str:
         pattern = r"=+\n\s*REQUEST\s*\n=+\n" r"(.*?)" r"(?==+\n\s*RESPONSE\s*\n=+)"
@@ -1313,6 +1421,7 @@ if __name__ == "__main__":
         "TPMPCRRead": tpm_pcr_read_seeds,
         "TPMPCRExtend": tpm_pcr_extend_seeds,
         "TPMPCRReset": tpm_pcr_reset_seeds,
+        "TPMPCRSetAuthPolicy": tpm_pcr_setauthpolicy_seeds,
         "TPMTestParms": TPMTestParms(),
         "TPMNVDefineSpace": tpm_nv_definespace_seeds,
         "TPMNVSetBits": tpm_nv_setbits_seeds,

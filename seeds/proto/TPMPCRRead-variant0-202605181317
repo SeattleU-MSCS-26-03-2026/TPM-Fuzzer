@@ -1,0 +1,17 @@
+commands {
+  pcrread {
+    header {
+      tag: TPM_ST_NO_SESSIONS
+      command_size: 20
+      command_code: TPM_CC_PCR_READ
+    }
+    pcrSelection {
+      count: 1
+      pcr_selections {
+        hash: TPM_ALG_SHA256
+        sizeof_select: 3
+        pcr_select: "\001\000\000"
+      }
+    }
+  }
+}

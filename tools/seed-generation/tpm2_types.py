@@ -128,7 +128,7 @@ class TPMA_NV(Enum):
     READ_STCLEAR = 1 << 31
 
 
-def _alg_to_int(a: Union[int, TPM_ALG]) -> int:
+def alg_to_int(a: Union[int, TPM_ALG]) -> int:
     return a.value if isinstance(a, TPM_ALG) else int(a)
 
 
@@ -162,14 +162,14 @@ class TPMS_SYM_DEF_OBJECT:
     mode: Union[int, TPM_ALG] = TPM_ALG.CFB
 
     def to_bytes(self) -> bytes:
-        alg = _alg_to_int(self.algorithm).to_bytes(2, BYTE_ORDER)
+        alg = alg_to_int(self.algorithm).to_bytes(2, BYTE_ORDER)
 
         # ALG NULL should return without key bits and mode
-        if _alg_to_int(self.algorithm) == TPM_ALG.NULL.value:
+        if alg_to_int(self.algorithm) == TPM_ALG.NULL.value:
             return alg
 
         key_bits = self.key_bits.to_bytes(2, BYTE_ORDER)
-        mode = _alg_to_int(self.mode).to_bytes(2, BYTE_ORDER)
+        mode = alg_to_int(self.mode).to_bytes(2, BYTE_ORDER)
         return alg + key_bits + mode
 
 
@@ -191,12 +191,12 @@ class TPMS_RSA_PARMS:
 
     def to_bytes(self) -> bytes:
         sym = self.symmetric.to_bytes()
-        scheme = _alg_to_int(self.scheme).to_bytes(2, BYTE_ORDER)
+        scheme = alg_to_int(self.scheme).to_bytes(2, BYTE_ORDER)
         if (
-            _alg_to_int(self.scheme) != TPM_ALG.NULL.value
+            alg_to_int(self.scheme) != TPM_ALG.NULL.value
             and self.scheme_hash is not None
         ):
-            scheme += _alg_to_int(self.scheme_hash).to_bytes(2, BYTE_ORDER)
+            scheme += alg_to_int(self.scheme_hash).to_bytes(2, BYTE_ORDER)
         key_bits = self.key_bits.to_bytes(2, BYTE_ORDER)
         exponent = self.exponent.to_bytes(4, BYTE_ORDER)
         return sym + scheme + key_bits + exponent
@@ -217,9 +217,9 @@ class TPMS_KEYEDHASH_PARMS:
     hash_alg: Optional[Union[int, TPM_ALG]] = None  # only used when scheme==HMAC
 
     def to_bytes(self) -> bytes:
-        s = _alg_to_int(self.scheme).to_bytes(2, BYTE_ORDER)
-        if _alg_to_int(self.scheme) == TPM_ALG.HMAC.value and self.hash_alg is not None:
-            s += _alg_to_int(self.hash_alg).to_bytes(2, BYTE_ORDER)
+        s = alg_to_int(self.scheme).to_bytes(2, BYTE_ORDER)
+        if alg_to_int(self.scheme) == TPM_ALG.HMAC.value and self.hash_alg is not None:
+            s += alg_to_int(self.hash_alg).to_bytes(2, BYTE_ORDER)
         return s
 
 
@@ -258,8 +258,8 @@ class TPMT_PUBLIC:
     keyedhash_scheme: Optional["TPMS_KEYEDHASH_PARMS"] = field(default=None)
 
     def to_bytes(self) -> bytes:
-        t_type = _alg_to_int(self.type).to_bytes(2, BYTE_ORDER)
-        name_alg = _alg_to_int(self.name_alg).to_bytes(2, BYTE_ORDER)
+        t_type = alg_to_int(self.type).to_bytes(2, BYTE_ORDER)
+        name_alg = alg_to_int(self.name_alg).to_bytes(2, BYTE_ORDER)
         attrs = _attrs_to_int(self.object_attributes).to_bytes(4, BYTE_ORDER)
 
         # TPM2B_DIGEST for authPolicy: size(2) + bytes
@@ -267,7 +267,7 @@ class TPMT_PUBLIC:
         auth = auth_size + self.auth_policy
 
         # Parameters + unique depend on type.
-        if _alg_to_int(self.type) == TPM_ALG.RSA.value:
+        if alg_to_int(self.type) == TPM_ALG.RSA.value:
             if self.rsa_parameters is None:
                 raise ValueError("rsa_parameters must be set for RSA public area")
             parameters = self.rsa_parameters.to_bytes()
@@ -275,7 +275,7 @@ class TPMT_PUBLIC:
             # TPM2B_PUBLIC_KEY_RSA: size(2) + key bytes
             unique_size = len(self.unique).to_bytes(2, BYTE_ORDER)
             unique = unique_size + self.unique
-        elif _alg_to_int(self.type) == TPM_ALG.KEYEDHASH.value:
+        elif alg_to_int(self.type) == TPM_ALG.KEYEDHASH.value:
             # TPMS_KEYEDHASH_PARMS
             scheme = self.keyedhash_scheme or TPMS_KEYEDHASH_PARMS()
             parameters = scheme.to_bytes()
@@ -434,7 +434,7 @@ class TPMS_PCR_SELECTION:
     pcr_select: bytes
 
     def to_bytes(self) -> bytes:
-        alg = _alg_to_int(self.hash).to_bytes(2, BYTE_ORDER)
+        alg = alg_to_int(self.hash).to_bytes(2, BYTE_ORDER)
         sizeof_select = len(self.pcr_select).to_bytes(1, BYTE_ORDER)
         return alg + sizeof_select + self.pcr_select
 
@@ -467,10 +467,10 @@ class TPMT_SIG_SCHEME:
     hash_alg: Union[int, TPM_ALG] = TPM_ALG.SHA256
 
     def to_bytes(self) -> bytes:
-        s = _alg_to_int(self.scheme).to_bytes(2, BYTE_ORDER)
-        if _alg_to_int(self.scheme) == TPM_ALG.NULL.value:
+        s = alg_to_int(self.scheme).to_bytes(2, BYTE_ORDER)
+        if alg_to_int(self.scheme) == TPM_ALG.NULL.value:
             return s
-        h = _alg_to_int(self.hash_alg).to_bytes(2, BYTE_ORDER)
+        h = alg_to_int(self.hash_alg).to_bytes(2, BYTE_ORDER)
         return s + h
 
 
@@ -487,9 +487,9 @@ class TPMT_RSA_DECRYPT:
     hash_alg: Optional[Union[int, TPM_ALG]] = None  # only used with OAEP
 
     def to_bytes(self) -> bytes:
-        s = _alg_to_int(self.scheme).to_bytes(2, BYTE_ORDER)
-        if _alg_to_int(self.scheme) == TPM_ALG.OAEP.value and self.hash_alg is not None:
-            s += _alg_to_int(self.hash_alg).to_bytes(2, BYTE_ORDER)
+        s = alg_to_int(self.scheme).to_bytes(2, BYTE_ORDER)
+        if alg_to_int(self.scheme) == TPM_ALG.OAEP.value and self.hash_alg is not None:
+            s += alg_to_int(self.hash_alg).to_bytes(2, BYTE_ORDER)
         return s
 
 
@@ -523,7 +523,7 @@ class TPM2B_SENSITIVE:
     private_key: bytes = b""
 
     def to_bytes(self) -> bytes:
-        stype = _alg_to_int(self.sensitive_type).to_bytes(2, BYTE_ORDER)
+        stype = alg_to_int(self.sensitive_type).to_bytes(2, BYTE_ORDER)
 
         auth_size = len(self.auth_value).to_bytes(2, BYTE_ORDER)
         auth = auth_size + self.auth_value
@@ -552,7 +552,7 @@ class TPMT_HA:
     digest: bytes
 
     def to_bytes(self) -> bytes:
-        alg = _alg_to_int(self.hash_alg).to_bytes(2, BYTE_ORDER)
+        alg = alg_to_int(self.hash_alg).to_bytes(2, BYTE_ORDER)
         return alg + self.digest
 
 
@@ -581,9 +581,9 @@ class TPMT_PUBLIC_PARMS:
     )
 
     def to_bytes(self) -> bytes:
-        alg = _alg_to_int(self.alg_type).to_bytes(2, BYTE_ORDER)
+        alg = alg_to_int(self.alg_type).to_bytes(2, BYTE_ORDER)
 
-        if _alg_to_int(self.alg_type) == TPM_ALG.RSA.value:
+        if alg_to_int(self.alg_type) == TPM_ALG.RSA.value:
             if self.rsa_parameters is None:
                 raise ValueError("rsa_parameters must be set for RSA public area")
 
@@ -603,7 +603,7 @@ class TPMS_NV_PUBLIC:
 
     def to_bytes(self) -> bytes:
         index = self.nv_index.to_bytes(4, BYTE_ORDER)
-        name = _alg_to_int(self.name_alg).to_bytes(2, BYTE_ORDER)
+        name = alg_to_int(self.name_alg).to_bytes(2, BYTE_ORDER)
 
         # Convert attributes bitmask
         if isinstance(self.attributes, int):
