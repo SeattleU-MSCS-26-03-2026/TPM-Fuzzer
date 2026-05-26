@@ -1,0 +1,8 @@
+syntax = "proto3";
+
+package tpm_types;
+
+message TPM2BPrivate {
+  uint32 size   = 1; //uint16
+  bytes  buffer = 2;
+}

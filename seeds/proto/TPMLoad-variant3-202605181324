@@ -1,0 +1,84 @@
+commands {
+  createprimary {
+    header {
+      tag: TPM_ST_SESSIONS
+      command_size: 67
+      command_code: TPM_CC_CREATE_PRIMARY
+    }
+    hierarchy: TPM_RH_OWNER
+    sessions {
+      session_handle: 1073741833
+    }
+    in_sensitive {
+      size: 4
+      sensitive {
+        user_auth {
+        }
+        data {
+        }
+      }
+    }
+    in_public {
+      size: 26
+      public_area {
+        type: TPM_ALG_RSA
+        name_alg: TPM_ALG_SHA256
+        object_attributes: 197746
+        auth_policy {
+        }
+        parameters {
+          rsa {
+            symmetric: TPM_ALG_AES
+            scheme: TPM_ALG_NULL
+            key_bits: 2048
+          }
+        }
+        unique {
+          rsa: ""
+        }
+      }
+    }
+    outside_info {
+    }
+    creation_pcr {
+    }
+  }
+}
+commands {
+  load {
+    header {
+      tag: TPM_ST_SESSIONS
+      command_size: 215
+      command_code: TPM_CC_LOAD
+    }
+    parent_handle: 2147483648
+    sessions {
+      session_handle: 1073741833
+    }
+    in_private {
+      size: 138
+      buffer: "\000 3YNo>\241\231\335\"\261M\340\271+?\236\006w9\324\346,\004\252\371\207\206\224b\206\374\277\000\020b\372`\331\371\243e\232\361\002\'\272J\226\243\347\367\350\356\322\rf&\361\347\301\277r_\362\270\346\276v\000_\252\353\204\277\305\261j3G\337\2648\375q\003\242G\340\350\201~h\023\227y\210\247y\330\020\267\316\310\217xz-\346L\266P\212\261\177\262t\000\206\026!\307`\217\030\300_\372B\2262\021M\261]\243b"
+    }
+    in_public {
+      size: 46
+      public_area {
+        type: TPM_ALG_KEYEDHASH
+        name_alg: TPM_ALG_SHA256
+        object_attributes: 1106
+        auth_policy {
+        }
+        parameters {
+          keyedhash {
+            scheme: TPM_ALG_NULL
+          }
+        }
+        unique {
+          keyedhash {
+            size: 32
+            buffer: "\020\016\021\372\300\345~R\204\001\270\027\252e\277\204n\267\255o\356\014|uj\211\315\314\265/l\t"
+          }
+        }
+      }
+    }
+  }
+}

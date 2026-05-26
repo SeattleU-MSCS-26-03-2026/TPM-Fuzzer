@@ -6,7 +6,9 @@
 #include "src/libfuzzer/libfuzzer_macro.h"
 #include "tpm_commands.pb.h"
 #include "tpm_commands/tpm_clear.pb.h"
+#include "tpm_commands/tpm_load.pb.h"
 #include "tpm_commands/tpm_nv_definespace.pb.h"
+#include "tpm_commands/tpm_pcr_allocate.pb.h"
 #include "tpm_commands/tpm_pcr_event.pb.h"
 #include "tpm_commands/tpm_rsa_decrypt.pb.h"
 #include "tpm_commands/tpm_rsa_encrypt.pb.h"
@@ -40,6 +42,19 @@ static protobuf_mutator::libfuzzer::PostProcessorRegistration<
     reg_clear = {[](tpm_commands::TPMClear* msg, unsigned int /* seed */) {
       NormalizeClear(msg);
     }};
+
+static protobuf_mutator::libfuzzer::PostProcessorRegistration<
+    tpm_commands::TPMLoad>
+    reg_load = {[](tpm_commands::TPMLoad* msg, unsigned int /* seed */) {
+      NormalizeLoad(msg);
+    }};
+
+static protobuf_mutator::libfuzzer::PostProcessorRegistration<
+    tpm_commands::TPMLoad>
+    reg_load_in_public = {
+        [](tpm_commands::TPMLoad* msg, unsigned int /* seed */) {
+          NormalizeInPublic(msg);
+        }};
 
 static protobuf_mutator::libfuzzer::PostProcessorRegistration<
     tpm_commands::TPMPCRAllocate>

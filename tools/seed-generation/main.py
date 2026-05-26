@@ -84,6 +84,94 @@ _UNSEAL_HMAC_IN_PUBLIC = bytes.fromhex(
 )
 
 
+def tpm_load_seeds() -> SeedVariants:
+    """
+    Generates seeds for TPM2_Load.
+
+    The valid variants use deterministic private/public blobs captured from
+    TPM2_Create under the deterministic simulator. This allows Load to exercise
+    the deeper path instead of only failing on empty or malformed inPrivate.
+
+    Command sequences:
+      Variant 0:
+        CreatePrimary -> Create(KEYEDHASH sealed object) -> Load
+      Variant 1:
+        CreatePrimary -> Create(HMAC KEYEDHASH object) -> Load
+      Variant 2:
+        CreatePrimary -> Load(empty inPrivate)  -> TPM_RCS_SIZE
+      Variant 3:
+        CreatePrimary -> Load(corrupted inPrivate) -> integrity/private error
+    """
+    primary = TPMCreatePrimary(TPM_RS.PW, TPM_ALG.SHA256, 2048)
+
+    variant0 = [
+        primary,
+        TPMCreate(
+            0x80000000,
+            TPM_RS.PW,
+            TPM_ALG.SHA256,
+            key_type=TPM_ALG.KEYEDHASH,
+            keyBits=2048,
+            object_attributes=[
+                TPMA_OBJECT.FIXEDTPM,
+                TPMA_OBJECT.FIXEDPARENT,
+                TPMA_OBJECT.USERWITHAUTH,
+                TPMA_OBJECT.NODA,
+            ],
+            keyedhash_scheme=TPMS_KEYEDHASH_PARMS(scheme=TPM_ALG.NULL),
+            sensitive_data=b"hello secret",
+        ),
+        TPMLoad(0x80000000, _UNSEAL_SEAL_IN_PRIVATE, _UNSEAL_SEAL_IN_PUBLIC),
+    ]
+
+    variant1 = [
+        primary,
+        TPMCreate(
+            0x80000000,
+            TPM_RS.PW,
+            TPM_ALG.SHA256,
+            key_type=TPM_ALG.KEYEDHASH,
+            keyBits=2048,
+            object_attributes=[
+                TPMA_OBJECT.FIXEDTPM,
+                TPMA_OBJECT.FIXEDPARENT,
+                TPMA_OBJECT.SENSITIVEDATAORIGIN,
+                TPMA_OBJECT.USERWITHAUTH,
+                TPMA_OBJECT.NODA,
+                TPMA_OBJECT.SIGN_ENCRYPT,
+                TPMA_OBJECT.RESTRICTED,
+            ],
+            keyedhash_scheme=TPMS_KEYEDHASH_PARMS(
+                scheme=TPM_ALG.HMAC, hash_alg=TPM_ALG.SHA256
+            ),
+        ),
+        TPMLoad(0x80000000, _UNSEAL_HMAC_IN_PRIVATE, _UNSEAL_HMAC_IN_PUBLIC),
+    ]
+
+    variant2 = [
+        primary,
+        TPMLoad(
+            0x80000000,
+            TPM2B_PRIVATE().to_bytes(),
+            _UNSEAL_SEAL_IN_PUBLIC,
+        ),
+    ]
+
+    corrupted_private = bytearray(_UNSEAL_SEAL_IN_PRIVATE)
+    corrupted_private[-1] ^= 0xFF
+
+    variant3 = [
+        primary,
+        TPMLoad(
+            0x80000000,
+            bytes(corrupted_private),
+            _UNSEAL_SEAL_IN_PUBLIC,
+        ),
+    ]
+
+    return [variant0, variant1, variant2, variant3]
+
+
 def tpm_unseal_seeds() -> SeedVariants:
     """
     Generates seeds for TPM2_Unseal targeting 100% line coverage of Unseal.c.
@@ -876,6 +964,7 @@ if __name__ == "__main__":
         "TPMReadClock": TPMReadClock(),
         "TPMVendorTCGTest": TPMVendorTCGTest(b""),
         "TPMUnseal": tpm_unseal_seeds,
+        "TPMLoad": tpm_load_seeds,
         "TPMCreate": [
             [
                 TPMCreatePrimary(TPM_RS.PW, TPM_ALG.SHA256, 2048),

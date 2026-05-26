@@ -13,6 +13,7 @@ import "tpm_commands/tpm_nv_definespace.proto";
 import "tpm_commands/tpm_rsa_encrypt.proto";
 import "tpm_commands/tpm_pcr_event.proto";
 import "tpm_commands/tpm_setprimarypolicy.proto";
+import "tpm_commands/tpm_load.proto";
 
 message TPMCommand {
   oneof command {
@@ -27,6 +28,7 @@ message TPMCommand {
     tpm_commands.TPMPCRAllocate      pcrallocate      = 9;
     tpm_commands.TPMNvDefineSpace    nvdefinespace    = 10;
     tpm_commands.TPMSetPrimaryPolicy setprimarypolicy = 11;
+    tpm_commands.TPMLoad             load             = 12;
   }
 }
 

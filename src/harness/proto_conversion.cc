@@ -8,6 +8,7 @@
 
 #include "tpm_types/tpm2b_digest.pb.h"
 #include "tpm_types/tpm2b_event.pb.h"
+#include "tpm_types/tpm2b_private.pb.h"
 #include "tpm_types/tpm_nv_public.pb.h"
 #include "tss2_common.h"
 
@@ -160,6 +161,12 @@ bool MarshalMessageField(const google::protobuf::Message& child,
     return MarshalTPM2BDigest(*digest, buf, offset);
   }
 
+  if (name == "tpm_types.TPM2BPrivate") {
+    const auto* data = dynamic_cast<const tpm_types::TPM2BPrivate*>(&child);
+    if (!data) return false;
+    return MarshalTPM2BPrivate(*data, buf, offset);
+  }
+
   if (name == "tpm_types.TPMTSymDef") {
     const auto* sym = dynamic_cast<const tpm_types::TPMTSymDef*>(&child);
     if (!sym) return false;
@@ -289,6 +296,15 @@ bool MarshalTPM2BDigest(const tpm_types::TPM2BDigest& digest,
   }
 
   return true;
+}
+
+bool MarshalTPM2BPrivate(const tpm_types::TPM2BPrivate& data,
+                         std::vector<uint8_t>* buf, size_t& offset) {
+  TPM2B_PRIVATE tpm_private = {};
+  FillTpm2b(data.buffer(), &tpm_private);
+
+  return !MUCommandFailed(Tss2_MU_TPM2B_PRIVATE_Marshal(
+      &tpm_private, buf->data(), buf->size(), &offset));
 }
 
 bool MarshalTPMTSymDef(const tpm_types::TPMTSymDef& sym,

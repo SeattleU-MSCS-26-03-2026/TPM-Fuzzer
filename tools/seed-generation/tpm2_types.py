@@ -306,6 +306,21 @@ class TPM2B_PUBLIC:
 
 
 @dataclass
+class TPM2B_PRIVATE:
+    """
+    TPM2B_PRIVATE
+
+    size(2) | buffer
+    """
+
+    buffer: bytes = b""
+
+    def to_bytes(self) -> bytes:
+        size = len(self.buffer).to_bytes(2, BYTE_ORDER)
+        return size + self.buffer
+
+
+@dataclass
 class TPMS_AUTH_COMMAND:
     """
     TPMS_AUTH_COMMAND

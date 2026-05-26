@@ -1392,13 +1392,27 @@ class TPMLoad(TPMCommand):
         in_public: bytes,
         session_handle: Union[int, TPM_RS] = TPM_RS.PW,
     ):
+        from tpm_types import tpm2b_private_pb2  # type: ignore
+
         session_handle_val = (
             session_handle.value
             if isinstance(session_handle, TPM_RS)
             else session_handle
         )
+
         auth = TPMS_AUTH_COMMAND(session_handle=session_handle_val)
         auth_area = TPM_AUTH_AREA(commands=[auth])
+
+        sessions = [
+            tpm_session_pb2.TPMSession(  # type: ignore
+                session_handle=session_handle_val,
+                nonce_size=0,
+                nonce=b"",
+                session_attributes=0,
+                hmac_size=0,
+                hmac=b"",
+            )
+        ]
 
         params = (
             parent_handle.to_bytes(4, BYTE_ORDER)
@@ -1408,6 +1422,20 @@ class TPMLoad(TPMCommand):
         )
 
         super().__init__(TPM_ST.TPM_ST_SESSIONS, TPM_CC.TPM_CC_LOAD, params=params)
+
+        self.proto = tpm_commands_pb2.tpm__commands_dot_tpm__load__pb2.TPMLoad(  # type: ignore
+            header=self._proto_header(),
+            parent_handle=parent_handle,
+            sessions=sessions,
+            in_private=tpm2b_private_pb2.TPM2BPrivate(  # type: ignore
+                size=len(in_private[2:]),
+                buffer=in_private[2:],
+            ),
+            in_public=self._proto_public(in_public),
+        )
+
+    def to_proto(self) -> Optional[dict]:
+        return {"load": self.proto}
 
 
 class TPMUnseal(TPMCommand):

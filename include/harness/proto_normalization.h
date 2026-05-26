@@ -11,6 +11,7 @@
 #include "tpm_commands/tpm_clear.pb.h"
 #include "tpm_commands/tpm_create.pb.h"
 #include "tpm_commands/tpm_createprimary.pb.h"
+#include "tpm_commands/tpm_load.pb.h"
 #include "tpm_commands/tpm_nv_definespace.pb.h"
 #include "tpm_commands/tpm_rsa_decrypt.pb.h"
 #include "tpm_commands/tpm_setprimarypolicy.pb.h"
@@ -33,5 +34,11 @@ void NormalizeSetPrimaryPolicy(tpm_commands::TPMSetPrimaryPolicy* msg);
 void NormalizeCreate(tpm_commands::TPMCreate* msg);
 
 void NormalizeRSADecrypt(tpm_commands::TPMRSADecrypt* msg);
+
+void NormalizeCommandSequence(tpm::TPMCommandSequence* seq);
+
+void NormalizeLoad(tpm_commands::TPMLoad* msg);
+
+void NormalizeInPublic(tpm_commands::TPMLoad* msg);
 
 #endif  // HARNESS_PROTO_NORMALIZATION_H_

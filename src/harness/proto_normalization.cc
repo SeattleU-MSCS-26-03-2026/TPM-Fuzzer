@@ -7,6 +7,7 @@
 #include "constants/tpm_rh.pb.h"
 #include "constants/tpm_st.pb.h"
 #include "tpm_commands/tpm_clear.pb.h"
+#include "tpm_commands/tpm_load.pb.h"
 #include "tpm_commands/tpm_setprimarypolicy.pb.h"
 #include "tpm_commands/tpm_startauthsession.pb.h"
 
@@ -78,6 +79,27 @@ void NormalizeRsaOrKeyedHashPublic(tpm_types::TPMTPublic* public_area,
     public_area->set_name_alg(constants::TPM_ALG_SHA256);
   if (public_area->object_attributes() == 0)
     public_area->set_object_attributes(object_attributes);
+}
+
+void NormalizeInPublic(tpm_commands::TPMLoad* msg) {
+  if (msg->has_in_public()) {
+    NormalizeRsaOrKeyedHashPublic(
+        msg->mutable_in_public()->mutable_public_area(),
+        kChildObjectAttributes);
+  }
+}
+
+void NormalizeLoad(tpm_commands::TPMLoad* msg) {
+  msg->mutable_header()->set_tag(constants::TPM_ST_SESSIONS);
+  msg->mutable_header()->set_command_code(constants::TPM_CC_LOAD);
+
+  if (msg->parent_handle() == 0) {
+    msg->set_parent_handle(kFirstTransientObjectHandle);
+  }
+
+  if (msg->sessions().empty()) {
+    SetPasswordSession(msg->add_sessions());
+  }
 }
 
 void NormalizeCreatePrimary(tpm_commands::TPMCreatePrimary* msg) {

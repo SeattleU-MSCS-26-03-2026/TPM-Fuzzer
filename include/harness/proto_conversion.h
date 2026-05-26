@@ -1,10 +1,12 @@
 #include "tpm_commands.pb.h"
 #include "tpm_commands/tpm_createprimary.pb.h"
 #include "tpm_commands/tpm_getrandom.pb.h"
+#include "tpm_commands/tpm_load.pb.h"
 #include "tpm_commands/tpm_rsa_decrypt.pb.h"
 #include "tpm_commands/tpm_startauthsession.pb.h"
 #include "tpm_types/tpm2b_data.pb.h"
 #include "tpm_types/tpm2b_digest.pb.h"
+#include "tpm_types/tpm2b_private.pb.h"
 #include "tpm_types/tpm2b_public.pb.h"
 #include "tpm_types/tpm2b_public_key_rsa.pb.h"
 #include "tpm_types/tpm2b_sensitive_create.pb.h"
@@ -84,6 +86,9 @@ bool MarshalTPM2BData(const tpm_types::TPM2BData& data,
 
 bool MarshalTPM2BDigest(const tpm_types::TPM2BDigest& digest,
                         std::vector<uint8_t>* buf, size_t& offset);
+
+bool MarshalTPM2BPrivate(const tpm_types::TPM2BPrivate& data,
+                         std::vector<uint8_t>* buf, size_t& offset);
 
 bool MarshalTPMTSymDef(const tpm_types::TPMTSymDef& sym,
                        std::vector<uint8_t>* buf, size_t& offset);
