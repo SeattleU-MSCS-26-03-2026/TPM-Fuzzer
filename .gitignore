@@ -48,6 +48,7 @@
 !tools/
 !tools/seed-generation/
 !tools/seed-generation/**/*
+!LICENSE
 
 # Always disallow
 .DS_Store
