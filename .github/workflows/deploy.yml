@@ -1,12 +1,15 @@
 name: Cloud Run Job
 
 on:
-  schedule:
-    - cron: '0 6 * * 2'
+  # Disabled in this public copy of the repository.
+  # The original private repo contains the active GCP deployment setup.
+  # This version is maintained for visibility use only.
+  # schedule:
+  #   - cron: '0 6 * * 2'
   workflow_dispatch:
-  push:
-    branches:
-      - gcloud-cloud-run-cron
+  # push:
+  #   branches:
+  #     - gcloud-cloud-run-cron
 
 permissions:
   contents: read
