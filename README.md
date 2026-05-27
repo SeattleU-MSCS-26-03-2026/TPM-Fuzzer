@@ -1,5 +1,5 @@
 # TPM 2.0 Fuzzer
-[![CI](https://github.com/seattleu-projectcenter/SUSE-26-03-Google/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/seattleu-projectcenter/SUSE-26-03-Google/actions/workflows/ci.yml)
+[![CI](https://github.com/SeattleU-MSCS-26-03-2026/TPM-Fuzzer/actions/workflows/ci.yml/badge.svg)](https://github.com/SeattleU-MSCS-26-03-2026/TPM-Fuzzer/actions/workflows/ci.yml)
 
 ## Overview
 
