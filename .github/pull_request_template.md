@@ -1,5 +1,3 @@
-[TPMF-XX](https://suse-26-3.atlassian.net/browse/TPMF-XX)
-
 ## Summary
 <!-- What does this PR do? Why is it needed? -->
 <!-- Keep this short and high-level -->
