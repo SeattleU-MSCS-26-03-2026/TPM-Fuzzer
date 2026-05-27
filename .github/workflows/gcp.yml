@@ -1,10 +1,12 @@
 name: GCP
 
 on:
-  push:
-    branches:
-      - main
-      - joerichey-ci-dev
+  # Disabled in this public copy of the repository.
+  # The original private repo contains the active GCP deployment setup.
+  # This version is maintained for visibility use only.
+  # push:
+  #   branches:
+  #     - main
   workflow_dispatch:
 
 permissions:
