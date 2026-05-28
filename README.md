@@ -10,7 +10,7 @@ coverage-guided fuzzing engine.
 The framework supports both:
 
 - **Byte-level fuzzing**: traditional mutation of raw byte inputs to explore low-level parsing and error handling paths
-- **Structure-aware fuzzing**: generation and mutation of well-formed TPM command structures using protobuf to exercise deeper semantic logic and command-level behavior
+- **Structure-aware fuzzing**: generation and mutation of well-formed TPM command sequences using protobuf to exercise deeper semantic logic and command-level behavior
 
 The core harness library has the following dependencies:
 
