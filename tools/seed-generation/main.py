@@ -675,7 +675,7 @@ def tpm_nv_definespace_seeds() -> SeedVariants:
     variant0 = [TPMNVDefineSpace()]
 
     variant1 = [
-        TPMStartAuthSession(TPM_RH.NULL, TPM_RH.NULL, session_type=TPM_SE.HMAC),
+        TPMStartAuthSession(TPM_RH.NULL, TPM_RH.NULL, session_type=TPM_SE.TPM_SE_HMAC),
         TPMNVDefineSpace(
             nv_index=nv_index,
             attributes=[TPMA_NV.OWNERWRITE, TPMA_NV.OWNERREAD, TPMA_NV.NO_DA],
