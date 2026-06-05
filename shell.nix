@@ -2,9 +2,8 @@
   pkgs ? import <nixpkgs> { },
 }:
 
-pkgs.clangStdenv.mkDerivation {
-  name = "tpm-fuzzer-shell";
-
+pkgs.mkShell {
+  # Build tools and libraries
   nativeBuildInputs = with pkgs; [
     llvmPackages_20.clang
     llvmPackages_20.clang-tools
@@ -12,41 +11,48 @@ pkgs.clangStdenv.mkDerivation {
     llvmPackages_20.libclang
     llvmPackages_20.libcxxClang
     llvmPackages_20.bintools
-
-    abseil-cpp
     autoconf
     automake
     binutils
-    black
     cmake
-    libtool
-    libtpms
     ninja
-    openssl_3
     pkg-config
-    protobuf
-    python3
-    ty
+  ];
+
+  # header, .pc files to propagate
+  buildInputs = with pkgs; [
+    abseil-cpp
+    openssl_3
     tpm2-tss
-    uv
+    libtpms
     xz
     zlib
   ];
 
+  # Developer tools
+  packages = with pkgs; [
+    black
+    libtool
+    protobuf
+    python3
+    ty
+    uv
+  ];
+
   shellHook = ''
-    export PS1="\n\[\033[1;32m\][\u@tpm-fuzzer:\w]\$\[\033[0m\] "
-    export PROJECT_DIR="$PWD"
-    export BUILD_DIR="$PWD/build"
-    export FUZZER_BIN="$PWD/build/proto-fuzzer"
-
-    export GEN_COVERAGE="1"
-    export RUN_CORPUS_DIR="/tmp/corpus"
-    export CORPUS_DIR="$PWD/proto-corpus"
-    export SEEDS_DIR="$PWD/proto-seeds"
-    export COVERAGE_DIR="$PWD/proto-coverage"
-    export FUZZER_EXTRA_ARGS="-seed=38912891 -runs=10000"
-
     export CC=clang
     export CXX=clang++
+    export PROJECT_DIR="$PWD"
+
+    alias build="rm -rf build/ && cmake -B build -G Ninja && cmake --build build"
+    alias run-proto="./scripts/run-fuzzer.sh"
+    alias test="./scripts/test-seed.sh"
+    alias sync="cd tools/seed-generation && uv run main.py --output-dir=$PROJECT_DIR/seeds --test-script=$PROJECT_DIR/scripts/test-seed.sh -recreate && cd -"
+
+    if [ -f $PROJECT_DIR/config/determinism.patch ]; then
+      cd vendor/TPM && \
+      patch -t -p1 -i $PROJECT_DIR/config/determinism.patch && \
+      cd -
+    fi
   '';
 }
