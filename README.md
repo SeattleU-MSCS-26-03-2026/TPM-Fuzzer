@@ -58,13 +58,13 @@ Docker is the recommended way to get started. The repository uses [Docker Compos
 To run a fuzz target:
 
 ```sh
-docker compose up <fuzzer|proto-fuzzer>
+docker compose run <fuzzer|proto-fuzzer>
 ```
 
 For example:
 
 ```sh
-docker compose up fuzzer
+docker compose run fuzzer
 ```
 
 ## Using Nix
