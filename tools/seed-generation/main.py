@@ -408,20 +408,28 @@ def tpm_pcr_allocate_seeds() -> SeedVariants:
         # Valid single-bank allocation. PCR 0 (HCRTM) and 17 (DRTM) must remain set.
         TPML_PCR_SELECTION(
             selections=[
-                TPMS_PCR_SELECTION(hash=TPM_ALG.SHA256, pcr_select=bytes.fromhex("010002"))
+                TPMS_PCR_SELECTION(
+                    hash=TPM_ALG.SHA256, pcr_select=bytes.fromhex("010002")
+                )
             ]
         ),
         # Duplicate SHA256 entries exercise "last one wins" replacement logic.
         TPML_PCR_SELECTION(
             selections=[
-                TPMS_PCR_SELECTION(hash=TPM_ALG.SHA256, pcr_select=bytes.fromhex("010000")),
-                TPMS_PCR_SELECTION(hash=TPM_ALG.SHA256, pcr_select=bytes.fromhex("010002")),
+                TPMS_PCR_SELECTION(
+                    hash=TPM_ALG.SHA256, pcr_select=bytes.fromhex("010000")
+                ),
+                TPMS_PCR_SELECTION(
+                    hash=TPM_ALG.SHA256, pcr_select=bytes.fromhex("010002")
+                ),
             ]
         ),
         # Invalid allocation: preserves PCR 0 but clears PCR 17, triggering TPM_RC_PCR.
         TPML_PCR_SELECTION(
             selections=[
-                TPMS_PCR_SELECTION(hash=TPM_ALG.SHA256, pcr_select=bytes.fromhex("010000"))
+                TPMS_PCR_SELECTION(
+                    hash=TPM_ALG.SHA256, pcr_select=bytes.fromhex("010000")
+                )
             ]
         ),
     ]
@@ -675,7 +683,7 @@ def tpm_nv_definespace_seeds() -> SeedVariants:
     variant0 = [TPMNVDefineSpace()]
 
     variant1 = [
-        TPMStartAuthSession(TPM_RH.NULL, TPM_RH.NULL, session_type=TPM_SE.HMAC),
+        TPMStartAuthSession(TPM_RH.NULL, TPM_RH.NULL, session_type=TPM_SE.TPM_SE_HMAC),
         TPMNVDefineSpace(
             nv_index=nv_index,
             attributes=[TPMA_NV.OWNERWRITE, TPMA_NV.OWNERREAD, TPMA_NV.NO_DA],
@@ -917,7 +925,7 @@ def tpm_make_credential_seeds() -> SeedVariants:
     """
     Generates seeds for TPM2_MakeCredential targeting line coverage of
     MakeCredential.c.
-    
+
     Command structure (TPM_ST_NO_SESSIONS):
       handle(4) | credential: TPM2B_DIGEST | objectName: TPM2B_NAME
 
@@ -927,7 +935,7 @@ def tpm_make_credential_seeds() -> SeedVariants:
       3. Success path (credential wrapped) → TPM_RC_SUCCESS (variant 0)
     """
     # Standard 16-byte credential — well within SHA-256 digest size limit.
-    credential = b"\xAB" * 16
+    credential = b"\xab" * 16
 
     # A syntactically valid SHA-256 name (nameAlg=0x000B + 32-byte digest).
     sha256_name = (0x000B).to_bytes(2, BYTE_ORDER) + b"\x00" * 32

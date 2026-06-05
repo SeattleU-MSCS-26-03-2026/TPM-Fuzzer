@@ -28,59 +28,75 @@ If you're new to fuzz testing, the following resources provide a helpful introdu
 
 ## Setup
 
-This repository uses Git submodules for external dependencies, including the TCG TPM reference implementation and libprotobuf-mutator.
+> **Note:** This repository uses Git submodules for the Trusted Computing Group TPM reference implementation and `libprotobuf-mutator`.
 
-After cloning the repository, initialize and update the submodules:
+Clone the repository with submodules enabled:
+
+```sh
+git clone --recurse-submodules <repository-url>
+```
+
+If you have already cloned the repository, initialize and update the submodules:
 
 ```sh
 git submodule update --init --recursive
 ```
 
-If you already cloned the repository without submodules, run the same command from the repository root before building Docker images, applying patches, or running the fuzzers.
+### Requirements
 
-For more details, see the [Developer Guide](./docs/DEVELOPER.md).
+This framework provides two supported ways to build, run, and interact with the fuzz targets:
 
-## Usage
+- [Docker](https://docs.docker.com/get-started/) — recommended for most users
+- [Nix](https://nix.dev/tutorials/first-steps/) — recommended for users who want more control over the development environment
 
-The provided TPM fuzz targets can be run using:
+All framework dependencies are provided through Docker or Nix, so you do not need to install the build and fuzzing toolchain manually.
+
+### Using Docker
+
+Docker is the recommended way to get started. The repository uses [Docker Compose](https://docs.docker.com/compose/) to run the fuzz targets and supporting workflows.
+
+To run a fuzz target:
 
 ```sh
-./scripts/run-fuzzer.sh -bin <fuzzer-type i.e. proto-fuzzer, fuzzer>
+docker compose run <fuzzer|proto-fuzzer>
 ```
 
-Common runner overrides:
+For example:
 
 ```sh
-./scripts/run-fuzzer.sh -bin fuzzer -maxRuns 1000
-./scripts/run-fuzzer.sh -bin proto-fuzzer -maxTime 60
-```
-
-You can also directly build and run the specific Docker containers:
-
-By default, the Docker Compose services use a fixed libFuzzer seed and a
-default run limit. The byte-level fuzzer defaults to `100000` runs, while the
-structure-aware fuzzer default is set in `docker-compose.yml`. These limits can
-be overridden through the wrapper script with `-maxRuns` / `-maxTime`, or
-directly with Docker Compose environment overrides.
-
-```sh
-docker compose build proto-fuzzer
-docker compose build fuzzer
-
-docker compose run proto-fuzzer
-ls -l
-drwxr-xr-x 2 user users    4096 Apr  2 22:52 proto-artifacts
-drwxr-xr-x 2 user users   4096 Apr 13 18:10 proto-corpus
-drwxr-xr-x 3 user users   4096 Apr 13 18:10 proto-coverage
-drwxr-xr-x 2 user users   4096 Mar 29 21:00 proto-seeds
-
 docker compose run fuzzer
-ls -l
-drwxr-xr-x 2 user users   4096 Apr 13 17:55 artifacts
-drwxr-xr-x 2 user users   4096 Apr 13 18:10 corpus
-drwxr-xr-x 3 user users   4096 Apr  2 22:54 coverage
-drwxr-xr-x 2 user users   4096 Apr 13 21:27 seeds
 ```
+
+### Using Nix
+
+Nix provides a reproducible development environment that matches the tooling used in the Docker containers. Use this option if you want direct access to the underlying CMake, C++, Python, and fuzzing tools.
+
+After installing Nix, enter the development environment with:
+
+```sh
+nix develop
+```
+
+Ensure that [Nix flakes](https://nixos.wiki/wiki/Flakes#Enable_flakes_temporarily) are enabled before running this command.
+
+The development shell provides the following useful aliases:
+
+```sh
+build          Rebuild the project, including Protobuf and binaries
+run            Run the fuzz targets
+test           Test a seed against the fuzzer
+sync           Ensure generated seeds are up to date
+track-coverage Track coverage
+```
+
+### Scripting
+
+The repository includes scripts for common workflows, such as running fuzz targets, generating seed inputs, testing individual seeds, and tracking coverage.
+
+These scripts are located in the `scripts` directory. Each script includes usage information to help you get started.
+
+> For more details, see the [Developer Guide](./docs/DEVELOPER.md).
+
 
 ## Documentation
 - [Our Architecture](./docs/ARCHITECTURE.md)

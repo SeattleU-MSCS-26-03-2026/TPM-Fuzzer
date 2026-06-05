@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+set -Eeuo pipefail
 # This script starts the fuzzer in a Docker environment.
 # It can also be run locally but requires llvm-cov and llvm-profdata.
 # Configurations can be overridden through environment variables.
@@ -8,39 +9,74 @@
 # Advanced controls:
 #   FUZZER_EXTRA_ARGS is appended after the structured flags for additional
 #   libFuzzer options when running the service directly via Docker Compose.
-set -Eeuo pipefail
 
-# Defaults are chosen to work well in a container where /srv is the project root.
+# --------------------------------------------------------------------
+# Environment flags
+# --------------------------------------------------------------------
+# Chosen to work well in a container where /srv is the project root.
 PROJECT_DIR="${PROJECT_DIR:-/srv}"
-BUILD_DIR="${BUILD_DIR:-$PROJECT_DIR/build}"
-FUZZER_BIN_NAME="${FUZZER_BIN_NAME:-proto-fuzzer}"
-FUZZER_BIN="${FUZZER_BIN:-$BUILD_DIR/$FUZZER_BIN_NAME}"
-
+FUZZER="${FUZZER_BIN_NAME:-proto-fuzzer}"
 CORPUS_DIR="${CORPUS_DIR:-$PROJECT_DIR/corpus}"
 RUN_CORPUS_DIR="${RUN_CORPUS_DIR:-$PROJECT_DIR/corpus-running}"
-SEEDS_DIR="${SEEDS_DIR:-$PROJECT_DIR/seeds/bytearray}"
+SEEDS_TYPE="${SEEDS_TYPE:-bytearray}"
+SEEDS_DIR="${SEEDS_DIR:-$PROJECT_DIR/seeds/$SEEDS_TYPE}"
 ARTIFACTS_DIR="${ARTIFACTS_DIR:-$PROJECT_DIR/artifacts}"
-
 GEN_COVERAGE="${GEN_COVERAGE:-0}"
 FUZZER_EXTRA_ARGS="${FUZZER_EXTRA_ARGS:-}"
 FUZZER_MAX_RUNS="${FUZZER_MAX_RUNS:-}"
 FUZZER_MAX_TIME="${FUZZER_MAX_TIME:-}"
 
+# --------------------------------------------------------------------
+# Variables
+# --------------------------------------------------------------------
+BUILD_DIR="$PROJECT_DIR/build"
+FUZZER_BIN="${FUZZER_BIN:-$BUILD_DIR/$FUZZER}"
+TPM_SOURCE_DIR="$PROJECT_DIR/vendor/TPM"
+FUZZER_SOURCE_DIR="$PROJECT_DIR/src"
 COVERAGE_DIR="${COVERAGE_DIR:-$BUILD_DIR/coverage}"
 SRC_COVERAGE_DIR="${SRC_COVERAGE_DIR:-$BUILD_DIR/src-coverage}"
-LLVM_PROFRAW="${LLVM_PROFRAW:-$COVERAGE_DIR/fuzzer.profraw}"
-LLVM_PROFDATA="${LLVM_PROFDATA:-$COVERAGE_DIR/fuzzer.profdata}"
+LLVM_PROFRAW="$COVERAGE_DIR/fuzzer.profraw"
+LLVM_PROFDATA="$COVERAGE_DIR/fuzzer.profdata"
 
-TPM_SOURCE_DIR="${TPM_SOURCE_DIR:-$PROJECT_DIR/vendor/TPM}"
-FUZZER_SOURCE_DIR="${FUZZER_SOURCE_DIR:-$PROJECT_DIR/src}"
+# --------------------------------------------------------------------
+# Miscellaneous
+# --------------------------------------------------------------------
+BLUE="\033[34m"
+RESET="\033[0m"
+RED="\033[0;31m"
+YELLOW="\033[1;33m"
+BLUE="\033[0;34m"
+CYAN="\033[0;36m"
 
 log() {
-    printf '[INFO] %s\n' "$*"
+    local prefix
+    local tag="$1"
+    local msg="$2"
+
+    case "$tag" in
+    info)
+        prefix="${CYAN}[INFO] "
+        ;;
+    warning)
+        prefix="${YELLOW}[WARNING] "
+        ;;
+    error)
+        prefix="${RED}[ERROR] "
+        ;;
+    step)
+        prefix="\n${BLUE}[STEP] "
+        ;;
+    *)
+        prefix=""
+        ;;
+    esac
+
+    echo -e "${prefix}${msg}${RESET}"
 }
 
 require_bin() {
     if [[ ! -x "$1" ]]; then
-        printf '[ERROR] Required executable not found: %s\n' "$1" >&2
+        log error "Required executable not found: $1"
         exit 1
     fi
 }
@@ -49,7 +85,7 @@ generate_coverage() {
     require_bin "$(command -v llvm-profdata)"
     require_bin "$(command -v llvm-cov)"
 
-    log "Creating profdata"
+    log step "Creating profdata"
     llvm-profdata merge --sparse "$LLVM_PROFRAW" -o "$LLVM_PROFDATA"
 
     mapfile -t tpm_sources < <(
@@ -60,7 +96,7 @@ generate_coverage() {
         find "$FUZZER_SOURCE_DIR" -type f \( -name '*.cc' \)
     )
 
-    log "Generating TPM coverage HTML"
+    log step "Generating TPM coverage HTML"
     llvm-cov show "$FUZZER_BIN" \
         -instr-profile="$LLVM_PROFDATA" \
         -format=html \
@@ -68,12 +104,12 @@ generate_coverage() {
         -output-dir="$COVERAGE_DIR" \
         "${tpm_sources[@]}"
 
-    log "Generating TPM coverage summary"
+    log step "Generating TPM coverage summary"
     llvm-cov report "$FUZZER_BIN" \
         -instr-profile="$LLVM_PROFDATA" \
         "${tpm_sources[@]}" >"$COVERAGE_DIR/report.txt"
 
-    log "Generating fuzzer-source coverage HTML"
+    log step "Generating fuzzer-source coverage HTML"
     llvm-cov show "$FUZZER_BIN" \
         -instr-profile="$LLVM_PROFDATA" \
         -format=html \
@@ -99,9 +135,9 @@ main() {
         fuzzer_args+=("${extra_args_array[@]}")
     fi
 
-    log "Using fuzzer args: ${fuzzer_args[*]}"
+    log info "Using fuzzer args: ${fuzzer_args[*]}"
 
-    log "Starting fuzzer"
+    log step "Starting fuzzer"
     LLVM_PROFILE_FILE="$LLVM_PROFRAW" \
         "$FUZZER_BIN" \
         -artifact_prefix="$ARTIFACTS_DIR/" \
@@ -110,7 +146,7 @@ main() {
         "$CORPUS_DIR" \
         "$SEEDS_DIR"
 
-    log "Merging corpus"
+    log step "Merging corpus"
     "$FUZZER_BIN" \
         -merge=1 \
         "${fuzzer_args[@]}" \
@@ -119,11 +155,11 @@ main() {
 
     if [[ "$GEN_COVERAGE" == "1" ]]; then
         mkdir -p "$COVERAGE_DIR" "$SRC_COVERAGE_DIR"
-        log "Generating coverage"
+        log step "Generating coverage"
         generate_coverage
     fi
 
-    log "Done"
+    log step "Done"
 }
 
 main "$@"

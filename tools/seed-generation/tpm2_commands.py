@@ -1124,7 +1124,7 @@ class TPMNVDefineSpace(TPMCommand):
         offset += 4
 
         sessions = []
-        if self.tag != TPM_ST.NO_SESSIONS:
+        if self.tag != TPM_ST.TPM_ST_NO_SESSIONS:
             auth_size = int.from_bytes(params[offset : offset + 4], BYTE_ORDER)
             auth_end = offset + 4 + auth_size
             auth_bytes = params[offset:auth_end]

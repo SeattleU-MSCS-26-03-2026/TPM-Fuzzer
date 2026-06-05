@@ -1,5 +1,5 @@
 {
-  description = "TPM Fuzzer Flake";
+  description = "TPM 2.0 Fuzzer";
 
   inputs = {
     nixpkgs.url = "github:nixos/nixpkgs?ref=nixos-unstable";

@@ -17,74 +17,34 @@
 #   Compose provides default FUZZER_SEED / FUZZER_MAX_RUNS values.
 #   -maxRuns and -maxTime override those defaults for the current invocation.
 #   FUZZER_EXTRA_ARGS remains available for advanced direct Docker Compose use.
+
+# --------------------------------------------------------------------
+# Environment flags
+# --------------------------------------------------------------------
+FUZZER_BIN="${FUZZER_BIN:-Fuzzer}"
+LOCAL_RUN="${LOCAL_RUN:-N}"
+
+# --------------------------------------------------------------------
+# Miscellaneous
+# --------------------------------------------------------------------
+SCRIPT_DIR=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" &>/dev/null && pwd)
 BLUE="\033[34m"
 RESET="\033[0m"
-COVERAGE_HISTORY="${FUZZER_COV_HISTORY:-coverage-history/history.csv}"
-FUZZER_BIN="${FUZZER_BIN:-Fuzzer}"
+RED="\033[0;31m"
+GREEN="\033[0;32m"
+YELLOW="\033[1;33m"
+BLUE="\033[0;34m"
+CYAN="\033[0;36m"
 
 # Append summarized coverage data into a CSV history file.
-#
-# This script:
-#   - Reads a text coverage REPORT_TXT (from llvm-cov) that contains
-#     a line beginning with "TOTAL" and coverage statistics.
-#   - Extracts summary totals for regions, functions, lines, and branches,
-#     along with their missed counts and coverage percentages.
-#   - Appends a CSV row to coverage_history.csv containing:
-#       * UTC timestamp
-#       * Current Git commit short SHA (or "unknown" if not in a git repo)
-#       * Coverage metrics for regions, functions, lines, and branches
 track_coverage() {
-    local bin="$1"
-    local report
-
-    if [[ $bin = "fuzzer" ]]; then
-        report="coverage/bytearray/report.txt"
-    else
-        report="coverage/bytearray/report.txt"
-    fi
-
-    if [[ -z $report ]]; then
-        echo "Usage: track-coverage <REPORT_TXT>"
-        exit 1
-    fi
-
-    local timestamp="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
-    local sha="$(git rev-parse --short HEAD 2>/dev/null || echo unknown)"
-
-    if [ ! -f "$COVERAGE_HISTORY" ]; then
-        cat >"$COVERAGE_HISTORY" <<'CSV'
-Timestamp,GitSHA,Regions,Missed Regions,Regions Cover %,Functions,Missed Functions,Functions Cover %,Lines,Missed Lines,Lines Cover %,Branches,Missed Branches,Branches Cover %
-CSV
-    fi
-
-    awk -v ts="$timestamp" -v sha="$sha" '
-  $1=="TOTAL" {
-    gsub(/%/,"",$4); gsub(/%/,"",$7); gsub(/%/,"",$10); gsub(/%/,"",$13);
-    printf "%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s\n",
-      ts,sha,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13
-  }
-' "$report" >>"$COVERAGE_HISTORY"
-    echo -e "${BLUE}[INFO] Appending to coverage history ($COVERAGE_HISTORY).${RESET}\n"
-}
-
-archive_coverage() {
-    local coverage_directory="${1:-coverage/}"
-    local timestamp="$(date -u +%Y-%m-%dT%H-%M-%SZ)"
-    local sha="$(git rev-parse --short HEAD 2>/dev/null || echo unknown)"
-    local out="coverage-history/coverage-$timestamp-$sha.tar.gz"
-    if [ ! -d "$coverage_directory" ]; then
-        echo "Warning: $coverage_directory doesn't exist! Skipping archiving"
-        exit 1
-    fi
-
-    echo -e "${BLUE}[INFO] Archiving coverage to $out.${RESET}\n"
-    tar czf "$out" "$coverage_directory"
+    "${SCRIPT_DIR}"/track-coverage "$1"
 }
 
 combine_coverage() {
     if [[ ! -f coverage/bytearray/fuzzer.profdata && ! -f coverage/proto/fuzzer.profdata ]]; then
-        printf 'Error: No fuzzer profdata found. Run at least one fuzzer first.\n' >&2
-        printf '  Expected: coverage/bytearray/fuzzer.profdata or coverage/proto/fuzzer.profdata\n' >&2
+        echo -e "${RED}[ERROR] No fuzzer profdata found. Run at least one fuzzer first.${RESET}"
+        echo -e "${CYAN} Expected: coverage/bytearray/fuzzer.profdata or coverage/proto/fuzzer.profdata"
         exit 1
     fi
 
@@ -98,10 +58,10 @@ combine_coverage() {
         --entrypoint /srv/scripts/docker/combine-coverage.sh \
         fuzzer
 
-    echo -e "${BLUE}[INFO] Combined coverage report written to coverage/overall/${RESET}\n"
+    echo -e "${CYAN}[INFO] Combined coverage report written to coverage/overall/${RESET}\n"
 }
 
-main() {
+ensure_directories() {
     [ -d corpus ] || mkdir -p corpus/bytearray && mkdir -p corpus/proto
     [ -d coverage ] || mkdir -p coverage/bytearray && mkdir -p coverage/proto
     [ -d artifacts ] || mkdir -p artifacts/bytearray && mkdir -p artifacts/proto
@@ -109,14 +69,24 @@ main() {
     if [ -O corpus ] && [ -O coverage ] && [ -O artifacts ]; then
         :
     else
-        echo "Warning: one or more required directories are owned by root or another user. Please adjust permissions, e.g.:"
-        echo "  sudo chown -R \$(whoami):\$(whoami) corpus coverage artifacts"
+        echo -e "${YELLOW}[WARNING] one or more required directories are owned by root or another user. Please adjust permissions, e.g.:"
+        echo -e "  sudo chown -R \$(whoami):\$(whoami) corpus coverage artifacts"
+        echo -ne "${RESET}"
         exit 1
     fi
+}
+
+main() {
+    local track=0
+    local combine=0
+    local max_runs=""
+    local max_time=""
+    local bin="$(echo "${FUZZER_BIN}" | tr '[:upper:]' '[:lower:]')"
+    local bin_explicit=0
 
     if [[ $# -eq 0 ]]; then
-        echo "Usage: ${0} [-track] [-bin <name>] [-combine] [-maxRuns <n>] [-maxTime <seconds>]"
-        echo "Options:"
+        echo -e "${BLUE}Usage:${RESET} ${1} [-track] [-bin <name>] [-combine] [-maxRuns <n>] [-maxTime <seconds>]"
+        echo -e "${CYAN}Options:${RESET}"
         echo "    -track: Track coverage metrics to coverage-history/"
         echo "    -bin: Select fuzzer binary to run i.e proto-fuzzer, Fuzzer"
         echo "    -combine: Merge coverage reports"
@@ -125,23 +95,20 @@ main() {
         exit 1
     fi
 
-    local track=0
-    local combine=0
-    local max_runs=""
-    local max_time=""
-    local bin="$(echo "${FUZZER_BIN}" | tr '[:upper:]' '[:lower:]')"
-    local bin_explicit=0
-
     while [[ $# -gt 0 ]]; do
         case "$1" in
         -track)
             track=1
             shift
             ;;
+        -local)
+            LOCAL_RUN="Y"
+            shift
+            ;;
         -bin)
             shift
             if [[ $# -eq 0 ]]; then
-                echo "Error: -bin requires a value."
+                echo -e "${RED}[ERROR] -bin requires a value.${RESET}"
                 exit 1
             fi
             bin="$(echo "$1" | tr '[:upper:]' '[:lower:]')"
@@ -155,7 +122,7 @@ main() {
         -maxRuns)
             shift
             if [[ $# -eq 0 ]]; then
-                echo "Error: -maxRuns requires a value."
+                echo -e "${RED}[ERROR] -maxRuns requires a value.${RESET}"
                 exit 1
             fi
             max_runs="$1"
@@ -164,14 +131,14 @@ main() {
         -maxTime)
             shift
             if [[ $# -eq 0 ]]; then
-                echo "Error: -maxTime requires a value."
+                echo -e "${RED}[ERROR] -maxTime requires a value.${RESET}"
                 exit 1
             fi
             max_time="$1"
             shift
             ;;
         --*)
-            echo "Error: unsupported option '$1'. Use single-dash options like -bin or -track."
+            echo -e "${RED}[ERROR] Unsupported option '$1'. Use single-dash options like -bin or -track.${RESET}"
             exit 1
             ;;
         *)
@@ -186,32 +153,48 @@ main() {
         return
     fi
 
-    echo -e "${BLUE}[1/4] Destroying pre-existing images.${RESET}\n"
-    docker compose down --rmi=all &>/dev/null
+    ensure_directories "${0}"
 
-    echo -e "${BLUE}[2/4] Building the ${bin} image.${RESET}\n"
-    docker compose build $bin &>/dev/null
+    if [[ "$LOCAL_RUN" = "N" ]]; then
+        echo -e "${BLUE}[1/4] Destroying pre-existing images.${RESET}"
+        docker compose down --rmi=all &>/dev/null
 
-    echo -e "${BLUE}[3/4] Running ${bin}...${RESET}\n\n"
-    local -a run_env=()
-    if [[ -n "$max_time" && -z "$max_runs" ]]; then
-        run_env+=(-e "FUZZER_MAX_RUNS=")
-    fi
-    if [[ -n "$max_runs" ]]; then
-        run_env+=(-e "FUZZER_MAX_RUNS=$max_runs")
-    fi
-    if [[ -n "$max_time" ]]; then
-        run_env+=(-e "FUZZER_MAX_TIME=$max_time")
-    fi
-    docker compose run --rm "${run_env[@]}" $bin
+        echo -e "${BLUE}[2/4] Building the ${bin} image.${RESET}"
+        docker compose build $bin &>/dev/null
 
-    echo -e "${BLUE}[INFO] Destroying containers.${RESET}\n"
-    docker compose down --rmi=all --remove-orphans
+        echo -e "${BLUE}[3/4] Running ${bin}...${RESET}\n"
+        local -a run_env=()
+        if [[ -n "$max_time" && -z "$max_runs" ]]; then
+            run_env+=(-e "FUZZER_MAX_RUNS=")
+        fi
+        if [[ -n "$max_runs" ]]; then
+            run_env+=(-e "FUZZER_MAX_RUNS=$max_runs")
+        fi
+        if [[ -n "$max_time" ]]; then
+            run_env+=(-e "FUZZER_MAX_TIME=$max_time")
+        fi
+        docker compose run --rm "${run_env[@]}" $bin
+
+        echo -e "${CYAN}[INFO] Destroying containers.${RESET}"
+        docker compose down --rmi=all --remove-orphans
+    else
+        local bin_name="$bin"
+        local seeds="proto"
+        if [[ "$bin_name" = "fuzzer" ]]; then
+            bin_name="Fuzzer"
+            seeds="bytearray"
+        fi
+
+        FUZZER_BIN_NAME="$bin_name" \
+            FUZZER_MAX_RUNS="$max_runs" \
+            FUZZER_MAX_TIME="$max_time" \
+            SEEDS_TYPE="$seeds" \
+            "$SCRIPT_DIR"/docker/start-fuzzer.sh
+    fi
 
     if [[ $track -eq 1 ]]; then
-        echo -e "${BLUE}[4/4] Tracking Coverage.${RESET}\n"
+        echo -e "${BLUE}[4/4] Tracking Coverage.${RESET}"
         track_coverage "$bin"
-        archive_coverage
     fi
 
     if [[ $combine -eq 1 ]]; then
