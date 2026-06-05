@@ -42,7 +42,7 @@ If you have already cloned the repository, initialize and update the submodules:
 git submodule update --init --recursive
 ```
 
-## Requirements
+### Requirements
 
 This framework provides two supported ways to build, run, and interact with the fuzz targets:
 
@@ -51,7 +51,7 @@ This framework provides two supported ways to build, run, and interact with the 
 
 All framework dependencies are provided through Docker or Nix, so you do not need to install the build and fuzzing toolchain manually.
 
-## Using Docker
+### Using Docker
 
 Docker is the recommended way to get started. The repository uses [Docker Compose](https://docs.docker.com/compose/) to run the fuzz targets and supporting workflows.
 
@@ -67,7 +67,7 @@ For example:
 docker compose run fuzzer
 ```
 
-## Using Nix
+### Using Nix
 
 Nix provides a reproducible development environment that matches the tooling used in the Docker containers. Use this option if you want direct access to the underlying CMake, C++, Python, and fuzzing tools.
 
@@ -89,49 +89,14 @@ sync           Ensure generated seeds are up to date
 track-coverage Track coverage
 ```
 
-For more details, see the [Developer Guide](./docs/DEVELOPER.md).
+### Scripting
 
-## Usage
+The repository includes scripts for common workflows, such as running fuzz targets, generating seed inputs, testing individual seeds, and tracking coverage.
 
-The provided TPM fuzz targets can be run using:
+These scripts are located in the `scripts` directory. Each script includes usage information to help you get started.
 
-```sh
-./scripts/run-fuzzer.sh -bin <fuzzer-type i.e. proto-fuzzer, fuzzer>
-```
+> For more details, see the [Developer Guide](./docs/DEVELOPER.md).
 
-Common runner overrides:
-
-```sh
-./scripts/run-fuzzer.sh -bin fuzzer -maxRuns 1000
-./scripts/run-fuzzer.sh -bin proto-fuzzer -maxTime 60
-```
-
-You can also directly build and run the specific Docker containers:
-
-By default, the Docker Compose services use a fixed libFuzzer seed and a
-default run limit. The byte-level fuzzer defaults to `100000` runs, while the
-structure-aware fuzzer default is set in `docker-compose.yml`. These limits can
-be overridden through the wrapper script with `-maxRuns` / `-maxTime`, or
-directly with Docker Compose environment overrides.
-
-```sh
-docker compose build proto-fuzzer
-docker compose build fuzzer
-
-docker compose run proto-fuzzer
-ls -l
-drwxr-xr-x 2 user users    4096 Apr  2 22:52 proto-artifacts
-drwxr-xr-x 2 user users   4096 Apr 13 18:10 proto-corpus
-drwxr-xr-x 3 user users   4096 Apr 13 18:10 proto-coverage
-drwxr-xr-x 2 user users   4096 Mar 29 21:00 proto-seeds
-
-docker compose run fuzzer
-ls -l
-drwxr-xr-x 2 user users   4096 Apr 13 17:55 artifacts
-drwxr-xr-x 2 user users   4096 Apr 13 18:10 corpus
-drwxr-xr-x 3 user users   4096 Apr  2 22:54 coverage
-drwxr-xr-x 2 user users   4096 Apr 13 21:27 seeds
-```
 
 ## Documentation
 - [Our Architecture](./docs/ARCHITECTURE.md)
