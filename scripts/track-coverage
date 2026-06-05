@@ -1,0 +1,87 @@
+#!/usr/bin/env bash
+
+# Append summarized coverage data into a CSV history file.
+#
+# This script:
+#   - Requires a file REPORT_TXT generated from running the fuzzer
+#   - Reads a text coverage REPORT_TXT (from llvm cov) that contains
+#     a line beginning with "TOTAL" and coverage statistics.
+#   - Extracts summary totals for regions, functions, lines, and branches,
+#     along with their missed counts and coverage percentages.
+#   - Appends a CSV row to coverage_history.csv containing:
+#       * UTC timestamp
+#       * Current Git commit short SHA (or "unknown" if not in a git repo)
+#       * Coverage metrics for regions, functions, lines, and branches
+
+# --------------------------------------------------------------------
+# Environment flags
+# --------------------------------------------------------------------
+COVERAGE_HISTORY="${FUZZER_COV_HISTORY:-coverage-history/history.csv}"
+
+# --------------------------------------------------------------------
+# Miscellaneous
+# --------------------------------------------------------------------
+RED="\033[0;31m"
+GREEN="\033[0;32m"
+RESET="\033[0m"
+YELLOW="\033[1;33m"
+CYAN="\033[0;36m"
+
+main() {
+    local bin timestamp sha report
+    if [[ $# -eq 0 ]]; then
+        echo -e "${RED}[ERROR] Binary not specified.${RESET}"
+        exit 1
+    fi
+
+    bin="$(echo "${1}" | tr '[:upper:]' '[:lower:]')"
+    timestamp="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
+    sha="$(git rev-parse --short HEAD 2>/dev/null || echo unknown)"
+
+    if [[ $bin = "fuzzer" ]]; then
+        report="coverage/bytearray/report.txt"
+    else
+        report="coverage/proto/report.txt"
+    fi
+
+    if [ ! -f "$COVERAGE_HISTORY" ]; then
+        cat >"$COVERAGE_HISTORY" <<'CSV'
+Timestamp,GitSHA,Regions,Missed Regions,Regions Cover %,Functions,Missed Functions,Functions Cover %,Lines,Missed Lines,Lines Cover %,Branches,Missed Branches,Branches Cover %
+CSV
+    fi
+
+    echo -e "${CYAN}[INFO] Appending to coverage history ($COVERAGE_HISTORY).${RESET}"
+    if awk -v ts="$timestamp" -v sha="$sha" '
+  $1=="TOTAL" {
+    gsub(/%/,"",$4); gsub(/%/,"",$7); gsub(/%/,"",$10); gsub(/%/,"",$13);
+    printf "%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s\n",
+      ts,sha,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13
+  }
+' "$report" >>"$COVERAGE_HISTORY"; then
+        archive_coverage "$timestamp" "$sha"
+
+        echo -e "${GREEN}[INFO] Coverage history updated.${RESET}\n"
+    else
+        exit 2
+    fi
+}
+
+archive_coverage() {
+    local timestamp="$1"
+    local sha="$2"
+    local coverage_directory="${3:-coverage/}"
+    local out="coverage-history/coverage-$timestamp-$sha.tar.gz"
+
+    timestamp="$(date -u +%Y-%m-%dT%H-%M-%SZ)"
+    sha="$(git rev-parse --short HEAD 2>/dev/null || echo unknown)"
+
+    if [ ! -d "$coverage_directory" ]; then
+        echo -e "${YELLOW}}[WARNING] $coverage_directory doesn't exist! Skipping archiving.${RESET}"
+        exit 3
+    fi
+
+    echo -e "${CYAN}[INFO] Archiving coverage to $out.${RESET}"
+    tar czf "$out" "$coverage_directory"
+}
+
+main "${@}"
