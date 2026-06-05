@@ -179,13 +179,16 @@ main() {
         docker compose down --rmi=all --remove-orphans
     else
         local bin_name="$bin"
+        local seeds="proto"
         if [[ "$bin_name" = "fuzzer" ]]; then
             bin_name="Fuzzer"
+            seeds="bytearray"
         fi
 
         FUZZER_BIN_NAME="$bin_name" \
             FUZZER_MAX_RUNS="$max_runs" \
             FUZZER_MAX_TIME="$max_time" \
+            SEEDS_TYPE="$seeds" \
             "$SCRIPT_DIR"/docker/start-fuzzer.sh
     fi
 
