@@ -4,17 +4,24 @@
 #  binary against a provided corpus file. Exits with an error if
 #  no corpus file is supplied or if the file does not exist.
 
+# --------------------------------------------------------------------
+# Environment flags
+# --------------------------------------------------------------------
+LOCAL_RUN="${LOCAL_RUN:-N}"
+
+# --------------------------------------------------------------------
+# Miscellaneous
+# --------------------------------------------------------------------
+RED="\033[0;31m"
+GREEN="\033[0;32m"
+YELLOW="\033[1;33m"
+BLUE="\033[0;34m"
+CYAN="\033[0;36m"
+RESET="\033[0m"
+
 SCRIPT_DIR=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" &>/dev/null && pwd)
 
 main() {
-    local RED="\033[0;31m"
-    local GREEN="\033[0;32m"
-    local YELLOW="\033[1;33m"
-    local BLUE="\033[0;34m"
-    local CYAN="\033[0;36m"
-    local RESET="\033[0m"
-    local local_run=0
-
     [ -d corpus ] || mkdir corpus
     [ -d coverage ] || mkdir coverage
 
@@ -29,7 +36,7 @@ main() {
     while [[ $# -gt 0 ]]; do
         case "$1" in
         -local)
-            local_run=1
+            LOCAL_RUN="Y"
             shift
             ;;
         *)
@@ -48,7 +55,7 @@ main() {
 
     echo -e "${CYAN}[*]${RESET} Using corpus file: ${BLUE}${corpus}${RESET}"
 
-    if [[ $local_run -eq 0 ]]; then
+    if [[ $LOCAL_RUN = "N" ]]; then
         echo -e "${CYAN}[*]${RESET} Building fuzzer Docker image..."
         docker compose build fuzzer &>/dev/null
 
