@@ -45,16 +45,22 @@ pkgs.mkShell {
     export PROJECT_DIR="$PWD"
     export LOCAL_RUN="Y"
 
-    alias build="rm -rf build/ && cmake -B build -G Ninja && cmake --build build"
-    alias run-proto="./scripts/run-fuzzer.sh"
-    alias test="./scripts/test-seed.sh"
-    # The '()' is a subshell; avoids changing directory if the command fails.
+    alias build="rm -rf $PROJECT_DIR/build && cmake -B $PROJECT_DIR/build -G Ninja && cmake --build $PROJECT_DIR/build"
+    alias run="$PROJECT_DIR/scripts/run-fuzzer.sh"
+    alias test="$PROJECT_DIR/scripts/test-seed.sh"
     alias sync="(cd $PROJECT_DIR/tools/seed-generation && uv run main.py --output-dir=$PROJECT_DIR/seeds --test-script=$PROJECT_DIR/scripts/test-seed.sh -recreate && rm NVChip default.profraw)"
+    alias track-coverage="$PROJECT_DIR/scripts/track-coverage"
 
     if [ -f $PROJECT_DIR/config/determinism.patch ]; then
-      cd vendor/TPM && \
-      patch -t -p1 -i $PROJECT_DIR/config/determinism.patch && \
-      cd -
+      (cd $PROJECT_DIR/vendor/TPM && patch -t -p1 -i $PROJECT_DIR/config/determinism.patch)
     fi
+
+    echo "TPM 2.0 Fuzzer
+    Available commands:
+      build          Rebuild the project, including Protobuf and binaries
+      run            Run the fuzz targets
+      test           Test a seed against the fuzzer
+      sync           Ensure generated seeds are up to date
+      track-coverage Track coverage"
   '';
 }
