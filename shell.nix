@@ -44,6 +44,7 @@ pkgs.mkShell {
     export CXX=clang++
     export PROJECT_DIR="$PWD"
     export LOCAL_RUN="Y"
+    export RUN_CORPUS_DIR="$PROJECT_DIR/corpus/running"
 
     alias build="rm -rf $PROJECT_DIR/build && cmake -B $PROJECT_DIR/build -G Ninja && cmake --build $PROJECT_DIR/build"
     alias run="$PROJECT_DIR/scripts/run-fuzzer.sh"
