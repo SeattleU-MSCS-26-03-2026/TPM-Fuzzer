@@ -48,7 +48,7 @@ pkgs.mkShell {
     alias run-proto="./scripts/run-fuzzer.sh"
     alias test="./scripts/test-seed.sh"
     # The '()' is a subshell; avoids changing directory if the command fails.
-    alias sync="(cd $PROJECT_DIR/tools/seed-generation && uv run main.py --output-dir=$PROJECT_DIR/seeds --test-script=$PROJECT_DIR/scripts/test-seed.sh -recreate)"
+    alias sync="(cd $PROJECT_DIR/tools/seed-generation && uv run main.py --output-dir=$PROJECT_DIR/seeds --test-script=$PROJECT_DIR/scripts/test-seed.sh -recreate && rm NVChip default.profraw)"
 
     if [ -f $PROJECT_DIR/config/determinism.patch ]; then
       cd vendor/TPM && \
