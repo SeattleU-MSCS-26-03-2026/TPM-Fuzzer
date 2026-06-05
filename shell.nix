@@ -48,7 +48,7 @@ pkgs.mkShell {
     alias build="rm -rf $PROJECT_DIR/build && cmake -B $PROJECT_DIR/build -G Ninja && cmake --build $PROJECT_DIR/build"
     alias run="$PROJECT_DIR/scripts/run-fuzzer.sh"
     alias test="$PROJECT_DIR/scripts/test-seed.sh"
-    alias sync="(cd $PROJECT_DIR/tools/seed-generation && uv run main.py --output-dir=$PROJECT_DIR/seeds --test-script=$PROJECT_DIR/scripts/test-seed.sh -recreate && rm NVChip default.profraw)"
+    alias sync="(cd $PROJECT_DIR/tools/seed-generation && uv run main.py --output-dir=$PROJECT_DIR/seeds --test-script=$PROJECT_DIR/scripts/test-seed.sh -recreate && rm -f NVChip default.profraw)"
     alias track-coverage="$PROJECT_DIR/scripts/track-coverage"
 
     if [ -f $PROJECT_DIR/config/determinism.patch ]; then
