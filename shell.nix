@@ -47,7 +47,8 @@ pkgs.mkShell {
     alias build="rm -rf build/ && cmake -B build -G Ninja && cmake --build build"
     alias run-proto="./scripts/run-fuzzer.sh"
     alias test="./scripts/test-seed.sh"
-    alias sync="cd tools/seed-generation && uv run main.py --output-dir=$PROJECT_DIR/seeds --test-script=$PROJECT_DIR/scripts/test-seed.sh -recreate && cd -"
+    # The '()' is a subshell; avoids changing directory if the command fails.
+    alias sync="(cd $PROJECT_DIR/tools/seed-generation && uv run main.py --output-dir=$PROJECT_DIR/seeds --test-script=$PROJECT_DIR/scripts/test-seed.sh -recreate)"
 
     if [ -f $PROJECT_DIR/config/determinism.patch ]; then
       cd vendor/TPM && \
